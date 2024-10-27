@@ -27,11 +27,11 @@ services:
     restart: unless-stopped
     command: tunnel run
     environment:
-        - TUNNEL_TOKEN=<token>
+        - TUNNEL_TOKEN=eyJhIjoiZDI1MjE2N2I1ZjUwYjdjODgzZmZhMDQ0NDZiOWJhYzMiLCJ0IjoiZDE1NTQzNDctYWNjNS00YWMzLTgyMTYtODM4NjZkNGFhNmE0IiwicyI6Ik5HRmlOVGcwWVRRdE1XTm1ZaTAwWlRVeExUa3lNVE10TVRRNE5qSTFObVZoTXpVNCJ9
     networks:
         - baserow
-	- docassemble
-	- n8n
+        - docassemble
+        - n8n
 
   baserow:
     container_name: baserow
@@ -57,7 +57,7 @@ services:
       - "8082:80"
     volumes:
       - dabackup:/usr/share/docassemble/backup
-    network:
+    networks:
       - docassemble
 
   traefik:
@@ -81,7 +81,7 @@ services:
     volumes:
       - traefik_data:/letsencrypt
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    network:
+    networks:
       - n8n
 
   n8n:
@@ -113,6 +113,6 @@ services:
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
     volumes:
       - n8n_data:/home/node/.n8n
-    network:
+    networks:
       - n8n
 
