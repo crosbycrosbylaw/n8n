@@ -1,17 +1,38 @@
 networks:
-  projcrosb:
+
+  baserow:
+
+  docassemble:
+
+  n8n:
 
 volumes:
+
   baserow_data:
     external: true
+
   dabackup:
-    driver: local
+    external: true
+
   traefik_data:
     external: true
+
   n8n_data:
     external: true
 
 services:
+
+  tunnel:
+    image: cloudflare/cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+        - TUNNEL_TOKEN=<token>
+    networks:
+        - baserow
+	- docassemble
+	- n8n
+
   baserow:
     container_name: baserow
     image: baserow/baserow:develop-latest
@@ -22,6 +43,8 @@ services:
       - "8080:80"
     volumes:
       - baserow_data:/baserow/data
+    networks:
+      - baserow
 
   docassemble:
     image: jhpyle/docassemble:latest
@@ -34,6 +57,8 @@ services:
       - "8082:80"
     volumes:
       - dabackup:/usr/share/docassemble/backup
+    network:
+      - docassemble
 
   traefik:
     image: "traefik"
@@ -56,6 +81,8 @@ services:
     volumes:
       - traefik_data:/letsencrypt
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    network:
+      - n8n
 
   n8n:
     image: docker.n8n.io/n8nio/n8n
@@ -86,5 +113,6 @@ services:
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
     volumes:
       - n8n_data:/home/node/.n8n
-
+    network:
+      - n8n
 
