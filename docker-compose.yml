@@ -1,19 +1,15 @@
 networks:
 
-  baserow:
-
+  nocodb:
   docassemble:
-
   n8n:
 
 volumes:
 
-  baserow_data:
-    external: true
-
+  db_data: 
+  nc_data: 
   dabackup:
     external: true
-
   n8n_data:
     external: true
 
@@ -26,22 +22,43 @@ services:
     environment:
         - TUNNEL_TOKEN=eyJhIjoiZDI1MjE2N2I1ZjUwYjdjODgzZmZhMDQ0NDZiOWJhYzMiLCJ0IjoiZDE1NTQzNDctYWNjNS00YWMzLTgyMTYtODM4NjZkNGFhNmE0IiwicyI6Ik5HRmlOVGcwWVRRdE1XTm1ZaTAwWlRVeExUa3lNVE10TVRRNE5qSTFObVZoTXpVNCJ9
     networks:
-        - baserow
+        - nocodb
         - docassemble
         - n8n
-
-  baserow:
-    container_name: baserow
-    image: baserow/baserow:develop-latest
-    restart: unless-stopped
+        
+  nocodb: 
+    depends_on: 
+      root_db: 
+        condition: service_healthy
     env_file:
       - .env
-    ports:
-      - "8080:80"
-    volumes:
-      - baserow_data:/baserow/data
+    environment: 
+      NC_DB: "pg://root_db:5432?u=postgres&p=password&d=root_db"
+    image: "nocodb/nocodb:latest"
+    ports: 
+      - "8080:8080"
+    restart: always
     networks:
-      - baserow
+      - nocodb
+    volumes: 
+      - "nc_data:/usr/app/data"
+  
+  root_db: 
+    environment: 
+      POSTGRES_DB: root_db
+      POSTGRES_PASSWORD: crosby&crosby!2021
+      POSTGRES_USER: postgres
+    healthcheck: 
+      interval: 10s
+      retries: 10
+      test: "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""
+      timeout: 2s
+    image: postgres
+    restart: always
+    networks:
+      - nocodb
+    volumes: 
+      - "db_data:/var/lib/postgresql/data"
 
   docassemble:
     image: jhpyle/docassemble:latest
