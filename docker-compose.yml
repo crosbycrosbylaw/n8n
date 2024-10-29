@@ -66,7 +66,7 @@ services:
     restart: unless-stopped
     stop_grace_period: 6m
     ports:
-      - "8082:8082"
+      - "8082:80"
     volumes:
       - dabackup:/usr/share/docassemble/backup
     networks:
