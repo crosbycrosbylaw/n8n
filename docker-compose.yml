@@ -1,4 +1,4 @@
-networks: 
+networks:
   nocodb:
   docassemble:
   n8n:
@@ -11,56 +11,58 @@ volumes:
     external: true
   n8n_data:
     external: true
-  
+
 
 services:
 
   tunnel:
-    image: cloudflare/cloudflared
+    image: "cloudflare/cloudflared"
+    container_name: "cloudflare tunnel"
     restart: unless-stopped
-    command: tunnel run
+    command: "tunnel run"
     environment:
-        - TUNNEL_TOKEN=eyJhIjoiZDI1MjE2N2I1ZjUwYjdjODgzZmZhMDQ0NDZiOWJhYzMiLCJ0IjoiZDE1NTQzNDctYWNjNS00YWMzLTgyMTYtODM4NjZkNGFhNmE0IiwicyI6Ik5HRmlOVGcwWVRRdE1XTm1ZaTAwWlRVeExUa3lNVE10TVRRNE5qSTFObVZoTXpVNCJ9
+        - TUNNEL_TOKEN: "eyJhIjoiZDI1MjE2N2I1ZjUwYjdjODgzZmZhMDQ0NDZiOWJhYzMiLCJ0IjoiZDE1NTQzNDctYWNjNS00YWMzLTgyMTYtODM4NjZkNGFhNmE0IiwicyI6Ik5HRmlOVGcwWVRRdE1XTm1ZaTAwWlRVeExUa3lNVE10TVRRNE5qSTFObVZoTXpVNCJ9"
     networks:
         - docassemble
         - nocodb
         - n8n
 
-  nocodb: 
-    depends_on: 
-      root_db: 
+  nocodb:
+    depends_on:
+      root_db:
         condition: service_healthy
-    environment: 
+    environment:
       NC_DB: "pg://root_db:5432?u=postgres&p=password&d=root_db"
     image: "nocodb/nocodb:latest"
-    ports: 
+    container_name: "nocodb"
+    ports:
       - "8080:8080"
     restart: always
-    volumes: 
+    volumes:
       - "nc_data:/usr/app/data"
     networks:
       - nocodb
-  
-  root_db: 
-    environment: 
+
+  root_db:
+    environment:
       POSTGRES_DB: root_db
       POSTGRES_PASSWORD: password
       POSTGRES_USER: postgres
-    healthcheck: 
+    healthcheck:
       interval: 10s
       retries: 10
       test: "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""
       timeout: 2s
     image: postgres
     restart: always
-    volumes: 
+    volumes:
       - "db_data:/var/lib/postgresql/data"
     networks:
       - nocodb
-  
+
   docassemble:
     image: jhpyle/docassemble:latest
-    container_name: docassemble
+    container_name: "docassemble"
     env_file:
       - .env
     restart: unless-stopped
@@ -68,23 +70,24 @@ services:
     ports:
       - "8082:80"
     volumes:
-      - dabackup:/usr/share/docassemble/backup
+      - "dabackup:/usr/share/docassemble/backup"
     networks:
       - docassemble
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n
+    image: "docker.n8n.io/n8nio/n8n:latest"
+    container_name: "n8n"
     restart: always
     ports:
       - "5678:5678"
     environment:
-      - N8N_HOST=${SUBDOMAIN}.${DOMAIN_NAME}
-      - N8N_PORT=5678
-      - N8N_PROTOCOL=https
-      - NODE_ENV=production
-      - WEBHOOK_URL=https://${SUBDOMAIN}.${DOMAIN_NAME}/
-      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      - N8N_HOST: ${SUBDOMAIN}.${DOMAIN_NAME}
+      - N8N_PORT: "5678"
+      - N8N_PROTOCOL: "https"
+      - NODE_ENV: "production"
+      - WEBHOOK_URL: https://${SUBDOMAIN}.${DOMAIN_NAME}/
+      - GENERIC_TIMEZONE: ${GENERIC_TIMEZONE}
     volumes:
-      - n8n_data:/home/node/.n8n
+      - "n8n_data:/home/node/.n8n"
     networks:
       - n8n
