@@ -21,7 +21,7 @@ services:
     restart: unless-stopped
     command: "tunnel run"
     environment:
-        - TUNNEL_TOKEN: "eyJhIjoiZDI1MjE2N2I1ZjUwYjdjODgzZmZhMDQ0NDZiOWJhYzMiLCJ0IjoiZDE1NTQzNDctYWNjNS00YWMzLTgyMTYtODM4NjZkNGFhNmE0IiwicyI6Ik5HRmlOVGcwWVRRdE1XTm1ZaTAwWlRVeExUa3lNVE10TVRRNE5qSTFObVZoTXpVNCJ9"
+        - TUNNEL_TOKEN: eyJhIjoiZDI1MjE2N2I1ZjUwYjdjODgzZmZhMDQ0NDZiOWJhYzMiLCJ0IjoiZDE1NTQzNDctYWNjNS00YWMzLTgyMTYtODM4NjZkNGFhNmE0IiwicyI6Ik5HRmlOVGcwWVRRdE1XTm1ZaTAwWlRVeExUa3lNVE10TVRRNE5qSTFObVZoTXpVNCJ9
     networks:
         - docassemble
         - nocodb
