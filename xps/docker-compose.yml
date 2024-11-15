@@ -32,6 +32,9 @@ x-ollama: &service-ollama
   container_name: ollama
   networks: ['n8n-ai']
   restart: unless-stopped
+  environment:
+    - OLLAMA_HOST=https://llama.ccn8n.org
+    - OLLAMA_INTEL_GPU=true
   ports:
     - 11434:11434
   volumes:
