@@ -45,7 +45,7 @@ x-ollama: &service-ollama
 
 x-init-ollama: &init-ollama
   image: ollama/ollama:latest
-  networks: ['demo']
+  networks: ['n8n-ai']
   container_name: ollama-pull-llama
   volumes:
     - ollama_storage:/root/.ollama
