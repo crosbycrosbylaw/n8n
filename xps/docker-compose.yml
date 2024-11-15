@@ -148,6 +148,7 @@ services:
       - ollama-cpu
    
   ollama-pull-openchat:
+    profiles: ["cpu"]
     <<: *init-ollama
     environment:
       - OLLAMA_MODEL=openchat
@@ -155,6 +156,7 @@ services:
       - ollama-cpu
 
   ollama-pull-granite-code:
+    profiles: ["cpu"]
     <<: *init-ollama
     environment:
       - OLLAMA_MODEL=granite-code
@@ -162,6 +164,7 @@ services:
       - ollama-cpu
 
   ollama-pull-all-minilm:
+    profiles: ["cpu"]
     <<: *init-ollama
     environment:
       - OLLAMA_MODEL=all-minilm:22m
