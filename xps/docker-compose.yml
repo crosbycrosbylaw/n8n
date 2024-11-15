@@ -55,11 +55,12 @@ x-init-ollama: &init-ollama
   entrypoint: /bin/sh
   command:
     - "-c"
-    - "sleep 3; OLLAMA_HOST=ollama:11434 ollama pull openchat"
-    - "-c"
-    - "sleep 3; OLLAMA_HOST=ollama:11434 ollama pull all-minilm:22m"
-    - "-c"
-    - "sleep 3; OLLAMA_HOST=ollama:11434 ollama pull granite-code"
+    - |
+      OLLAMA_HOST=ollama:11434
+      for model in openchat all-minilm:22m granite-code; do
+        ollama pull "$model"
+        sleep 3
+      done
 
 services:
 
