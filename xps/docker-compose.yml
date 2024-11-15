@@ -22,6 +22,8 @@ x-n8n: &service-n8n
     - N8N_PROTOCOL=https
     - N8N_PORT=5678
     - NODE_ENV=production
+    - NODE_FUNCTION_ALLOW_BUILTIN=*
+    - NODE_FUNCTION_ALLOW_EXTERNAL=*
     - WEBHOOK_URL=https://xps.ccn8n.org/
     - N8N_ENCRYPTION_KEY
     - N8N_USER_MANAGEMENT_JWT_SECRET
