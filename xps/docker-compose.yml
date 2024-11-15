@@ -60,7 +60,7 @@ services:
     networks: ['n8n-ai']
     restart: unless-stopped
     env_file:
-      - env
+      - .env
     environment:
       - POSTGRES_USER
       - POSTGRES_PASSWORD
