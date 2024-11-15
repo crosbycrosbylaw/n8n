@@ -47,14 +47,12 @@ x-init-ollama: &init-ollama
   image: ollama/ollama:latest
   networks: ['n8n-ai']
   container_name: ollama-pull-llama
-  environment:
-    - OLLAMA_MODEL=granite-code
   volumes:
     - ollama_storage:/root/.ollama
   entrypoint: /bin/sh
   command:
     - "-c"
-    - "sleep 3; OLLAMA_HOST=ollama:11434 ollama pull ${OLLAMA_MODEL}"
+    - "sleep 3; OLLAMA_HOST=ollama:11434 ollama pull granite-code"
 
 services:
 
