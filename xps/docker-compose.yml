@@ -51,7 +51,7 @@ services:
     restart: unless-stopped
     command: tunnel run
     environment:
-        - TUNNEL_TOKEN=eyJhIjoiZDI1MjE2N2I1ZjUwYjdjODgzZmZhMDQ0NDZiOWJhYzMiLCJ0IjoiODRiNmRhZjMtYTU3MC00Y2MyLWE1ODYtZTFjYzE5MTBlMmU3IiwicyI6Ik5qWmlaREZqTXpFdFkyTXdNUzAwWXprNUxXSTBNbVl0TnpjM05EQXpZMlEwTURRMyJ9
+        - TUNNEL_TOKEN=eyJhIjoiZDI1MjE2N2I1ZjUwYjdjODgzZmZhMDQ0NDZiOWJhYzMiLCJ0IjoiODRiNmRhZjMtYTU3MC00Y2MyLWE1ODYtZTFjYzE5MTBlMmU3IiwicyI6IlptUXhPRFl4T1dRdE9EWmlNUzAwTjJaaExUazVZbVF0T1dVeVpqVTVOekJsTURBNCJ9
     networks:
         - n8n-ai
 
@@ -91,7 +91,7 @@ services:
     container_name: n8n
     restart: unless-stopped
     ports:
-      - 5679:5679
+      - 5678:5678
     volumes:
       - n8n_storage:/home/node/.n8n
       - ./n8n/backup:/backup
