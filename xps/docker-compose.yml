@@ -44,6 +44,9 @@ x-init-ollama: &init-ollama
   image: ollama/ollama:latest
   networks: ['n8n-ai']
   container_name: ollama-pull-llama
+  environment:
+    - OLLAMA_ORIGINS=https://llama.ccn8n.org
+    - OLLAMA_INTEL_GPU=true
   volumes:
     - ollama_storage:/root/.ollama
   entrypoint: /bin/sh
