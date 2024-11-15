@@ -47,6 +47,8 @@ x-init-ollama: &init-ollama
   image: ollama/ollama:latest
   networks: ['n8n-ai']
   container_name: ollama-pull-llama
+  environment:
+    - OLLAMA_MODEL=granite-code
   volumes:
     - ollama_storage:/root/.ollama
   entrypoint: /bin/sh
@@ -144,8 +146,6 @@ services:
   ollama-pull-llama-cpu:
     profiles: ["cpu"]
     <<: *init-ollama
-    environment:
-      - OLLAMA_MODEL=granite-code
     depends_on:
       - ollama-cpu
 
