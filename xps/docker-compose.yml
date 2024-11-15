@@ -43,41 +43,16 @@ x-ollama: &service-ollama
   volumes:
     - ollama_storage:/root/.ollama
 
-x-init-ollama-openchat: &init-ollama
+x-init-ollama: &init-ollama
   image: ollama/ollama:latest
-  networks: ['n8n-ai']
-  environment:
-    - OLLAMA_ORIGINS=https://llama.ccn8n.org
-    - OLLAMA_INTEL_GPU=true
+  networks: ['demo']
+  container_name: ollama-pull-llama
   volumes:
     - ollama_storage:/root/.ollama
+  entrypoint: /bin/sh
   command:
     - "-c"
-    - "sleep 3; OLLAMA_HOST=ollama:11434 ollama pull openchat"
-
-x-init-ollama-all-minilm: &init-ollama
-  image: ollama/ollama:latest
-  networks: ['n8n-ai']
-  environment:
-    - OLLAMA_ORIGINS=https://llama.ccn8n.org
-    - OLLAMA_INTEL_GPU=true
-  volumes:
-    - ollama_storage:/root/.ollama
-  command:
-    - "-c"
-    - "sleep 3; OLLAMA_HOST=ollama:11434 ollama pull all-minilm:22m"
-
-x-init-ollama-granite-code: &init-ollama
-  image: ollama/ollama:latest
-  networks: ['n8n-ai']
-  environment:
-    - OLLAMA_ORIGINS=https://llama.ccn8n.org
-    - OLLAMA_INTEL_GPU=true
-  volumes:
-    - ollama_storage:/root/.ollama
-  command:
-    - "-c"
-    - "sleep 3; OLLAMA_HOST=ollama:11434 ollama pull granite-code"
+    - "sleep 3; OLLAMA_HOST=ollama:11434 ollama pull llama3.2"
 
 services:
 
@@ -169,5 +144,26 @@ services:
   ollama-pull-llama-cpu:
     profiles: ["cpu"]
     <<: *init-ollama
+    depends_on:
+      - ollama-cpu
+   
+  ollama-pull-openchat:
+    <<: *init-ollama
+    environment:
+      - OLLAMA_MODEL=openchat
+    depends_on:
+      - ollama-cpu
+
+  ollama-pull-granite-code:
+    <<: *init-ollama
+    environment:
+      - OLLAMA_MODEL=granite-code
+    depends_on:
+      - ollama-cpu
+
+  ollama-pull-all-minilm:
+    <<: *init-ollama
+    environment:
+      - OLLAMA_MODEL=all-minilm:22m
     depends_on:
       - ollama-cpu
