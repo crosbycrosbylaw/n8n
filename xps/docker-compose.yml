@@ -188,5 +188,5 @@ services:
 
     shm_size: '8g'
     networks:
-      - llms
+      - n8n-ai
 
