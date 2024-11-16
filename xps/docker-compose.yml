@@ -38,7 +38,7 @@ x-ollama: &service-ollama
   privileged: true
   environment:
     - OLLAMA_ORIGINS=https://llama.ccn8n.org
-    - OLLAMA_INTEL_GPU=true
+    - OLLAMA_INTEL_GPU=1
   ports:
     - 11434:11434
   volumes:
