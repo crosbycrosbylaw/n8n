@@ -2,6 +2,7 @@ volumes:
   n8n_storage:
   postgres_storage:
   ollama_storage:
+  ollama_models:
   qdrant_storage:
   open-webui:
 
@@ -156,8 +157,8 @@ services:
       - /dev/dri
     volumes:
       - /dev/dri:/dev/dri
-      - ${LLAMA_MODELS_DIR}:/models
-      - ${OLLAMA_DIR}:/root/.ollama
+      - ollama_models:/models
+      - ollama_storage:/root/.ollama
     environment:
       # no_proxy: localhost,127.0.0.1
       DEVICE: Arc
@@ -168,7 +169,7 @@ services:
       OLLAMA_DEBUG: 1
       OLLAMA_INTEL_GPU: 1
       OLLAMA_NUM_PARALLEL: 1
-      OLLAMA_HOST: 0.0.0.0
+      OLLAMA_HOST: "ollama:11434"
       OLLAMA_NUM_GPU: 1 # layers to offload
 
       SYCL_CACHE_PERSISTENT: 1
