@@ -61,20 +61,6 @@ services:
     networks:
       - nocodb
 
-  docassemble:
-    image: jhpyle/docassemble:latest
-    container_name: "docassemble"
-    env_file:
-      - .env
-    restart: unless-stopped
-    stop_grace_period: 6m
-    ports:
-      - "8082:80"
-    volumes:
-      - "dabackup:/usr/share/docassemble/backup"
-    networks:
-      - docassemble
-
   n8n:
     image: docker.n8n.io/n8nio/n8n:latest
     container_name: n8n
