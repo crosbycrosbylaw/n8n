@@ -139,17 +139,6 @@ services:
     volumes:
       - qdrant_storage:/qdrant/storage
 
-  ollama-cpu:
-    privileged: true
-    profiles: ["cpu"]
-    <<: *service-ollama
-
-  ollama-pull-llama-cpu:
-    profiles: ["cpu"]
-    <<: *init-ollama
-    depends_on:
-      - ollama-cpu
-
   ipex-llm:
     image: intelanalytics/ipex-llm-inference-cpp-xpu:latest
     restart: unless-stopped
