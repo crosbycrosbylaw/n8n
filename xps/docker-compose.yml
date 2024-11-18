@@ -140,13 +140,28 @@ services:
       - qdrant_storage:/qdrant/storage
 
   ollama-cpu:
-    privileged: true
-    profiles: ["gpu"]
+    profiles: ["cpu"]
     <<: *service-ollama
 
+  ollama-gpu:
+    profiles: ["gpu-intel"]
+    <<: *service-ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: intel
+              count: 1
+              capabilities: [gpu]
+
   ollama-pull-llama-cpu:
-    profiles: ["gpu"]
+    profiles: ["cpu"]
+    <<: *init-ollama
+    depends_on:
+      - ollama-cpu
+
+  ollama-pull-llama-gpu:
+    profiles: ["gpu-intel"]
     <<: *init-ollama
     depends_on:
       - ollama-gpu
-
