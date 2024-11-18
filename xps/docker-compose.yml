@@ -2,7 +2,6 @@ volumes:
   n8n_storage:
   postgres_storage:
   ollama_storage:
-  ollama_models:
   qdrant_storage:
   open-webui:
 
@@ -140,43 +139,14 @@ services:
     volumes:
       - qdrant_storage:/qdrant/storage
 
-  ipex-llm:
-    image: intelanalytics/ipex-llm-inference-cpp-xpu:latest
-    restart: unless-stopped
+  ollama-cpu:
+    privileged: true
+    profiles: ["gpu"]
+    <<: *service-ollama
 
-    command: >
-      /bin/bash -c "
-        sycl-ls &&
-        source ipex-llm-init --gpu --device Arc &&
-
-        bash ./scripts/start-ollama.sh && # run the scripts
-        kill $(pgrep -f ollama) && # kill background ollama
-        /llm/ollama/ollama serve # run foreground ollama
-      "
-    devices:
-      - /dev/dri
-    volumes:
-      - /dev/dri:/dev/dri
-      - ollama_models:/models
-      - ollama_storage:/root/.ollama
-    environment:
-      # no_proxy: localhost,127.0.0.1
-      DEVICE: Arc
-      NEOReadDebugKeys: 1
-      OverrideGpuAddressSpace: 48
-      ZES_ENABLE_SYSMAN: 1
-
-      OLLAMA_DEBUG: 1
-      OLLAMA_INTEL_GPU: 1
-      OLLAMA_NUM_PARALLEL: 1
-      OLLAMA_HOST: "ollama:11434"
-      OLLAMA_NUM_GPU: 1 # layers to offload
-
-      SYCL_CACHE_PERSISTENT: 1
-      SYCL_PI_LEVEL_ZERO_USE_IMMEDIATE_COMMANDLISTS: 1
-      ONEAPI_DEVICE_SELECTOR: level_zero:0
-
-    shm_size: '8g'
-    networks:
-      - n8n-ai
+  ollama-pull-llama-cpu:
+    profiles: ["gpu"]
+    <<: *init-ollama
+    depends_on:
+      - ollama-cpu
 
