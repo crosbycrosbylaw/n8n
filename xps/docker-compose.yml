@@ -148,5 +148,5 @@ services:
     profiles: ["gpu"]
     <<: *init-ollama
     depends_on:
-      - ollama-cpu
+      - ollama-gpu
 
