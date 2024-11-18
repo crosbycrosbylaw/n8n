@@ -35,6 +35,8 @@ services:
       - N8N_USER_MANAGEMENT_JWT_SECRET
     ports:
       - 5678:5678
+    networks:
+      - n8n-xps
     volumes:
       - n8n_storage:/home/node/.n8n
       - ./n8n/backup:/backup
