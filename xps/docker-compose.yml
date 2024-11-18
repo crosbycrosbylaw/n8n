@@ -53,7 +53,7 @@ x-init-ollama: &init-ollama
   entrypoint: /bin/sh
   command:
     - "-c"
-    - "sleep 3; OLLAMA_HOST=ollama:11434 ollama pull gemma2"
+    - "sleep 3; OLLAMA_HOST=ollama:11434 ollama pull initium/law_model"
 
 services:
 
