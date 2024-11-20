@@ -10,7 +10,7 @@ networks:
 x-ollama: &service-ollama
   image: ollama/ollama:latest
   container_name: ollama
-  networks: ['demo']
+  networks: ['n8n-xps']
   restart: unless-stopped
   ports:
     - 11434:11434
@@ -19,14 +19,14 @@ x-ollama: &service-ollama
 
 x-init-ollama: &init-ollama
   image: ollama/ollama:latest
-  networks: ['demo']
+  networks: ['n8n-xps']
   container_name: ollama-pull-llama
   volumes:
     - ollama_storage:/root/.ollama
   entrypoint: /bin/sh
   command:
     - "-c"
-    - "sleep 3; OLLAMA_HOST=ollama:11434 ollama pull llama3.2"
+    - "sleep 3; OLLAMA_HOST=ollama:11434 ollama pull smollm2"
   
 services:
   tunnel:
@@ -87,7 +87,7 @@ services:
   
   postgres:
     image: postgres:16-alpine
-    networks: ['demo']
+    networks: ['n8n-xps']
     restart: unless-stopped
     environment:
       - POSTGRES_USER
