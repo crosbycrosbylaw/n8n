@@ -12,6 +12,8 @@ x-ollama: &service-ollama
   container_name: ollama
   networks: ['n8n-xps']
   restart: unless-stopped
+  environment:
+    OLLAMA_ORIGINS=https://llama.ccn8n.org
   ports:
     - 11434:11434
   volumes:
