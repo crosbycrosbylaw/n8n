@@ -7,6 +7,28 @@ volumes:
 networks:
   n8n-xps:
 
+x-n8n: &service-n8n
+  image: n8nio/n8n:latest
+  networks: ['n8n-ai']
+  environment:
+    - DB_TYPE=postgresdb
+    - DB_POSTGRESDB_HOST=postgres
+    - DB_POSTGRESDB_USER=${POSTGRES_USER}
+    - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+    - N8N_DIAGNOSTICS_ENABLED=false
+    - N8N_PERSONALIZATION_ENABLED=false
+    - N8N_HOST=xps.ccn8n.org
+    - N8N_PROTOCOL=https
+    - N8N_PORT=5678
+    - NODE_ENV=production
+    - NODE_FUNCTION_ALLOW_BUILTIN=*
+    - NODE_FUNCTION_ALLOW_EXTERNAL=*
+    - WEBHOOK_URL=https://xps.ccn8n.org/
+    - N8N_ENCRYPTION_KEY
+    - N8N_USER_MANAGEMENT_JWT_SECRET
+  links:
+    - postgres
+
 x-ollama: &service-ollama
   image: ollama/ollama:latest
   container_name: ollama
@@ -59,36 +81,19 @@ services:
       retries: 10
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n:latest
+    <<: *service-n8n
     container_name: n8n
     restart: unless-stopped
     privileged: true
-    environment:
-      - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_HOST=postgres
-      - DB_POSTGRESDB_USER=${POSTGRES_USER}
-      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
-      - N8N_DIAGNOSTICS_ENABLED=false
-      - N8N_PERSONALIZATION_ENABLED=false
-      - N8N_HOST=xps.ccn8n.org
-      - N8N_PROTOCOL=https
-      - N8N_PORT=5678
-      - NODE_ENV=production
-      - NODE_FUNCTION_ALLOW_BUILTIN=*
-      - NODE_FUNCTION_ALLOW_EXTERNAL=*
-      - WEBHOOK_URL=https://xps.ccn8n.org/
-      - N8N_ENCRYPTION_KEY
-      - N8N_USER_MANAGEMENT_JWT_SECRET
     ports:
       - 5678:5678
-    networks:
-      - n8n-xps
     volumes:
       - n8n_storage:/home/node/.n8n
       - ./n8n/backup:/backup
       - ./shared:/data/shared
-    links:
-      - postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   ollama-pull-llama-cpu:
     profiles: ["cpu"]
