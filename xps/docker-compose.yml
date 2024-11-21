@@ -52,7 +52,7 @@ x-init-ollama: &init-ollama
   command:
     - "-c"
     - "sleep 3; OLLAMA_HOST=ollama:11434 ollama pull smollm2"
-  
+
 services:
   tunnel:
     image: cloudflare/cloudflared:latest
@@ -79,7 +79,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-  
+
   n8n-import:
     <<: *service-n8n
     container_name: n8n-import
@@ -92,7 +92,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-  
+
   n8n:
     <<: *service-n8n
     container_name: n8n
@@ -110,12 +110,12 @@ services:
       n8n-import:
         condition: service_completed_successfully
 
-  ollama-cpu:
-    profiles: ["cpu"]
-    <<: *service-ollama
-    
-  ollama-pull-llama-cpu:
-    profiles: ["cpu"]
-    <<: *init-ollama
-    depends_on:
-      - ollama-cpu
+#  ollama-cpu:
+#    profiles: ["cpu"]
+#    <<: *service-ollama
+#
+#  ollama-pull-llama-cpu:
+#    profiles: ["cpu"]
+#    <<: *init-ollama
+#    depends_on:
+#      - ollama-cpu
