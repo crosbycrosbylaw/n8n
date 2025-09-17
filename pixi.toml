@@ -1,0 +1,16 @@
+[workspace]
+authors = ["zaynram <ramdasszayn@gmail.com>"]
+channels = ["conda-forge"]
+name = "auto-n8n"
+platforms = ["win-64"]
+version = "0.1.0"
+preview = ["pixi-build"]
+
+[tasks]
+serve = "bun n8n"
+
+
+[dependencies]
+python = "==3.13"
+spacy = ">=3.8.7,<4"
+bs4 = ">=4.13.5,<5"

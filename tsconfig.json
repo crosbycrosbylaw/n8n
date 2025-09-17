@@ -1,0 +1,11 @@
+{
+  "include": ["src/**/*.ts"],
+  "compilerOptions": {
+    "allowJs": true,
+    "esModuleInterop": true,
+    "checkJs": true,
+    "module": "preserve",
+    "baseUrl": ".",
+    "target": "es6"
+  }
+}

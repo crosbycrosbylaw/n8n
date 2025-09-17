@@ -1,0 +1,42 @@
+{
+  "name": "crosbies-n8n",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "lint": "oxlint --type-aware",
+    "serve": "n8n",
+    "upgrade": "bun update n8n"
+  },
+  "prettier": {
+    "plugins": [
+      "prettier-plugin-packagejson"
+    ],
+    "semi": false,
+    "tabWidth": 4,
+    "overrides": [
+      {
+        "files": [
+          "*.json"
+        ],
+        "options": {
+          "tabWidth": 2
+        }
+      }
+    ]
+  },
+  "dependencies": {
+    "@kenkaiii/n8n-nodes-supercode": "1.6.2",
+    "n8n": "^1.111.0",
+    "n8n-nodes-globals": "1.1.0",
+    "n8n-nodes-mcp": "0.1.29",
+    "n8n-nodes-pdf-parse": "1.6.1",
+    "n8n-nodes-python-runtime": "0.1.0",
+    "n8n-nodes-tesseractjs": "1.4.2",
+    "n8n-nodes-text-manipulation": "1.4.0"
+  },
+  "devDependencies": {
+    "oxlint-tsgolint": "^0.2.0",
+    "prettier": "3.6.2",
+    "prettier-plugin-packagejson": "2.5.19"
+  }
+}
