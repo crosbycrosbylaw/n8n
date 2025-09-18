@@ -1,5 +1,5 @@
 {
-  "workbench.colorTheme": "Eva Dark Bold",
+  "workbench.colorTheme": "PowerShell Theme Default",
   "oxc.configPath": ".oxlintrc.json",
   "oxc.typeAware": true,
   "files.exclude": {
