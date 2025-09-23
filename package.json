@@ -3,6 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
+    "px": "pixi run",
     "lint": "oxlint --type-aware",
     "serve": "n8n",
     "upgrade": "bun update n8n"

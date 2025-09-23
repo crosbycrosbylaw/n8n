@@ -1,6 +1,0 @@
-{
-  "typeCheckingMode": "standard",
-  "reportUnusedImport": "none",
-  "reportUnusedVariable": "none",
-  "ignore": ["**/__init__.py"]
-}

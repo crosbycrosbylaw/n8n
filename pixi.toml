@@ -1,16 +1,30 @@
 [workspace]
-authors = ["zaynram <ramdasszayn@gmail.com>"]
-channels = ["conda-forge"]
-name = "auto-n8n"
+authors   = ["zaynram <ramdasszayn@gmail.com>"]
+channels  = ["conda-forge"]
+name      = "crosbydev.n8n"
 platforms = ["win-64"]
-version = "0.1.0"
-preview = ["pixi-build"]
+version   = "0.0.1"
 
 [tasks]
+invoke = { cmd = "pwsh -noni -c 'icm -session (remsesh zrspectre) -scriptblock {{ SCRIPTBLOCK }}'", args = [
+  { arg = "SCRIPTBLOCK", default = "{ echo alive }" },
+] }
 serve = "bun n8n"
+x = { cmd = "typer {{ MODULE }} {{ COMMAND }}", cwd = "python", args = [
 
+  { arg = "MODULE" },
+
+  { arg = "COMMAND", default = "--help" },
+
+] }
 
 [dependencies]
-python = "==3.13"
-spacy = ">=3.8.7,<4"
-bs4 = ">=4.13.5,<5"
+bs4        = ">=4.13.5,<5"
+ipykernel  = "*"
+ipywidgets = "*"
+python     = "==3.13"
+spacy      = ">=3.8.7,<4"
+typer-slim = "*"
+
+[pypi-dependencies]
+"py" = { path = "python", editable = true }

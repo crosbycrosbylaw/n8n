@@ -1,0 +1,13 @@
+[project]
+dynamic = ["dependencies"]
+name    = "py"
+version = "0.1.0"
+
+# --
+[tool.setuptools]
+packages = ["finder", "loader", "parser", "utils"]
+
+# --
+[tool.pyright]
+reportUnusedExpression          = "none"
+reportWildcardImportFromLibrary = "none"
