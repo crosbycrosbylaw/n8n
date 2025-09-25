@@ -3,15 +3,15 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
-    "px": "pixi run",
+    "install:service": "sudo ./install-service.sh",
     "lint": "oxlint --type-aware",
+    "px": "pixi run",
     "serve": "./serve-n8n.sh start",
-    "serve:monitor": "./serve-n8n.sh monitor",
-    "serve:stop": "./serve-n8n.sh stop", 
-    "serve:status": "./serve-n8n.sh status",
     "serve:logs": "./serve-n8n.sh logs",
-    "upgrade": "bun update n8n",
-    "install:service": "sudo ./install-service.sh"
+    "serve:monitor": "./serve-n8n.sh monitor",
+    "serve:status": "./serve-n8n.sh status",
+    "serve:stop": "./serve-n8n.sh stop",
+    "upgrade": "bun update n8n"
   },
   "prettier": {
     "plugins": [
