@@ -122,7 +122,7 @@ start_server() {
     cd "${SCRIPT_DIR}"
     
     # Start n8n in background and capture PID
-    nohup bash -c "${start_command}" >> "${LOG_FILE}" 2>> "${ERROR_LOG}" &
+    nohup ${start_command} >> "${LOG_FILE}" 2>> "${ERROR_LOG}" &
     local pid=$!
     echo "${pid}" > "${PID_FILE}"
     
