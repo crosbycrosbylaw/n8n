@@ -95,9 +95,9 @@ get_start_command() {
 
 # Health check function
 health_check() {
-    if curl -f -s "http://localhost:${PORT}/healthz" >/dev/null 2>&1; then
-        return 0
-    elif curl -f -s "http://localhost:${PORT}/" >/dev/null 2>&1; then
+    # n8n does not provide a /healthz endpoint by default.
+    # Check the root endpoint for server health.
+    if curl -f -s "http://localhost:${PORT}/" >/dev/null 2>&1; then
         return 0
     else
         return 1
