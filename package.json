@@ -3,9 +3,14 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
-    "px": "pixi run",
+    "install:service": "sudo ./install-service.sh",
     "lint": "oxlint --type-aware",
-    "serve": "n8n",
+    "px": "pixi run",
+    "serve": "./serve-n8n.sh start",
+    "serve:logs": "./serve-n8n.sh logs",
+    "serve:monitor": "./serve-n8n.sh monitor",
+    "serve:status": "./serve-n8n.sh status",
+    "serve:stop": "./serve-n8n.sh stop",
     "upgrade": "bun update n8n"
   },
   "prettier": {
