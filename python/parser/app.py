@@ -30,7 +30,7 @@ def parse_download_http_response(parser: HtmlParser) -> None:
             "emailAddress": "eservice@crosbyandcrosbylaw.com",
             "__viewstate": value_for("__VIEWSTATE"),
             "__viewstategenerator": value_for("__VIEWSTATEGENERATOR"),
-            "__eventvalidation": value_for("__EVENTVALIDATIOn"),
+            "__eventvalidation": value_for("__EVENTVALIDATION"),
         },
     )
 

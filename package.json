@@ -5,8 +5,13 @@
   "scripts": {
     "px": "pixi run",
     "lint": "oxlint --type-aware",
-    "serve": "n8n",
-    "upgrade": "bun update n8n"
+    "serve": "./serve-n8n.sh start",
+    "serve:monitor": "./serve-n8n.sh monitor",
+    "serve:stop": "./serve-n8n.sh stop", 
+    "serve:status": "./serve-n8n.sh status",
+    "serve:logs": "./serve-n8n.sh logs",
+    "upgrade": "bun update n8n",
+    "install:service": "sudo ./install-service.sh"
   },
   "prettier": {
     "plugins": [

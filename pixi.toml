@@ -2,29 +2,78 @@
 authors   = ["zaynram <ramdasszayn@gmail.com>"]
 channels  = ["conda-forge"]
 name      = "crosbydev.n8n"
-platforms = ["win-64"]
+platforms = ["win-64", "linux-64", "osx-64"]
 version   = "0.0.1"
 
 [tasks]
-invoke = { cmd = "pwsh -noni -c 'icm -session (remsesh zrspectre) -scriptblock {{ SCRIPTBLOCK }}'", args = [
-  { arg = "SCRIPTBLOCK", default = "{ echo alive }" },
+# Enhanced remote command execution with error handling and retry logic
+invoke = { cmd = """
+pwsh -noni -c '
+try {
+    $session = Get-PSSession -Name "zrspectre" -ErrorAction SilentlyContinue
+    if (-not $session -or $session.State -ne "Opened") {
+        Write-Host "Session not available or closed. Attempting to reconnect..."
+        $session = New-PSSession -ComputerName "zrspectre" -Name "zrspectre" -ErrorAction Stop
+    }
+    $result = Invoke-Command -Session $session -ScriptBlock { {{ SCRIPTBLOCK }} } -ErrorAction Stop
+    Write-Host "Command executed successfully"
+    $result
+} catch {
+    Write-Error "Failed to execute remote command: $_"
+    Write-Host "Attempting cleanup and retry..."
+    try {
+        Remove-PSSession -Name "zrspectre" -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 2
+        $session = New-PSSession -ComputerName "zrspectre" -Name "zrspectre" -ErrorAction Stop
+        $result = Invoke-Command -Session $session -ScriptBlock { {{ SCRIPTBLOCK }} } -ErrorAction Stop
+        Write-Host "Retry successful"
+        $result
+    } catch {
+        Write-Error "Retry failed: $_"
+        exit 1
+    }
+}
+'
+""", args = [
+  { arg = "SCRIPTBLOCK", default = "{ Get-Date; echo 'Connection alive' }" },
 ] }
-serve = "bun n8n"
-x = { cmd = "typer {{ MODULE }} {{ COMMAND }}", cwd = "python", args = [
 
-  { arg = "MODULE" },
+# Enhanced n8n serve command with dependency check
+serve = { cmd = """
+if command -v bun >/dev/null 2>&1; then
+    echo "Starting n8n with Bun..."
+    bun n8n
+elif command -v npx >/dev/null 2>&1; then
+    echo "Starting n8n with npx..."
+    npx n8n
+elif command -v npm >/dev/null 2>&1; then
+    echo "Starting n8n with npm..."
+    npm run serve
+else
+    echo "Error: No suitable Node.js runtime found (bun, npx, or npm)"
+    exit 1
+fi
+""" }
 
+# Python utilities with better error handling
+x = { cmd = """
+cd python
+if [ ! -f "parser/app.py" ]; then
+    echo "Error: parser/app.py not found"
+    exit 1
+fi
+python -m typer parser.app:app run {{ COMMAND }}
+""", args = [
   { arg = "COMMAND", default = "--help" },
-
 ] }
 
 [dependencies]
 bs4        = ">=4.13.5,<5"
 ipykernel  = "*"
 ipywidgets = "*"
-python     = "==3.13"
+python     = ">=3.11,<3.14"
 spacy      = ">=3.8.7,<4"
 typer-slim = "*"
 
 [pypi-dependencies]
-"py" = { path = "python", editable = true }
+"n8n-python-tools" = { path = "python", editable = true }
