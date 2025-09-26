@@ -2,11 +2,22 @@ from __future__ import annotations
 
 import typing
 import sys
-import json
-import rampy
+from rampy import console
 
 if typing.TYPE_CHECKING:
     from typing import *
+
+try:
+    console.level("RETURN")
+except ValueError:
+    console.remove(0)
+    console.level("RETURN", 100)
+    console.add(
+        sink=sys.stdout,
+        serialize=True,
+        format=lambda rec: rec["message"],
+        level="RETURN",
+    )
 
 
 def stderr(
@@ -22,11 +33,5 @@ def stderr(
     sys.exit(0)
 
 
-def stdout(text: str = "", **struct: object) -> None:
-    json_dict = {"text": text, **(struct or {})}
-    print(json.dumps(json_dict, default=str), file=sys.stdout, flush=True)
-
-
-rampy.console.configure(
-    handlers=[]
-)
+def stdout(text: str | None = None, **struct: object) -> None:
+    console.log("RETURN", str(text), **struct)
