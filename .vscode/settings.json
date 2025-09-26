@@ -1,11 +1,9 @@
 {
-  "workbench.colorTheme": "PowerShell Theme Default",
   "oxc.configPath": ".oxlintrc.json",
   "oxc.typeAware": true,
   "files.exclude": {
     "node_modules": false
   },
-  "python-envs.defaultEnvManager": "ms-python.python:system",
   "python-envs.pythonProjects": [
     {
       "path": "",

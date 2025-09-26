@@ -27,7 +27,7 @@ def find_tag(
     elem = bs4.BeautifulSoup(content, "html.parser").find(tag, string=string)
 
     if not isinstance(elem, bs4.Tag):
-        from utils.output import stderr
+        from lib.output import stderr
 
         stderr(TypeError, expected=bs4.Tag, received=type(elem))
     else:
@@ -43,7 +43,7 @@ def tag_attribute(
     value = element.get(attr)
 
     if not (value and isinstance(value, str)):
-        from utils.output import stderr
+        from lib.output import stderr
 
         stderr(ValueError, attribute_name=attr, value_type=type(value))
     else:

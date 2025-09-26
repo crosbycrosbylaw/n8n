@@ -3,6 +3,7 @@ authors   = ["zaynram <ramdasszayn@gmail.com>"]
 channels  = ["conda-forge"]
 name      = "crosbydev.n8n"
 platforms = ["win-64"]
+preview   = ["pixi-build"]
 version   = "0.0.1"
 
 [tasks]
@@ -23,8 +24,9 @@ bs4        = ">=4.13.5,<5"
 ipykernel  = "*"
 ipywidgets = "*"
 python     = "==3.13"
+rampy      = { git = "https://github.com/zaynram/ramda-py" }
 spacy      = ">=3.8.7,<4"
 typer-slim = "*"
 
 [pypi-dependencies]
-"py" = { path = "python", editable = true }
+n8n_python = { path = "python", editable = true }

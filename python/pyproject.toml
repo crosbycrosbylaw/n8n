@@ -1,13 +1,8 @@
 [project]
-dynamic = ["dependencies"]
-name    = "py"
+name    = "n8n_python"
 version = "0.1.0"
 
 # --
 [tool.setuptools]
-packages = ["finder", "loader", "parser", "utils"]
-
-# --
-[tool.pyright]
-reportUnusedExpression          = "none"
-reportWildcardImportFromLibrary = "none"
+packages   = ["lib"]
+py-modules = ["finder", "loader", "parser"]
