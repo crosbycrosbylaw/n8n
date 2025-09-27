@@ -24,9 +24,9 @@ bs4        = ">=4.13.5,<5"
 ipykernel  = "*"
 ipywidgets = "*"
 python     = "==3.13"
-rampy      = { git = "https://github.com/zaynram/ramda-py" }
+rampy      = { git = "https://github.com/zaynram/ramda-py", tag = "v0.0.5.alpha" }
 spacy      = ">=3.8.7,<4"
 typer-slim = "*"
 
 [pypi-dependencies]
-n8n_python = { path = "python", editable = true }
+n8n-py = { path = "python", editable = true }

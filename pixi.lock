@@ -97,7 +97,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.13-8_cp313.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pywin32-311-py313h40c08fc_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pyzmq-27.1.0-py312hbb5da91_0.conda
-      - conda: git+https://github.com/zaynram/ramda-py#9ee94d1fc778a858d5dcd1620fd701694276dbd8
+      - conda: git+https://github.com/zaynram/ramda-py?tag=v0.0.5.alpha#b7313e015bb6a856939457c82d175c517e87213b
       - conda: https://conda.anaconda.org/conda-forge/noarch/requests-2.32.5-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/rich-14.1.0-pyhe01879c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-80.9.0-pyhff2d567_0.conda
@@ -1055,9 +1055,13 @@ packages:
   size: 31874
   timestamp: 1756660184446
 - pypi: ./python
-  name: n8n-python
-  version: 0.1.0
-  sha256: 78728237fd4d97336febf9c857fbba3a026157942cc2f487da7b7530ba8b3410
+  name: n8n-py
+  version: 0.0.1a0
+  sha256: 04eb9e69452f4796205d42aa90c323d98cf80ac4ffedad542d7f6a3c3ac8734d
+  requires_dist:
+  - beautifulsoup4
+  - typer-slim
+  requires_python: '>=3.13'
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/nest-asyncio-1.6.0-pyhd8ed1ab_1.conda
   sha256: bb7b21d7fd0445ddc0631f64e66d91a179de4ba920b8381f29b9d006a42788c0
@@ -1376,15 +1380,15 @@ packages:
   - pkg:pypi/pyzmq?source=hash-mapping
   size: 185711
   timestamp: 1757387025899
-- conda: git+https://github.com/zaynram/ramda-py#9ee94d1fc778a858d5dcd1620fd701694276dbd8
+- conda: git+https://github.com/zaynram/ramda-py?tag=v0.0.5.alpha#b7313e015bb6a856939457c82d175c517e87213b
   name: rampy
-  version: 0.1.1
+  version: 0.0.4.alpha
   build: pyh4616a5c_0
   subdir: noarch
   depends:
   - loguru >=0.7.3
-  - python
-  - python
+  - python >=3.13
+  - python *
   channel: null
 - conda: https://conda.anaconda.org/conda-forge/noarch/requests-2.32.5-pyhd8ed1ab_0.conda
   sha256: 8dc54e94721e9ab545d7234aa5192b74102263d3e704e6d0c8aa7008f2da2a7b
