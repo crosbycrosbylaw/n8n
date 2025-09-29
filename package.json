@@ -3,9 +3,13 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
+    "install:service": "bun px install-service",
     "lint": "oxlint --type-aware",
     "px": "pixi run",
-    "serve": "n8n",
+    "start": "bash serve-n8n.sh",
+    "start:logs": "bash serve-n8n.sh logs",
+    "start:monitor": "bash serve-n8n.sh monitor",
+    "stop": "bash serve-n8n.sh stop",
     "upgrade": "bun update n8n"
   },
   "prettier": {

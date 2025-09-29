@@ -6,27 +6,38 @@ platforms = ["win-64"]
 preview   = ["pixi-build"]
 version   = "0.0.1"
 
+
+[environments]
+default = []
+service = ["service"]
+
 [tasks]
-invoke = { cmd = "pwsh -noni -c 'icm -session (remsesh zrspectre) -scriptblock {{ SCRIPTBLOCK }}'", args = [
-  { arg = "SCRIPTBLOCK", default = "{ echo alive }" },
-] }
-serve = "bun n8n"
-x = { cmd = "typer {{ MODULE }} {{ COMMAND }}", cwd = "python", args = [
+  [tasks.parse]
+  args = [{ arg = "CONTENT" }, { arg = "MODE" }]
+  cmd  = "python -m n8n_py.parser --content {{ CONTENT }} --mode {{ MODE }}"
 
-  { arg = "MODULE" },
+[feature.remote.tasks]
+  [feature.remote.tasks.invoke]
+  cmd = "python scripts/server-cmd.py 'cd ~/share/n8n' "
 
-  { arg = "COMMAND", default = "--help" },
-
-] }
 
 [dependencies]
 bs4        = ">=4.13.5,<5"
 ipykernel  = "*"
 ipywidgets = "*"
 python     = "==3.13"
-rampy      = { git = "https://github.com/zaynram/ramda-py", tag = "v0.0.5.alpha" }
+rampy      = { git = "https://github.com/zaynram/ramda-py", branch = "master" }
 spacy      = ">=3.8.7,<4"
 typer-slim = "*"
 
 [pypi-dependencies]
 n8n-py = { path = "python", editable = true }
+
+[feature.service]
+  [feature.service.tasks.init]
+  cmd = "bash -c 'sudo install-service.sh'"
+  [feature.service.tasks.systemctl]
+  args = [{ arg = "ACTION", default = "status" }]
+  cmd  = "sudo systemctl {{ ACTION }} n8n"
+  [feature.service.tasks.logs]
+  cmd = "sudo journalctl -u n8n -f"
