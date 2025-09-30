@@ -8,17 +8,14 @@ version   = "0.0.1"
 
 
 [environments]
-default = []
+default = ["remote", "service"]
+remote  = ["remote"]
 service = ["service"]
 
 [tasks]
   [tasks.parse]
   args = [{ arg = "CONTENT" }, { arg = "MODE" }]
   cmd  = "python -m n8n_py.parser --content {{ CONTENT }} --mode {{ MODE }}"
-
-[feature.remote.tasks]
-  [feature.remote.tasks.invoke]
-  cmd = "python scripts/server-cmd.py 'cd ~/share/n8n' "
 
 
 [dependencies]
@@ -28,10 +25,15 @@ ipywidgets = "*"
 python     = "==3.13"
 rampy      = { git = "https://github.com/zaynram/ramda-py", branch = "master" }
 spacy      = ">=3.8.7,<4"
-typer-slim = "*"
 
 [pypi-dependencies]
 n8n-py = { path = "python", editable = true }
+
+[feature.remote]
+  [feature.remote.tasks]
+  invoke = "python scripts/server-cmd.py"
+  pull   = "pixi run invoke 'git pull'"
+
 
 [feature.service]
   [feature.service.tasks.init]
