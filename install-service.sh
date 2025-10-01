@@ -52,7 +52,7 @@ install_files() {
 
     # Set ownership and permissions
     chown -R "${SERVICE_USER}:${SERVICE_GROUP}" "${INSTALL_DIR}"
-    chmod +x "${INSTALL_DIR}/serve-n8n.mjs"
+    chmod +x "${INSTALL_DIR}/scripts/serve-n8n.mjs"
     chmod 755 "${INSTALL_DIR}"
     chmod 750 "${INSTALL_DIR}/logs" "${INSTALL_DIR}/.n8n"
 }
