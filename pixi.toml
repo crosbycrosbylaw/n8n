@@ -35,7 +35,7 @@ n8n-py = { path = "python", editable = true }
 [feature.remote]
   [feature.remote.tasks]
   remote = "python scripts/server-cmd.py"
-    [feature.remote.tasks.refresh]
+    [feature.remote.tasks.synchronize]
     cmd        = "pixi run remote 'git pull 2>&1'"
     depends-on = ["push"]
 
