@@ -1,3 +1,4 @@
+powershell.exe -c @"
 if (test-command 'node.exe') {
     [string]$serve_script = join-path $psscriptroot 'serve-n8n.mjs'
     $arguments = @($serve_script, $null, $null)
@@ -5,3 +6,4 @@ if (test-command 'node.exe') {
     start-process -filepath node.exe -argumentlist $arguments `
         -nonewwindow -wait -passthru | out-null
 } else { write-error 'node.exe is not on PATH' }
+"@
