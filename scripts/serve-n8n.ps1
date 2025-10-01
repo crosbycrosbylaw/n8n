@@ -1,4 +1,4 @@
-powershell.exe -c @'
+pwsh.exe -c @'
 if (test-command 'node.exe') {
     [string]$serve_script = join-path $psscriptroot 'serve-n8n.mjs'
     $arguments = @($serve_script, $null, $null)
