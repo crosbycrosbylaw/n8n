@@ -48,17 +48,13 @@ create_user() {
 install_files() {
     print_status "${BLUE}" "Installing files to ${INSTALL_DIR}"
 
-    # Create directory structure
-    mkdir -p "${INSTALL_DIR}"/{logs,.n8n,n8n-data}
-
-    # Copy files
-    cp -r "${SCRIPT_DIR}"/* "${INSTALL_DIR}/"
+		ln -s "$SCRIPT_DIR" "$INSTALL_DIR"
 
     # Set ownership and permissions
     chown -R "${SERVICE_USER}:${SERVICE_GROUP}" "${INSTALL_DIR}"
-    chmod +x "${INSTALL_DIR}/serve-n8n.sh"
+    chmod +x "${INSTALL_DIR}/serve-n8n.mjs"
     chmod 755 "${INSTALL_DIR}"
-    chmod 750 "${INSTALL_DIR}/logs" "${INSTALL_DIR}/.n8n" "${INSTALL_DIR}/n8n-data"
+    chmod 750 "${INSTALL_DIR}/logs" "${INSTALL_DIR}/.n8n"
 }
 
 # Install systemd service
@@ -83,19 +79,14 @@ install_dependencies() {
 
     # Check for Node.js runtime
     local has_runtime=false
-    local runtimes=("bun" "node" "npm")
 
-    for runtime in "${runtimes[@]}"; do
-        if command -v "${runtime}" >/dev/null 2>&1; then
-            print_status "${GREEN}" "Found runtime: ${runtime}"
-            has_runtime=true
-            break
-        fi
-    done
+    if command -v "node" >/dev/null 2>&1; then
+					has_runtime=true
+					break
+		fi
 
     if [ "${has_runtime}" = false ]; then
         print_status "${YELLOW}" "No Node.js runtime found. Installing Node.js..."
-
 
         # Install Node.js using NodeSource repository
         curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -

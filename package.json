@@ -6,16 +6,17 @@
     "install:service": "bun px install-service",
     "lint": "oxlint --type-aware",
     "px": "pixi run",
-    "start": "bash -c 'serve-n8n.sh'",
-    "start:logs": "bash -c 'serve-n8n.sh logs'",
-    "start:monitor": "bash -c 'serve-n8n.sh monitor'",
-    "stop": "bash -c 'serve-n8n.sh stop'",
+    "start": "node ./serve-n8n.mjs",
+    "start:logs": "node ./serve-n8n.mjs logs",
+    "start:monitor": "node ./serve-n8n.mjs monitor",
+    "stop": "node ./serve-n8n.mjs stop",
     "upgrade": "bun update n8n"
   },
   "prettier": {
     "plugins": [
       "prettier-plugin-packagejson"
     ],
+    "printWidth": 108,
     "semi": false,
     "tabWidth": 4,
     "overrides": [
@@ -33,6 +34,8 @@
     "n8n": "^1.111.0"
   },
   "devDependencies": {
+    "@types/bun": "^1.2.23",
+    "chalk": "^5.6.2",
     "oxlint-tsgolint": "^0.2.0",
     "prettier": "3.6.2",
     "prettier-plugin-packagejson": "2.5.19"

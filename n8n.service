@@ -9,10 +9,10 @@ Type=forking
 User=n8n
 Group=n8n
 WorkingDirectory=/opt/n8n
-ExecStart=/opt/n8n/serve-n8n.sh start
-ExecStop=/opt/n8n/serve-n8n.sh stop
-ExecReload=/opt/n8n/serve-n8n.sh restart
-PIDFile=/opt/n8n/n8n.pid
+ExecStart=/usr/bin/node /opt/n8n/scripts/serve-n8n.mjs start
+ExecStop=/usr/bin/node /opt/n8n/scripts/serve-n8n.mjs stop
+ExecReload=/usr/bin/node /opt/n8n/scripts/serve-n8n.mjs restart
+PIDFile=/opt/n8n/logs/n8n.pid
 Restart=always
 RestartSec=10
 StartLimitInterval=600
@@ -23,7 +23,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/n8n/logs /opt/n8n/.n8n /opt/n8n/n8n-data
+ReadWritePaths=/opt/n8n/logs /opt/n8n/.n8n
 
 # Environment
 Environment=NODE_ENV=production
@@ -31,6 +31,8 @@ Environment=N8N_HOST=0.0.0.0
 Environment=N8N_PORT=5678
 Environment=N8N_PROTOCOL=http
 Environment=N8N_LOG_LEVEL=info
+Environment=N8N_USER_FOLDER=/opt/n8n/
+Environment=N8N_PREVIEW_MODE=true
 
 # Resource limits
 LimitNOFILE=65536

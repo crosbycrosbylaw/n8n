@@ -1,11 +1,21 @@
 {
-  "include": ["src/**/*.ts"],
   "compilerOptions": {
     "allowJs": true,
-    "esModuleInterop": true,
-    "checkJs": true,
-    "module": "preserve",
     "baseUrl": ".",
-    "target": "es6"
-  }
+    "checkJs": true,
+    "declaration": false,
+    "esModuleInterop": true,
+    "module": "preserve",
+    "noEmit": true,
+    "target": "esnext"
+  },
+  "exclude": [
+    "node_modules"
+  ],
+  "include": [
+    "**/*.ts",
+    "**/*.mts",
+    "**/*.js",
+    "**/*.mjs"
+  ]
 }
