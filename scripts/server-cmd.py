@@ -6,7 +6,6 @@ from rampy import root, sh
 def main(*script_cmds: str) -> None:
     commands = ["cd ~/share/n8n", *script_cmds]
     sh.logs.pretty()
-
     sh.pwsh(
         *commands,
         remote_session=str(root.join("scripts", "server-session.ps1", resolve=True)),
