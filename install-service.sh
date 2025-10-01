@@ -49,6 +49,7 @@ install_files() {
     print_status "${BLUE}" "Installing files to ${INSTALL_DIR}"
 
 		ln -s "$SCRIPT_DIR" "$INSTALL_DIR"
+		mkdir -p "$INSTALL_DIR/.n8n"
 
     # Set ownership and permissions
     chown -R "${SERVICE_USER}:${SERVICE_GROUP}" "${INSTALL_DIR}"
