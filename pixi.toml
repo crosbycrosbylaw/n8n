@@ -36,7 +36,7 @@ n8n-py = { path = "python", editable = true }
   [feature.remote.tasks]
   remote = "python scripts/server-cmd.py"
     [feature.remote.tasks.synchronize]
-    cmd        = "sleep 2 && python scripts/server-cmd.py 'git pull 2>&1'"
+    cmd        = "python scripts/server-cmd.py 'git pull'"
     depends-on = ["push"]
 
 
