@@ -71,11 +71,20 @@ const raise = (err) => {
 }
 
 /** @param file {fs.PathOrFileDescriptor} @param text {string[]} */
-const write = (file, ...text) => fs.appendFile(file, text.join("\n"), { encoding: "utf-8" }, raise)
+const write = (file, ...text) => {
+    try {
+        fs.appendFileSync(file, text.join("\n"), { encoding: "utf-8" })
+    } catch {
+        overwrite(file, ...text)
+    }
+}
 /** @param file {fs.PathOrFileDescriptor} @param text {string[]} */
-const overwrite = (file, ...text) => fs.writeFile(file, text.join("\n"), { encoding: "utf-8" }, raise)
+const overwrite = (file, ...text) => fs.writeFileSync(file, text.join("\n"), { encoding: "utf-8" })
 /** @param file {fs.PathLike} */
-const cat = (file) => (fs.existsSync(file) && fs.readFileSync(file, { encoding: "utf-8" })) ?? ""
+const cat = (file) => {
+    if (fs.existsSync(file)) return fs.readFileSync(file, { encoding: "utf-8" })
+    else return ""
+}
 /** @param file {fs.PathLike} @param n {number} */
 const readlines = (file, n = -1) => {
     const lines = cat(file).split("\n").filter(Boolean)
@@ -85,7 +94,7 @@ const readlines = (file, n = -1) => {
 // -- LOGGING METHODS -- //
 
 const setup_logging = () => {
-    if (!fs.existsSync(logs_root)) fs.mkdir(logs_root, raise)
+    if (!fs.existsSync(logs_root)) fs.mkdirSync(logs_root)
     const now = new Date(),
         text = `\n[${now.toLocaleTimeString()}] ${now.toLocaleDateString()} - '${path.parse(process.argv[1]).name}.mjs'\n`
     ;[paths.log, paths.err].forEach((f) => write(f, text))
@@ -128,8 +137,8 @@ const log = (lvl, ...msg) => {
 
 /** @param pid {string | number | null} */
 const set_pid = (pid) => {
-    if (pid == null) return fs.rm(path.normalize(paths.pid), raise)
-    return overwrite(paths.pid, pid.toString())
+    if (pid == null && fs.existsSync(paths.pid)) return fs.rmSync(path.normalize(paths.pid))
+    return overwrite(paths.pid, pid?.toString())
 }
 
 /** @returns {number | void} */
@@ -145,17 +154,15 @@ const run = (cmd, shell = false) => {
 }
 
 const serve = () => {
-    /** @param executor {string} @param args {string[]} */
-    const start_process = (executor, ...args) =>
-        subprocess.spawn(executor, [...args, "n8n"], {
-            stdio: "inherit",
-        })
-
-    try {
-        return start_process("bun", "x")
-    } catch {
-        return start_process("npx")
+    let executor = "bun"
+    if (run(executor).error) {
+        status.error("failed to detect bun installation; falling back on npx")
+        executor = "npm"
     }
+    return subprocess.spawn(executor, ["x", "n8n"], {
+        stdio: "inherit",
+        shell: true,
+    })
 }
 
 // -- CONDITIONALS -- //
@@ -285,12 +292,13 @@ const server_status = async () => {
                         'pwsh -noni -nop -c "' +
                         `get-process -id ${pid} -erroraction silentlycontinue | ` +
                         "select-object -property " +
-                        "@{n='Id';e={$_.id}}," +
-                        "@{n='Parent.Id';e={$_.parent.id}}," +
-                        "@{n='% CPU';e={$_.cpu}}," +
-                        "@{n='% MEM';e={$_.workingset/1kb}}," +
-                        "@{n='Elapsed';" +
-                        "e={$_.starttime.tostring('hh:mm:ss')}}, @{n='Command';e={$_.path}}" +
+                        "@{n='PID';e={$_.id}}," +
+                        "@{n='PPID';e={$_.parent.id}}," +
+                        "@{n='%CPU';e={$_.cpu}}," +
+                        "@{n='%MEM';e={$_.workingset/1kb}}," +
+                        "@{n='ELAPSED';" +
+                        "e={$_.starttime.tostring('hh:mm:ss')}}," +
+                        "@{n='CMD';e={$_.path}}" +
                         '"'
                     )
                 default:

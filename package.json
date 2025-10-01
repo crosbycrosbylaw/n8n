@@ -3,16 +3,16 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
+    "clean:logs": "rm -r logs && mkdir logs",
     "install:service": "bun px install-service",
     "lint": "oxlint --type-aware",
     "px": "pixi run",
-    "start": "node ./scripts/serve-n8n.mjs",
     "serve": "bash -c 'nohup node ./scripts/serve-n8n.mjs start &'",
-    "serve:status": "node ./scripts/serve-n8n.mjs status",
     "serve:logs": "node ./scripts/serve-n8n.mjs logs",
     "serve:monitor": "node ./scripts/serve-n8n.mjs monitor",
+    "serve:status": "node ./scripts/serve-n8n.mjs status",
+    "start": "node ./scripts/serve-n8n.mjs",
     "stop": "node ./scripts/serve-n8n.mjs stop",
-    "clean:logs": "rm -r logs && mkdir logs",
     "upgrade": "bun update n8n"
   },
   "prettier": {

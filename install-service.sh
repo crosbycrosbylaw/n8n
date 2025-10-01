@@ -9,7 +9,7 @@ set -euo pipefail
 INSTALL_DIR="/opt/n8n"
 SERVICE_USER="n8n"
 SERVICE_GROUP="n8n"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
 
 # Colors
 RED='\033[0;31m'
@@ -48,10 +48,10 @@ create_user() {
 install_files() {
     print_status "${BLUE}" "Installing files to ${INSTALL_DIR}"
 
-		if [ ! -e "$INSTALL_DIR" ]; then
-				ln -s "$SCRIPT_DIR" "$INSTALL_DIR"
-				mkdir -p "$INSTALL_DIR/.n8n"
-		fi
+	if [ ! -e "$INSTALL_DIR" ]; then
+			ln -s "$SCRIPT_DIR" "$INSTALL_DIR"
+			mkdir -p "$INSTALL_DIR/.n8n"
+	fi
 
     # Set ownership and permissions
     chown -R "${SERVICE_USER}:${SERVICE_GROUP}" "${INSTALL_DIR}"
@@ -80,30 +80,43 @@ install_service() {
 install_dependencies() {
     print_status "${BLUE}" "Checking dependencies"
 
-    # Check for Node.js runtime
-    local has_runtime=false
+	function need {
+		if ! command -v "$1" >/dev/null 2>&1; then return 1; fi
+	}
 
-    if command -v "node" >/dev/null 2>&1; then
-					has_runtime=true
-					break
-		fi
+	function usenode {
+		\. "$HOME/.nvm/nvm.sh"
+		nvm install node
+		nvm use node
+	}
 
-    if [ "${has_runtime}" = false ]; then
-        print_status "${YELLOW}" "No Node.js runtime found. Installing Node.js..."
+	if need curl
+	then {
+		print_status "${BLUE}" "Installing curl..."
+		apt-get update
+		apt-get install -y curl
+	} fi
 
-        # Install Node.js using NodeSource repository
-        curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
-        apt-get install -y nodejs
+	[ -s "$HOME/.bun/bin/bun" ] || {
+		if [[ ":$PATH:" == *":$HOME/.bun/bin:"* ]]
+		then return
+		elif need bun
+		then {
+			print_status "${BLUE}" "Installing bun..."
+			curl -fsSL https://bun.sh/install | bash
+			export PATH="$HOME/.bun/bin:$PATH"
+		} fi
+	}
 
-        print_status "${GREEN}" "Node.js installed"
-    fi
-
-    # Check for curl (needed for health checks)
-    if ! command -v curl >/dev/null 2>&1; then
-        print_status "${BLUE}" "Installing curl..."
-        apt-get update
-        apt-get install -y curl
-    fi
+	[ -s "/usr/bin/node" ] || {
+		if [ -s "$HOME/.nvm/nvm.sh" ]; then usenode
+		elif need nvm
+		then {
+			print_status "${BLUE}" "Installing node..."
+			curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+			usenode
+		} fi
+	}
 }
 
 # Main installation function
