@@ -7,9 +7,12 @@
     "lint": "oxlint --type-aware",
     "px": "pixi run",
     "start": "node ./scripts/serve-n8n.mjs",
-    "start:logs": "node ./scripts/serve-n8n.mjs logs",
-    "start:monitor": "node ./scripts/serve-n8n.mjs monitor",
+    "serve": "bash -c 'nohup node ./scripts/serve-n8n.mjs start &'",
+    "serve:status": "node ./scripts/serve-n8n.mjs status",
+    "serve:logs": "node ./scripts/serve-n8n.mjs logs",
+    "serve:monitor": "node ./scripts/serve-n8n.mjs monitor",
     "stop": "node ./scripts/serve-n8n.mjs stop",
+    "clean:logs": "rm -r logs && mkdir logs",
     "upgrade": "bun update n8n"
   },
   "prettier": {
