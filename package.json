@@ -6,10 +6,10 @@
     "install:service": "bun px install-service",
     "lint": "oxlint --type-aware",
     "px": "pixi run",
-    "start": "node ./serve-n8n.mjs",
-    "start:logs": "node ./serve-n8n.mjs logs",
-    "start:monitor": "node ./serve-n8n.mjs monitor",
-    "stop": "node ./serve-n8n.mjs stop",
+    "start": "node ./scripts/serve-n8n.mjs",
+    "start:logs": "node ./scripts/serve-n8n.mjs logs",
+    "start:monitor": "node ./scripts/serve-n8n.mjs monitor",
+    "stop": "node ./scripts/serve-n8n.mjs stop",
     "upgrade": "bun update n8n"
   },
   "prettier": {
