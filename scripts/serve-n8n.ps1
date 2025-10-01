@@ -1,4 +1,5 @@
-pwsh.exe -c @'
+[string]$pwshPath = join-path 'c:\' 'program files/powershell/7-preview/pwsh.exe'
+& $pwshPath -c @'
 if (test-command 'node.exe') {
     [string]$serve_script = join-path $psscriptroot 'serve-n8n.mjs'
     $arguments = @($serve_script, $null, $null)
