@@ -13,6 +13,9 @@ remote  = ["remote"]
 service = ["service"]
 
 [tasks]
+  [tasks.push]
+  args = [{ arg = "MESSAGE", default = "autocommit" }]
+  cmd  = "git add --all && git commit -m '{{ MESSAGE }}' && git push"
   [tasks.parse]
   args = [{ arg = "CONTENT" }, { arg = "MODE" }]
   cmd  = "python -m n8n_py.parser --content {{ CONTENT }} --mode {{ MODE }}"
@@ -31,8 +34,10 @@ n8n-py = { path = "python", editable = true }
 
 [feature.remote]
   [feature.remote.tasks]
-  invoke = "python scripts/server-cmd.py"
-  pull   = "pixi run invoke 'git pull'"
+  remote = "python scripts/server-cmd.py"
+    [feature.remote.tasks.refresh]
+    cmd        = "pixi run remote 'git pull 2>&1'"
+    depends-on = ["push"]
 
 
 [feature.service]
