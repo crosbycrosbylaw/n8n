@@ -1,1 +1,1 @@
-node /opt/n8n/scripts/serve-n8n.mjs $2 $3
+nohup node /opt/n8n/scripts/serve-n8n.mjs $2 $3
