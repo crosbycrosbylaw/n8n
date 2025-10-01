@@ -2,14 +2,12 @@ from argparse import ArgumentParser
 
 from rampy import root, sh
 
+sh.logs.pretty()
+
 
 def main(*script_cmds: str) -> None:
-    commands = ["cd ~/share/n8n", *script_cmds]
-    sh.logs.pretty()
-    sh.pwsh(
-        *commands,
-        remote_session=str(root.join("scripts", "server-session.ps1", resolve=True)),
-    )
+    remote_session = str(root.join("scripts", "server-session.ps1", resolve=True))
+    sh.pwsh("cd ~/share/n8n", *script_cmds, remote_session=remote_session)
 
 
 if __name__ == "__main__":
