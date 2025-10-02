@@ -15,9 +15,6 @@ function printerror {
 	[ "$2" == "noexit" ] || exit 1
 }
 
-[ -s "$HOME/.bun/bin/bun" ] || printerror 'could not find bun'
-export PATH="$HOME/.bun/bin/bun:$PATH"
-
 [ -s "/usr/bin/node" ] || printerror 'could not find node'
 
 if [ -z "$1" ] || [ "$1" == "start" ]
