@@ -154,12 +154,7 @@ const run = (cmd, shell = false) => {
 }
 
 const serve = () => {
-    let executor = "bun"
-    if (run(executor).error) {
-        status.error("failed to detect bun installation; falling back on npx")
-        executor = "npm"
-    }
-    return subprocess.spawn(executor, ["x", "n8n"], {
+    return subprocess.spawn("npx", ["n8n"], {
         stdio: "inherit",
         shell: true,
     })
