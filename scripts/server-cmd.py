@@ -7,7 +7,7 @@ sh.logs.pretty()
 
 def main(*script_cmds: str) -> None:
     remote_session = str(root.join("scripts", "server-session.ps1", resolve=True))
-    sh.pwsh("n8n", *script_cmds, remote_session=remote_session)
+    sh.pwsh("cd n8n", *script_cmds, remote_session=remote_session)
 
 
 if __name__ == "__main__":
