@@ -5,7 +5,7 @@ After=network.target
 Wants=network.target
 
 [Service]
-Type=forking
+Type=exec
 User=n8n
 Group=n8n
 WorkingDirectory=/opt/n8n
