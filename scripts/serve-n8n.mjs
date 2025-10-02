@@ -134,19 +134,7 @@ const log = (lvl, ...msg) => {
 }
 
 // -- PROCESS METHODS -- //
-
-/** @param pid {string | number | null} */
-const set_pid = (pid) => {
-    if (pid == null && fs.existsSync(paths.pid)) return fs.rmSync(path.normalize(paths.pid))
-    return overwrite(paths.pid, pid?.toString())
-}
-
-/** @returns {number | void} */
-const get_pid = () => {
-    const pid_str = cat(paths.pid).trim()
-    return (pid_str && Number.parseInt(pid_str)) ?? void pid_str
-}
-
+
 /** @param cmd {string} @param shell {boolean} */
 const run = (cmd, shell = false) => {
     const { status, ...rest } = subprocess.spawnSync(cmd, { shell })
@@ -159,6 +147,19 @@ const serve = () => {
         shell: true,
     })
 }
+
+/** @param pid {string | number | null} */
+const set_pid = (pid) => {
+    if (pid == null && fs.existsSync(paths.pid)) return fs.rmSync(path.normalize(paths.pid))
+    return overwrite(paths.pid, pid?.toString())
+}
+
+/** @returns {number | void} */
+const get_pid = () => {
+    const pid_str = cat(paths.pid).trim() || run("ps -x | grep [n]8n").output?.map((x) => x?.toString("utf-8")).join("\n").split(" ").at(0).trim()
+    return (pid_str && Number.parseInt(pid_str)) ?? void pid_str
+}
+
 
 // -- CONDITIONALS -- //
 
