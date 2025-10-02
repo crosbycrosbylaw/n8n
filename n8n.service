@@ -15,7 +15,7 @@ ExecReload=/opt/n8n/serve.sh restart
 PIDFile=/opt/n8n/logs/n8n.pid
 Restart=always
 RestartSec=10
-StartLimitIntervalSec=10
+StartLimitInterval=10
 StartLimitBurst=5
 
 # Security settings
