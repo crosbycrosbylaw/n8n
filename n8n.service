@@ -40,6 +40,3 @@ Environment=N8N_PREVIEW_MODE=true
 # Resource limits
 LimitNOFILE=1048576
 LimitNPROC=4096
-
-[Install]
-WantedBy=multi-user.target
