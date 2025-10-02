@@ -10,13 +10,6 @@ DIR=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
 	echo -e "${BLUE}\$${NC} ${1}"
 }
 
-function printerror {
-	echo -e "${RED}ERROR${NC}${1}"
-	[ "$2" == "noexit" ] || exit 1
-}
-
-[ -s "/usr/bin/node" ] || printerror 'could not find node'
-
 if [ -z "$1" ] || [ "$1" == "start" ]
 then {
 	[ -n "$DEBUG" ] && printcmd 'nohup serve-n8n start &'
