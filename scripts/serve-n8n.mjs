@@ -156,7 +156,7 @@ const set_pid = (pid) => {
 
 /** @returns {number | void} */
 const get_pid = () => {
-    const pid_str = cat(paths.pid).trim() || run("ps -x | grep [n]8n").output?.map((x) => x?.toString("utf-8")).join("\n").split(" ").at(0).trim()
+    const pid_str = cat(paths.pid).trim() || run("ps -x | grep [n]8n", true).output?.map((x) => x?.toString("utf-8")).join("\n").split(" ").at(0).trim()
     return (pid_str && Number.parseInt(pid_str)) ?? void pid_str
 }
 
