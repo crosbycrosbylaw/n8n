@@ -85,12 +85,12 @@ export const start_server = async () => {
     log('INFO', 'starting n8n server')
 
     /** @param name {string} */
-    const serve = name => subprocess.spawn(name, ['n8n'], spawn_options)
+    const serve = name => subprocess.spawn(name, ['x', 'n8n'], spawn_options)
 
     /** @type {import('node:child_process').ChildProcess | null} */
     let proc = null
-    if (test_command('bunx')) proc = serve('bunx')
-    else if (test_command('npx')) proc = serve('npx')
+    if (test_command('bun')) proc = serve('bun')
+    else if (test_command('npm')) proc = serve('npm')
 
     if (!proc?.pid) return log('ERROR', 'no node runtime detected')
 
