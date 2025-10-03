@@ -68,7 +68,7 @@ export const spawn_options = Object.freeze({
         DB_SQLITE_POOL_SIZE: 1,
         GENERIC_TIMEZONE: 'America/Chicago',
         N8N_DIAGNOSTICS_ENABLED: false,
-        N8N_EDITOR_BASE_URL: 'ccn8n.org',
+        N8N_EDITOR_BASE_URL: 'https://ccn8n.org',
         NODE_ENV: 'production',
         N8N_HOST: 'localhost',
         N8N_PORT: 5678,
