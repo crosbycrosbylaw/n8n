@@ -227,6 +227,7 @@ export const restart_server = async (_ct = 0) => {
 }
 
 export const monitor_server = async () => {
+    if (!(await inspect_state())) await start_server()
     log('INFO', 'starting server monitor with auto-restart enabled')
     while (true) {
         const [, health] = (await inspect_state()) ?? []
