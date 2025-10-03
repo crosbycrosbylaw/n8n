@@ -8,7 +8,7 @@ const script_root = path.dirname(process.argv[1]).normalize()
  */
 const environment = obj =>
     Object.freeze(
-        Object.fromEntries(Object.entries({ ...process.env, ...obj }).map(([k, v]) => [k, String(v)])),
+        Object.fromEntries(Object.entries({ ...obj, ...process.env }).map(([k, v]) => [k, String(v)])),
     )
 
 const resolve_port = () => {
@@ -81,4 +81,5 @@ export const spawn_options = Object.freeze({
 })
 
 export default { config, file, signal, spawn_options }
+
 
