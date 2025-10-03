@@ -36,15 +36,18 @@ n8n-py = { path = "python", editable = true }
   [feature.remote.tasks]
   remote = "python scripts/server-cmd.py"
     [feature.remote.tasks.synchronize]
-    cmd        = "python scripts/server-cmd.py 'git rm --cached -r . ; git stash ; git pull origin main'"
+    cmd        = "python scripts/server-cmd.py 'git pull'"
     depends-on = ["push"]
 
 
 [feature.service]
   [feature.service.tasks.init]
-  cmd = "bash -c 'sudo install-service.sh'"
-  [feature.service.tasks.systemctl]
-  args = [{ arg = "ACTION", default = "status" }]
-  cmd  = "sudo systemctl {{ ACTION }} n8n"
-  [feature.service.tasks.logs]
-  cmd = "sudo journalctl -u n8n -f"
+  cmd = "pwsh -noni -c ./service.ps1"
+  cwd = "scripts"
+  [feature.service.tasks.serve]
+  cmd = "bun n8n-serve &"
+  cwd = "server"
+  [feature.service.tasks.dev]
+  args = [{ arg = "COMMAND", default = "status" }]
+  cmd  = "bun n8n-serve {{ COMMAND }}"
+  cwd  = "server"

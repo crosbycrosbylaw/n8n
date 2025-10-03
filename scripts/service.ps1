@@ -1,12 +1,14 @@
-﻿[string]$nssm = (get-command 'nssm').path
+﻿[string]$nssm_path = (get-command 'nssm').path
+function invoke-nssm { & $nssm_path @args }
 
-$service = @{
+
+$n8n = @{
   name = 'n8n.service'
-  exe  = (get-command 'node').path
+  path = (get-command 'node').path
   args = (join-path $psscriptroot '../server/bin/serve.mjs')
-  cwd  = (join-path $psscriptroot '../server/bin')
+  root = (join-path $psscriptroot '../server/bin')
 }
 
-& $nssm install $service.name $service.exe $service.args
-& $nssm set $service.name AppDirectory $service.cwd
-& $nssm set $service.name Start SERVICE_AUTO_START
+invoke-nssm install $n8n.name $n8n.path $n8n.args
+invoke-nssm set $n8n.name AppDirectory $n8n.root
+invoke-nssm set $n8n.name Start SERVICE_AUTO_START
