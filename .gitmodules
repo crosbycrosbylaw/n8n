@@ -1,4 +1,3 @@
 [submodule "server"]
-	branch = main
 	path = server
 	url = https://github.com/crosbycrosbylaw/n8n-serve.git
