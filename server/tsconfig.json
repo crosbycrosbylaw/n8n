@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "esModuleInterop": true,
+    "lib": [
+      "ESNext"
+    ],
+    "module": "esnext",
+    "noEmit": true,
+    "rootDir": ".",
+    "skipLibCheck": true,
+    "strictNullChecks": true,
+    "target": "esnext"
+  },
+  "files": [
+    "./bin/serve.mjs"
+  ],
+  "include": [
+    ".src/**/*.js"
+  ]
+}

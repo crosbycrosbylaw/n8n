@@ -1,0 +1,21 @@
+{
+    "name": "n8n-serve",
+    "version": "0.0.1",
+    "private": true,
+    "exports": {
+        ".": "./src/index.mjs"
+    },
+    "bin": "./bin/serve.mjs",
+    "scripts": {
+        "logs": "n8n-serve logs",
+        "monitor": "n8n-serve monitor",
+        "start": "n8n-serve",
+        "status": "n8n-serve status",
+        "stop": "n8n-serve stop"
+    },
+    "dependencies": {
+        "chalk": "^5.6.2",
+        "n8n": "^1.111.0",
+        "node-fetch": "3.3.2"
+    }
+}

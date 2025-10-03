@@ -3,7 +3,7 @@
     "version": "2.0.0",
     "private": true,
     "scripts": {
-        "gcp": "git commit --all -m 'latest changes' && git push",
+        "gcp": "git add --all && git commit -m 'latest changes' && git push",
         "lint": "oxlint --type-aware",
         "px": "pixi run",
         "server": "bun --filter=./server run",
