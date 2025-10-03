@@ -1,46 +1,37 @@
 {
-  "name": "crosbies-n8n",
-  "version": "2.0.0",
-  "private": true,
-  "scripts": {
-    "clean:logs": "rm -r logs && mkdir logs",
-    "install:service": "bun px install-service",
-    "lint": "oxlint --type-aware",
-    "px": "pixi run",
-    "serve": "bash -c 'nohup node ./scripts/serve-n8n.mjs start &'",
-    "serve:logs": "node ./scripts/serve-n8n.mjs logs",
-    "serve:monitor": "node ./scripts/serve-n8n.mjs monitor",
-    "serve:status": "node ./scripts/serve-n8n.mjs status",
-    "start": "node ./scripts/serve-n8n.mjs",
-    "stop": "node ./scripts/serve-n8n.mjs stop",
-    "upgrade": "bun update n8n"
-  },
-  "prettier": {
-    "plugins": [
-      "prettier-plugin-packagejson"
-    ],
-    "printWidth": 108,
-    "semi": false,
-    "tabWidth": 4,
-    "overrides": [
-      {
-        "files": [
-          "*.json"
+    "name": "crosbies-n8n",
+    "version": "2.0.0",
+    "private": true,
+    "scripts": {
+        "gcp": "git commit --all -m 'latest changes' && git push",
+        "lint": "oxlint --type-aware",
+        "px": "pixi run",
+        "server": "bun --filter=./server run",
+        "upgrade": "bun update n8n"
+    },
+    "prettier": {
+        "arrowParens": "avoid",
+        "experimentalOperatorPosition": "start",
+        "experimentalTernaries": true,
+        "objectWrap": "collapse",
+        "plugins": [
+            "prettier-plugin-packagejson"
         ],
-        "options": {
-          "tabWidth": 2
-        }
-      }
-    ]
-  },
-  "dependencies": {
-    "n8n": "^1.111.0"
-  },
-  "devDependencies": {
-    "@types/bun": "^1.2.23",
-    "chalk": "^5.6.2",
-    "oxlint-tsgolint": "^0.2.0",
-    "prettier": "3.6.2",
-    "prettier-plugin-packagejson": "2.5.19"
-  }
+        "printWidth": 108,
+        "proseWrap": "never",
+        "semi": false,
+        "singleQuote": true,
+        "tabWidth": 4,
+        "overrides": []
+    },
+    "dependencies": {
+        "n8n-serve": "link:n8n-serve"
+    },
+    "devDependencies": {
+        "@types/bun": "^1.2.23",
+        "oxlint": "1.19.0",
+        "oxlint-tsgolint": "^0.2.0",
+        "prettier": "3.6.2",
+        "prettier-plugin-packagejson": "2.5.19"
+    }
 }

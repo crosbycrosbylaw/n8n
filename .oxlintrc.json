@@ -1,7 +1,16 @@
 {
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["unicorn", "typescript", "oxc"],
+  "$schema": "node_modules/oxlint/configuration_schema.json",
   "categories": {},
+  "env": {
+    "builtin": true
+  },
+  "globals": {},
+  "ignorePatterns": [],
+  "plugins": [
+    "unicorn",
+    "typescript",
+    "oxc"
+  ],
   "rules": {
     "for-direction": "warn",
     "no-async-promise-executor": "warn",
@@ -43,6 +52,7 @@
     "no-unsafe-finally": "warn",
     "no-unsafe-negation": "warn",
     "no-unsafe-optional-chaining": "warn",
+    "no-unused-expressions": "off",
     "no-unused-labels": "warn",
     "no-unused-private-class-members": "warn",
     "no-unused-vars": "warn",
@@ -51,9 +61,6 @@
     "no-useless-escape": "warn",
     "no-useless-rename": "warn",
     "no-with": "warn",
-    "require-yield": "warn",
-    "use-isnan": "warn",
-    "valid-typeof": "warn",
     "oxc/bad-array-method-on-arguments": "warn",
     "oxc/bad-char-at-comparison": "warn",
     "oxc/bad-comparison-sequence": "warn",
@@ -67,6 +74,7 @@
     "oxc/number-arg-out-of-range": "warn",
     "oxc/only-used-in-recursion": "warn",
     "oxc/uninvoked-array-callback": "warn",
+    "require-yield": "warn",
     "typescript/await-thenable": "warn",
     "typescript/no-array-delete": "warn",
     "typescript/no-base-to-string": "warn",
@@ -104,13 +112,25 @@
     "unicorn/no-useless-length-check": "warn",
     "unicorn/no-useless-spread": "warn",
     "unicorn/prefer-set-size": "warn",
-    "unicorn/prefer-string-starts-ends-with": "warn"
+    "unicorn/prefer-string-starts-ends-with": "warn",
+    "use-isnan": "warn",
+    "valid-typeof": "warn"
   },
   "settings": {
+    "jsdoc": {
+      "augmentsExtendsReplacesDocs": false,
+      "exemptDestructuredRootsFromChecks": false,
+      "ignoreInternal": false,
+      "ignorePrivate": false,
+      "ignoreReplacesDocs": true,
+      "implementsReplacesDocs": false,
+      "overrideReplacesDocs": true,
+      "tagNamePreference": {}
+    },
     "jsx-a11y": {
-      "polymorphicPropName": null,
+      "attributes": {},
       "components": {},
-      "attributes": {}
+      "polymorphicPropName": null
     },
     "next": {
       "rootDir": []
@@ -118,21 +138,6 @@
     "react": {
       "formComponents": [],
       "linkComponents": []
-    },
-    "jsdoc": {
-      "ignorePrivate": false,
-      "ignoreInternal": false,
-      "ignoreReplacesDocs": true,
-      "overrideReplacesDocs": true,
-      "augmentsExtendsReplacesDocs": false,
-      "implementsReplacesDocs": false,
-      "exemptDestructuredRootsFromChecks": false,
-      "tagNamePreference": {}
     }
-  },
-  "env": {
-    "builtin": true
-  },
-  "globals": {},
-  "ignorePatterns": []
+  }
 }
