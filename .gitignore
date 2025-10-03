@@ -71,3 +71,4 @@ temp/
 .tmp/
 
 server-session.ps1
+nohup.out
