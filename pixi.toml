@@ -14,8 +14,11 @@ service = ["service"]
 
 [tasks]
   [tasks.push]
-  args = [{ arg = "MESSAGE", default = "autocommit" }]
-  cmd  = "git add --all && git commit -m '{{ MESSAGE }}' && git push"
+  args = [
+    { arg = "DIRECTORY", default = "." },
+    { arg = "MESSAGE", default = "auto" },
+  ]
+  cmd = "cd {{ DIRECTORY }} && git add --all && git commit -m '{{ MESSAGE }}' && git push"
   [tasks.parse]
   args = [{ arg = "CONTENT" }, { arg = "MODE" }]
   cmd  = "python -m n8n_py.parser --content {{ CONTENT }} --mode {{ MODE }}"
@@ -35,19 +38,24 @@ n8n-py = { path = "python", editable = true }
 [feature.remote]
   [feature.remote.tasks]
   remote = "python scripts/server-cmd.py"
-    [feature.remote.tasks.synchronize]
-    cmd        = "python scripts/server-cmd.py 'git pull'"
-    depends-on = ["push"]
+    [feature.remote.tasks.sync]
+    cmd        = "python scripts/server-cmd.py 'git pull --recurse-submodules'"
+    depends-on = [{ task = "push", args = ["server"] }, { task = "push" }]
 
 
 [feature.service]
-  [feature.service.tasks.init]
-  cmd = "pwsh -noni -c ./service.ps1"
-  cwd = "scripts"
-  [feature.service.tasks.serve]
-  cmd = "bun n8n-serve &"
-  cwd = "server"
-  [feature.service.tasks.dev]
-  args = [{ arg = "COMMAND", default = "status" }]
-  cmd  = "bun n8n-serve {{ COMMAND }}"
-  cwd  = "server"
+  [feature.service.tasks]
+    [feature.service.tasks.submodule]
+    cmd = "git pull --recurse-submodules"
+    [feature.service.tasks.build]
+    cmd    = "bun run --cwd server build"
+    inputs = ["server/bin/serve.mjs", "server/.env", "server/src/*.js"]
+    [feature.service.tasks.serve]
+    cmd        = "n8n-serve &"
+    cwd        = "server"
+    depends-on = ["build"]
+    [feature.service.tasks.n8n]
+    args       = [{ arg = "COMMAND", default = "status" }]
+    cmd        = "n8n-serve {{ COMMAND }}"
+    cwd        = "server"
+    depends-on = ["build"]

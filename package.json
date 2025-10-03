@@ -3,11 +3,11 @@
     "version": "2.0.0",
     "private": true,
     "scripts": {
+        "build": "cd server && bun run build",
         "gcp": "git add --all && git commit -m 'latest changes' && git push",
         "lint": "oxlint --type-aware",
         "px": "pixi run",
-        "server": "bun --filter=./server run",
-        "upgrade": "bun update n8n"
+        "server": "cd server && n8n-serve"
     },
     "prettier": {
         "arrowParens": "avoid",
@@ -24,11 +24,8 @@
         "tabWidth": 4,
         "overrides": []
     },
-    "dependencies": {
-        "n8n-serve": "link:n8n-serve"
-    },
     "devDependencies": {
-        "@types/bun": "^1.2.23",
+        "@types/node": "^24.6.2",
         "oxlint": "1.19.0",
         "oxlint-tsgolint": "^0.2.0",
         "prettier": "3.6.2",
