@@ -61,7 +61,7 @@ const state_message = async () => {
 
 const initialize_handlers = () =>
     ['beforeExit', 'uncaughtException', signal.SIGINT, signal.SIGTERM].forEach(item =>
-        process.on(item, () => set_pid(null)),
+        process.on(item, () => stop_server().then(state => !state && set_pid(null))),
     )
 
 // -- COMMAND FUNCTIONS -- //
