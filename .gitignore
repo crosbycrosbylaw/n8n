@@ -41,6 +41,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+server-session.ps1
 
 # IDE files
 .vscode/settings.json
@@ -49,6 +50,7 @@ venv.bak/
 *~
 
 # Logs
+nohup.out
 *.log
 logs/
 npm-debug.log*
@@ -70,5 +72,5 @@ tmp/
 temp/
 .tmp/
 
-server-session.ps1
-nohup.out
+# Executable binaries
+*.exe

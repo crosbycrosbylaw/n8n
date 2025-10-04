@@ -45,17 +45,23 @@ n8n-py = { path = "python", editable = true }
 
 [feature.service]
   [feature.service.tasks]
-    [feature.service.tasks.submodule]
+  serve = "pixi run n8n &"
+    [feature.service.tasks.update]
     cmd = "git pull --recurse-submodules"
     [feature.service.tasks.build]
-    cmd    = "bun run --cwd server build"
-    inputs = ["server/bin/serve.mjs", "server/.env", "server/src/*.js"]
-    [feature.service.tasks.serve]
-    cmd        = "n8n-serve &"
-    cwd        = "server"
-    depends-on = ["build"]
+    cmd     = "bun run --cwd server build && mv server/n8n-serve.exe ."
+    inputs  = ["server/bin/serve.mjs", "server/.env", "server/src/*.js"]
+    outputs = ["n8n-serve.exe"]
+    [feature.service.tasks.install]
+    cmd = "./n8n-serve.exe install"
+    env = { BUN_BE_BUN = '1' }
     [feature.service.tasks.n8n]
-    args       = [{ arg = "COMMAND", default = "status" }]
-    cmd        = "n8n-serve {{ COMMAND }}"
-    cwd        = "server"
-    depends-on = ["build"]
+    args       = [{ arg = "COMMAND", default = "start" }]
+    cmd        = "./n8n-serve.exe {{ COMMAND }}"
+    depends-on = ["build", "install"]
+      [feature.service.tasks.n8n.env]
+      N8N_HOST       = 'ccn8n.org'
+      N8N_PORT       = '5678'
+      N8N_PROTOCOL   = 'https'
+      N8N_PROXY_HOPS = '1'
+      WEBHOOK_URL    = 'https://ccn8n.org/'

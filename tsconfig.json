@@ -5,6 +5,7 @@
     "declaration": false,
     "esModuleInterop": true,
     "module": "preserve",
+    "moduleResolution": "nodenext",
     "noEmit": true,
     "target": "esnext"
   },

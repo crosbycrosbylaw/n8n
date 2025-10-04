@@ -17,7 +17,7 @@
     "no-caller": "warn",
     "no-class-assign": "warn",
     "no-compare-neg-zero": "warn",
-    "no-cond-assign": "warn",
+    "no-cond-assign": "off",
     "no-const-assign": "warn",
     "no-constant-binary-expression": "warn",
     "no-constant-condition": "warn",
