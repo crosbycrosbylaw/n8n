@@ -4,7 +4,7 @@
     "checkJs": true,
     "declaration": false,
     "esModuleInterop": true,
-    "module": "preserve",
+    "module": "nodenext",
     "moduleResolution": "nodenext",
     "noEmit": true,
     "target": "esnext"
