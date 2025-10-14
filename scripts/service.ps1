@@ -29,7 +29,7 @@ $scripts = @{
 }
 
 switch ($action) {
-  'serve' { start-process -filepath $n8n.path $n8n.args -workingdirectory $n8n.root -windowstyle hidden }
+  'serve' { start-process -filepath $n8n.path $n8n.args -workingdirectory $n8n.root -windowstyle hidden -nonewwindow }
   'start' { & $scripts.start }
   'stop' { & $scripts.stop }
   'reload' { & $scripts.reload }
