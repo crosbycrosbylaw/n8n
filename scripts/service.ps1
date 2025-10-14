@@ -1,8 +1,8 @@
 ﻿[CmdletBinding()]
 param(
   [parameter(mandatory)]
-  [validateset('start', 'stop', 'reload', 'status', 'install')]
-  $action = 'install'
+  [validateset('start', 'stop', 'reload', 'status')]
+  $action = 'status'
 )
 
 $n8n = @{
@@ -32,13 +32,8 @@ $scripts = @{
 
 
 switch ($action) {
-  'install' {
-    nssm install $n8n.name $((get-command 'pixi').source)
-    nssm set $n8n.name AppParameters 'run n8n'
-    nssm set $n8n.name AppDirectory $(join-path $psscriptroot '..')
-  }
   'start' { & $scripts.start }
   'stop' { & $scripts.stop }
   'reload' { & $scripts.reload }
-  'status' { get-job $n8n.name }
+  'status' { get-job $n8n.name -erroraction silentlycontinue }
 }
