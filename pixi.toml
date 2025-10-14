@@ -66,6 +66,6 @@ n8n-py = { path = "python", editable = true }
       N8N_PROXY_HOPS                  = '1'
       N8N_RUNNERS_ENABLED             = 'true'
       N8N_TEMPLATES_ENABLED           = 'false'
-      N8N_USER_FOLDER                 = './service'
+      N8N_USER_FOLDER                 = './'
       NODE_ENV                        = 'production'
       WEBHOOK_URL                     = 'https://ccn8n.org/'
