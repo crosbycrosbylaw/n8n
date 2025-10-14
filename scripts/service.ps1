@@ -1,8 +1,8 @@
 ﻿[CmdletBinding()]
 param(
   [parameter(mandatory)]
-  [validateset('start', 'stop', 'reload', 'status')]
-  $action
+  [validateset('start', 'stop', 'reload', 'status', 'serve')]
+  $action = 'serve'
 )
 
 $n8n = @{
@@ -29,6 +29,7 @@ $scripts = @{
 }
 
 switch ($action) {
+  'serve' { start-process -filepath $n8n.path $n8n.args -workingdirectory $n8n.root -windowstyle hidden }
   'start' { & $scripts.start }
   'stop' { & $scripts.stop }
   'reload' { & $scripts.reload }
