@@ -7,7 +7,7 @@ param(
 
 $n8n = @{
   name = 'n8n.service'
-  path = (get-command 'pixi').path
+  path = (get-command 'pixi').source
   args = 'run n8n'
   root = (join-path $psscriptroot '..')
 }
@@ -33,9 +33,9 @@ $scripts = @{
 
 switch ($action) {
   'install' {
-    nssm install "${n8n.name}" "${n8n.path}"
-    nssm set $n8n.name AppParameters "${n8n.args}"
-    nssm set $n8n.name AppDirectory "${n8n.root}"
+    nssm install $n8n.name $((get-command 'pixi').source)
+    nssm set $n8n.name AppParameters 'run n8n'
+    nssm set $n8n.name AppDirectory $(join-path $psscriptroot '..')
   }
   'start' { & $scripts.start }
   'stop' { & $scripts.stop }
