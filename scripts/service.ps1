@@ -28,8 +28,15 @@ $scripts = @{
   }
 }
 
+
+
+
 switch ($action) {
-  'serve' { start-process -filepath $n8n.path $n8n.args -workingdirectory $n8n.root -windowstyle hidden -nonewwindow -wait }
+  'install' {
+    nssm install $n8n.name $n8n.path
+    nssm set $n8n.name AppParameters $n8n.args
+    nssm set $n8n.name AppDirectory $n8n.root
+  }
   'start' { & $scripts.start }
   'stop' { & $scripts.stop }
   'reload' { & $scripts.reload }
