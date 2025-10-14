@@ -33,9 +33,9 @@ $scripts = @{
 
 switch ($action) {
   'install' {
-    nssm install $n8n.name $n8n.path
-    nssm set $n8n.name AppParameters $n8n.args
-    nssm set $n8n.name AppDirectory $n8n.root
+    nssm install "${n8n.name}" "${n8n.path}"
+    nssm set $n8n.name AppParameters "${n8n.args}"
+    nssm set $n8n.name AppDirectory "${n8n.root}"
   }
   'start' { & $scripts.start }
   'stop' { & $scripts.stop }
