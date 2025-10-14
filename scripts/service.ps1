@@ -17,7 +17,7 @@ $scripts = @{
     $procs = get-process 'node' -erroraction silentlycontinue
     if (!$procs) {
       start-process -filepath $n8n.path $n8n.args -workingdirectory $n8n.root `
-        -windowstyle hidden -nonewwindow -wait -passthru
+        -windowstyle hidden -wait -passthru
     }
   }
   stop   = {
