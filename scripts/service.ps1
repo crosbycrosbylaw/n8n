@@ -14,9 +14,9 @@ $n8n = @{
 
 $scripts = @{
   start  = {
+    $process = start-process -filepath $n8n.path $n8n.args `
+      -workingdirectory $n8n.root -windowstyle hidden -passthru
     start-job -name $n8n.name -scriptblock {
-      $process = start-process -filepath $n8n.path $n8n.args `
-        -workingdirectory $n8n.root -windowstyle hidden -passthru
       while ($true) { if ($process.hasexited) {
           $process = start-process -filepath $n8n.path $n8n.args `
             -workingdirectory $n8n.root -windowstyle hidden -passthru
