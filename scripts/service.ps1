@@ -12,4 +12,4 @@ function start-n8n {
     -workingdirectory $n8n.root -windowstyle hidden -passthru
 }
 
-while ($true) { if (!$n8n.proc -or $n8n.proc.hasexited) { $n8n.proc = start-n8n } }
+& { while ($true) { if (!$n8n.proc -or $n8n.proc.hasexited) { $n8n.proc = start-n8n } } }
