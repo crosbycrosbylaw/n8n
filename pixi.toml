@@ -39,7 +39,7 @@ n8n-py = { path = "python", editable = true }
   [feature.remote.tasks]
   remote = "python scripts/server-cmd.py"
     [feature.remote.tasks.sync]
-    cmd        = "python scripts/server-cmd.py 'git pull origin main'"
+    cmd        = "python scripts/server-cmd.py 'git pull origin main && ./scripts/service.ps1 reload'"
     depends-on = [{ task = "push" }]
 
 

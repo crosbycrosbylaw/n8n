@@ -30,9 +30,6 @@ $scripts = @{
   }
 }
 
-
-
-
 switch ($action) {
   'start' { & $scripts.start }
   'stop' { & $scripts.stop }
