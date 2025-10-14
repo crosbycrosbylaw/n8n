@@ -7,7 +7,7 @@
         "gcp": "git add --all && git commit -m 'latest changes' && git push",
         "lint": "oxlint --type-aware",
         "px": "pixi run",
-        "server": "cd server && n8n-serve"
+        "server": "cd server/bin && ./n8n-serve.exe"
     },
     "prettier": {
         "arrowParens": "avoid",

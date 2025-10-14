@@ -49,16 +49,17 @@ n8n-py = { path = "python", editable = true }
     [feature.service.tasks.update]
     cmd = "git pull --recurse-submodules"
     [feature.service.tasks.build]
-    cmd     = "bun run --cwd server build && mv server/n8n-serve.exe ."
-    inputs  = ["server/bin/serve.mjs", "server/.env", "server/src/*.js"]
-    outputs = ["n8n-serve.exe"]
+    cmd     = "bun run --cwd server build"
+    inputs  = ["server/src/**/*.ts", "server/.env", "server/scripts/*.ps1"]
+    outputs = ["server/bin/n8n-serve.exe", "server/bin/serve.js"]
     [feature.service.tasks.install]
-    cmd = "./n8n-serve.exe install"
+    cmd = "./bin/n8n-serve.exe install"
+    cwd = "server"
     env = { BUN_BE_BUN = '1' }
     [feature.service.tasks.n8n]
-    args       = [{ arg = "COMMAND", default = "start" }]
-    cmd        = "./n8n-serve.exe {{ COMMAND }}"
-    depends-on = ["build", "install"]
+    cmd        = "./n8n-serve.exe"
+    cwd        = "server/bin"
+    depends-on = ["build"]
       [feature.service.tasks.n8n.env]
       N8N_HOST       = 'ccn8n.org'
       N8N_PORT       = '5678'
