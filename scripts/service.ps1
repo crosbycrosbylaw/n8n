@@ -14,12 +14,12 @@ $n8n = @{
 
 $scripts = @{
   start  = {
-    $process = start-process -filepath $n8n.path $n8n.args `
-      -workingdirectory $n8n.root -windowstyle hidden -passthru
     start-job -name $n8n.name -scriptblock {
-      while ($true) { if ($process.hasexited) {
-          $process = start-process -filepath $n8n.path $n8n.args `
+      while ($true) {
+        if ([string]::isnullorempty((get-process 'node' -erroraction silentlycontinue))) {
+          start-process -filepath $n8n.path $n8n.args `
             -workingdirectory $n8n.root -windowstyle hidden -passthru
+          start-sleep 30
         }
       }
     }
