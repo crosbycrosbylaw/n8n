@@ -14,13 +14,15 @@ $n8n = @{
 
 $scripts = @{
   start  = {
-    start-job -name $n8n.name -scriptblock {
-      start-process -filepath $n8n.path $n8n.args -workingdirectory $n8n.root -windowstyle hidden
+    $procs = get-process 'node' -erroraction silentlycontinue
+    if (!$procs) {
+      start-process -filepath $n8n.path $n8n.args -workingdirectory $n8n.root `
+        -windowstyle hidden -nonewwindow -wait -passthru
     }
   }
   stop   = {
-    $job = get-job $n8n.name -erroraction silentlycontinue
-    if ($job) { $job.stopjob(); $job | remove-job }
+    $procs = get-process 'node' -erroraction silentlycontinue
+    if ($procs) { $procs | stop-process }
   }
   reload = {
     & $scripts.stop
