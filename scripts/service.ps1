@@ -15,10 +15,11 @@ $n8n = @{
 $scripts = @{
   start  = {
     start-job -name $n8n.name -scriptblock {
-      $process = $null
-      while ($true) { if (!$process -or $process.hasexited) {
-          $process = (start-process -filepath $n8n.path $n8n.args `
-              -workingdirectory $n8n.root -windowstyle hidden -passthru)
+      $process = start-process -filepath $n8n.path $n8n.args `
+        -workingdirectory $n8n.root -windowstyle hidden -passthru
+      while ($true) { if ($process.hasexited) {
+          $process = start-process -filepath $n8n.path $n8n.args `
+            -workingdirectory $n8n.root -windowstyle hidden -passthru
         }
       }
     }
