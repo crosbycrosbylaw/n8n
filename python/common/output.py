@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 
 from rampy import console, typed
-from rampy.type import JSON
+from rampy.json import JSON
 
 if "CONSOLE_INIT" not in globals():
     console.remove(0)

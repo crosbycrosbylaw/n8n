@@ -38,7 +38,7 @@ n8n-py = { path = "python", editable = true }
 [feature.remote]
   [feature.remote.tasks]
   remote = "python scripts/server-cmd.py"
-    [feature.remote.tasks.sync]
+    [feature.remote.tasks.update]
     cmd        = "python scripts/server-cmd.py 'git pull origin main'"
     depends-on = [{ task = "push" }]
     [feature.remote.tasks.maintenance]
@@ -48,8 +48,6 @@ n8n-py = { path = "python", editable = true }
 [feature.service]
   [feature.service.tasks]
   serve = "pixi run n8n &"
-    [feature.service.tasks.update]
-    cmd = "git pull --recurse-submodules"
     [feature.service.tasks.n8n]
     cmd = "bun x n8n"
     cwd = "service"

@@ -8,4 +8,5 @@ if __name__ == "__main__":
         argument("-m", "--mode", type=str, dest="mode", required=True),
         argument("-e", "--email", type=str, dest="email", default="eservice@crosbyandcrosbylaw.com"),
         namespace=Runner(),
+        program_name="n8n_py.parser",
     ).invoke()

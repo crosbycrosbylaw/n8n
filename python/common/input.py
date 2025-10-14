@@ -32,9 +32,10 @@ def parse_args[N: Namespace](
     *args_ls: ArgSpecTuple[Any],
     args_dict: ArgSpecDict[Any] = {},
     namespace: N = Namespace(),
+    program_name: str | None = None,
 ) -> N:
     args_dict.update(dict(args_ls))
-    parser = ArgumentParser()
+    parser = ArgumentParser(program_name)
     if not any("--content" in ls for ls in args_dict.keys()):
         parser.add_argument("--content", type=str, dest="content", required=True)
     [parser.add_argument(*als, **args) for als, args in args_dict.items()]
