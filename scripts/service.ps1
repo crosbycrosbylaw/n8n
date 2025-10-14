@@ -4,7 +4,7 @@ function invoke-nssm { & $nssm_path @args }
 $n8n = @{
   name = 'n8n.service'
   path = (get-command 'pixi').path
-  args = "run $((get-command 'bun').path) x n8n"
+  args = 'run n8n'
   root = (join-path $psscriptroot '../service')
 }
 
