@@ -1,8 +1,8 @@
 ﻿[CmdletBinding()]
 param(
   [parameter(mandatory)]
-  [validateset('start', 'stop', 'reload', 'status')]
-  $action = 'status'
+  [validateset('start', 'stop', 'reload', 'status', 'monitor')]
+  $action = 'monitor'
 )
 
 $n8n = @{
@@ -38,4 +38,8 @@ switch ($action) {
   'stop' { & $scripts.stop }
   'reload' { & $scripts.reload }
   'status' { get-process 'node' -erroraction silentlycontinue | where-object commandline -like '*n8n*' | where-object commandline -notlike '*task*' }
+  'monitor' {
+    $path = join-path $psscriptroot 'service.ps1'
+    while ($true) { if (!(& $path status)) { & $path start }; start-sleep 20 }
+  }
 }
