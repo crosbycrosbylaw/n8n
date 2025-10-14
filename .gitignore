@@ -71,4 +71,6 @@ coverage/
 tmp/
 temp/
 .tmp/
-.service/**/*
+
+service/
+!service/.n8n

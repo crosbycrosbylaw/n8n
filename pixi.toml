@@ -50,7 +50,7 @@ n8n-py = { path = "python", editable = true }
     cmd = "git pull --recurse-submodules"
     [feature.service.tasks.n8n]
     cmd        = "bun x n8n"
-    cwd        = ".service"
+    cwd        = "service"
     depends-on = ["build"]
       [feature.service.tasks.n8n.env]
       N8N_HOST       = 'ccn8n.org'
