@@ -71,6 +71,4 @@ coverage/
 tmp/
 temp/
 .tmp/
-
-# Executable binaries
-*.exe
+.service/**/*
