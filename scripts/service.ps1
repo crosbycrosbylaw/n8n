@@ -1,8 +1,8 @@
 ﻿[CmdletBinding()]
 param(
   [parameter(mandatory)]
-  [validateset('start', 'stop', 'reload', 'status', 'serve')]
-  $action = 'serve'
+  [validateset('start', 'stop', 'reload', 'status', 'install')]
+  $action = 'install'
 )
 
 $n8n = @{
