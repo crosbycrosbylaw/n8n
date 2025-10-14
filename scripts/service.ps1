@@ -37,5 +37,5 @@ switch ($action) {
   'start' { & $scripts.start }
   'stop' { & $scripts.stop }
   'reload' { & $scripts.reload }
-  'status' { get-process 'node' -erroraction silentlycontinue | where-object commandline -like '*n8n' }
+  'status' { get-process 'node' -erroraction silentlycontinue | where-object commandline -like '*n8n*' | where-object commandline -notlike '*task*' }
 }
