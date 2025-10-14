@@ -14,7 +14,7 @@ $n8n = @{
 
 $scripts = @{
   start  = {
-    start-job -name $n8n.name -initializationscript {
+    start-job -name $n8n.name -scriptblock {
       start-process -filepath $n8n.path $n8n.args -workingdirectory $n8n.root -windowstyle hidden
     }
   }
