@@ -37,5 +37,5 @@ switch ($action) {
   'start' { & $scripts.start }
   'stop' { & $scripts.stop }
   'reload' { & $scripts.reload }
-  'status' { get-job $n8n.name -erroraction silentlycontinue }
+  'status' { get-process 'node' -erroraction silentlycontinue | where-object commandline -like '*n8n' }
 }
