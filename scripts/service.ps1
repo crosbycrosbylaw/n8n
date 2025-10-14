@@ -14,13 +14,8 @@ $n8n = @{
 
 $scripts = @{
   start  = {
-    start-job -name $n8n.name -scriptblock {
+    start-job -name $n8n.name -initializationscript {
       start-process -filepath $n8n.path $n8n.args -workingdirectory $n8n.root -windowstyle hidden
-      while ($true) {
-        $dead = [string]::isnullorempty((get-process 'node' -erroraction silentlycontinue))
-        if ($dead) { start-process -filepath $n8n.path $n8n.args -workingdirectory $n8n.root -windowstyle hidden -passthru - }
-        start-sleep 30
-      }
     }
   }
   stop   = {
