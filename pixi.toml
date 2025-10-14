@@ -43,14 +43,16 @@ n8n-py = { path = "python", editable = true }
     depends-on = [{ task = "push" }]
     [feature.remote.tasks.maintenance]
     cmd        = "python scripts/server-cmd.py './scripts/service.ps1 reload'"
-    depends-on = [{ task = "sync" }]
+    depends-on = [{ task = "update" }]
 
 [feature.service]
   [feature.service.tasks]
-  serve = "pixi run n8n &"
+  install = "bun i"
+  serve   = "pixi run n8n &"
     [feature.service.tasks.n8n]
-    cmd = "bun x n8n"
-    cwd = "service"
+    cmd        = "bun n8n"
+    cwd        = "service"
+    depends-on = ["install"]
       [feature.service.tasks.n8n.env]
       DB_SQLITE_POOL_SIZE             = '1'
       GENERIC_TIMEZONE                = 'America/Chicago'
