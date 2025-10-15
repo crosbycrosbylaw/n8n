@@ -62,6 +62,7 @@ n8n-py = { path = "python", editable = true }
       N8N_GIT_NODE_DISABLE_BARE_REPOS = 'false'
       N8N_HOST                        = 'ccn8n.org'
       N8N_LOG_LEVEL                   = 'info'
+      N8N_NATIVE_PYTHON_RUNNER        = 'true'
       N8N_PORT                        = '5678'
       N8N_PREVIEW_MODE                = 'true'
       N8N_PROTOCOL                    = 'https'
