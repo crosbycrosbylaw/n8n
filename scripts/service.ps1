@@ -1,7 +1,7 @@
 ﻿[CmdletBinding()]
 param(
   [parameter()]
-  [validateset('start', 'stop', 'reload', 'status', 'monitor')]
+  [validateset('start', 'stop', 'reload', 'status', 'monitor', 'poll')]
   $action = 'monitor'
 )
 
