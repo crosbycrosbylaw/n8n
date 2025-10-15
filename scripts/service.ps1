@@ -26,17 +26,25 @@ $scripts = @{
   }
   reload = {
     & $scripts.stop
+    start-sleep 10
     & $scripts.start
   }
 }
+
+$path = join-path $psscriptroot 'service.ps1'
 
 switch ($action) {
   'start' { & $scripts.start }
   'stop' { & $scripts.stop }
   'reload' { & $scripts.reload }
-  'status' { get-process 'node' -erroraction silentlycontinue | where-object commandline -like '*n8n*' | where-object commandline -notlike '*task*' }
+  'status' {
+    get-process 'node' -erroraction silentlycontinue |
+      where-object commandline -like '*n8n*' | where-object commandline -notlike '*task*'
+  }
+  'poll' {
+    while ($true) { & $path status; start-sleep 10 }
+  }
   'monitor' {
-    $path = join-path $psscriptroot 'service.ps1'
-    while ($true) { if (!(& $path status)) { & $path start }; start-sleep 20 }
+    while ($true) { if (!(& $path status)) { & $path start; start-sleep 30 }; start-sleep 20 }
   }
 }
