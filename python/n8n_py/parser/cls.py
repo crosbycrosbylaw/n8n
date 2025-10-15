@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from argparse import Namespace
-from rampy.json import JSON
+
 import bs4
 from common import stderr, stdout
 from rampy import console
@@ -29,8 +29,8 @@ class HTMLParser:
 
 class Runner(Namespace):
     mode: str
-    input: JSON[str]
-    email: str = 'eservice@crosbyandcrosbylaw.com'
+    input: str
+    email: str = "eservice@crosbyandcrosbylaw.com"
 
     _parser: HTMLParser
 
@@ -68,7 +68,7 @@ class Runner(Namespace):
     @console.catch
     def invoke(self) -> None:
         repr(self)
-        self._parser = HTMLParser(self.input['content'])
+        self._parser = HTMLParser(self.input)
         match self.mode:
             case "link":
                 self._parse_download_link()

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 from argparse import ArgumentParser, Namespace
-from rampy.json import JSON
+
 if typing.TYPE_CHECKING:
     from argparse import Action, _ActionType
     from collections.abc import *
@@ -28,9 +28,6 @@ type ArgSpecTuple[T] = Tuple[Sequence[str], ArgumentParameters[T]]
 type ArgSpecDict[T] = MutableMapping[Sequence[str], ArgumentParameters[T]]
 
 
-
-
-
 def parse_args[N: Namespace](
     *args_ls: ArgSpecTuple[Any],
     args_dict: ArgSpecDict[Any] = {},
@@ -40,7 +37,7 @@ def parse_args[N: Namespace](
     args_dict.update(dict(args_ls))
     parser = ArgumentParser(program_name)
     if not any("input" in ls for ls in args_dict.keys()):
-        parser.add_argument("input", type=JSON.loads)
+        parser.add_argument("input", type=lambda x: rf"{x}")
     [parser.add_argument(*als, **args) for als, args in args_dict.items()]
     return parser.parse_args(namespace=namespace)
 
