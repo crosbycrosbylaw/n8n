@@ -34,10 +34,10 @@ def parse_args[N: Namespace](
     namespace: N = Namespace(),
     program_name: str | None = None,
 ) -> N:
-    args_dict.update(dict(args_ls))
+    args_dict.update(args_ls)
     parser = ArgumentParser(program_name)
     if not any("input" in ls for ls in args_dict.keys()):
-        parser.add_argument("input", type=lambda x: rf"{x}")
+        parser.add_argument("input", type=lambda x: rf"{x}".replace("^", '"'))
     [parser.add_argument(*als, **args) for als, args in args_dict.items()]
     return parser.parse_args(namespace=namespace)
 

@@ -67,7 +67,7 @@ class Runner(Namespace):
 
     @console.catch
     def invoke(self) -> None:
-        self._parser = HTMLParser(self.input.replace("^", '"'))
+        self._parser = HTMLParser(self.input)
         match self.mode:
             case "link":
                 self._parse_download_link()
