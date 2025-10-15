@@ -12,19 +12,19 @@ class HTMLParser:
     soup: bs4.BeautifulSoup
 
     def __init__(self, content: str) -> None:
-        self.soup = bs4.BeautifulSoup(content, "html.parser")
+        self.soup = bs4.BeautifulSoup(content, features="html.parser")
 
-    def tags(self, name: str, **attrs: str | re.Pattern[str] | bool):
+    def tags(self, name: str, string: str | re.Pattern[str] | None = None, **attrs: bool):
         return [
             item
-            for item in bs4.Tag(self.soup, name=name).find_all(
-                attrs={k: v if isinstance(v, bool | re.Pattern) else re.compile(v) for k, v in attrs.items()},
-            )
+            for item in self.soup.find_all(name=name, string=string, attrs={**attrs})
             if isinstance(item, bs4.Tag)
         ]
 
     def find_hrefs(self, string: str = "") -> list[str]:
-        return [href for x in self.tags("a", href=string) if (href := x["href"]) and isinstance(href, str)]
+        return [
+            href for x in self.tags("a", string=string, href=True) if (href := x["href"]) and isinstance(href, str)
+        ]
 
 
 class Runner(Namespace):
@@ -45,7 +45,7 @@ class Runner(Namespace):
             stdout(hrefs[0], **{str(i): rest[i] for i in range(len(rest) - 1)})
 
     def _parse_http_response(self) -> None:
-        tags = self._parser.tags("input", id=r"__(VIEW|EVENT)\w+", value=True)
+        tags = self._parser.tags("input", string=r"__(VIEW|EVENT)\w+", value=True)
 
         def value_for(id: str, *, prefix: str = "__", upper: bool = True) -> str:
             id_str = f"{prefix}{id}"
@@ -67,8 +67,7 @@ class Runner(Namespace):
 
     @console.catch
     def invoke(self) -> None:
-        repr(self)
-        self._parser = HTMLParser(self.input)
+        self._parser = HTMLParser(self.input.replace("^", '"'))
         match self.mode:
             case "link":
                 self._parse_download_link()
