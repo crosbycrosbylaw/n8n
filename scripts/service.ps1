@@ -42,7 +42,7 @@ switch ($action) {
       where-object commandline -like '*n8n*' | where-object commandline -notlike '*task*'
   }
   'poll' {
-    while ($true) { & $path status; start-sleep 10 }
+    $ct = 0; while ($ct -lt 5) { & $path status; start-sleep 5 }
   }
   'monitor' {
     while ($true) { if (!(& $path status)) { & $path start; start-sleep 30 }; start-sleep 20 }
