@@ -23,6 +23,7 @@
         "overrides": []
     },
     "dependencies": {
+        "@n8n/task-runner": "^1.52.0",
         "n8n": "1.115.3"
     },
     "devDependencies": {
