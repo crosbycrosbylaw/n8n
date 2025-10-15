@@ -26,6 +26,7 @@ service = ["service"]
 
 [dependencies]
 bs4        = ">=4.13.5,<5"
+fire       = "*"
 ipykernel  = "*"
 ipywidgets = "*"
 python     = "==3.13"
