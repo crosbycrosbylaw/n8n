@@ -50,7 +50,7 @@ n8n-py = { path = "python", editable = true }
   install = "bun i"
   serve   = "pixi run n8n &"
     [feature.service.tasks.n8n]
-    cmd        = "bun n8n"
+    cmd        = "../node_modules/n8n/bin/n8n"
     cwd        = "service"
     depends-on = ["install"]
       [feature.service.tasks.n8n.env]
