@@ -36,8 +36,8 @@ def parse_args[N: Namespace](
 ) -> N:
     args_dict.update(dict(args_ls))
     parser = ArgumentParser(program_name)
-    if not any("--content" in ls for ls in args_dict.keys()):
-        parser.add_argument("--content", type=str, dest="content", required=True)
+    if not any("input" in ls for ls in args_dict.keys()):
+        parser.add_argument("input", type=str)
     [parser.add_argument(*als, **args) for als, args in args_dict.items()]
     return parser.parse_args(namespace=namespace)
 

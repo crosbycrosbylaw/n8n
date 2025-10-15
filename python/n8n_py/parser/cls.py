@@ -29,8 +29,8 @@ class HTMLParser:
 
 class Runner(Namespace):
     mode: str
-    content: str
-    email: str
+    input: str
+    email: str = 'eservice@crosbyandcrosbylaw.com'
 
     _parser: HTMLParser
 
@@ -68,7 +68,7 @@ class Runner(Namespace):
     @console.catch
     def invoke(self) -> None:
         repr(self)
-        self._parser = HTMLParser(self.content)
+        self._parser = HTMLParser(self.input)
         match self.mode:
             case "link":
                 self._parse_download_link()

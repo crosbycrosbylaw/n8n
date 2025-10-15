@@ -19,10 +19,12 @@ service = ["service"]
     { arg = "MESSAGE", default = "auto" },
   ]
   cmd = "cd {{ DIRECTORY }} && git add --all && git commit -m '{{ MESSAGE }}' && git push"
-  [tasks.parse]
-  args = [{ arg = "CONTENT" }, { arg = "MODE" }]
-  cmd  = "python -m n8n_py.parser --content {{ CONTENT }} --mode {{ MODE }}"
-
+  [tasks.parse-link]
+  args = [{ arg = "CONTENT" }]
+  cmd  = "python -m n8n_py.parser --mode 'link' {{ CONTENT }}"
+  [tasks.parse-response]
+  args = [{ arg = "CONTENT" }]
+  cmd  = "python -m n8n_py.parser --mode 'response' {{ CONTENT }}"
 
 [dependencies]
 bs4        = ">=4.13.5,<5"
