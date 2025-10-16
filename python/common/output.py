@@ -24,5 +24,5 @@ console.level("ERROR", icon=" ")
 
 
 def output[T: serializable](json: JSON[T], *, logs: list[str], warnings: list[str]):
-    console.error(warnings)
-    console.log("RETURN", logs, **json)
+    console.error("\n".join(warnings))
+    console.log("RETURN", "\n".join(logs), **json)
