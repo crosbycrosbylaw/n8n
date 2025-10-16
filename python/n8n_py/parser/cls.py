@@ -9,7 +9,7 @@ from urllib.parse import urlencode
 
 import bs4
 import requests
-from common import stderr, stdout
+from common import output
 from rampy import console, root
 from rampy.json import JSON
 
@@ -20,10 +20,6 @@ TMP = root() / "service" / "tmp"
 
 if not TMP.is_dir():
     TMP.mkdir(parents=True, exist_ok=True)
-
-
-def clear_temporary_files():
-    [f.unlink() for f in TMP.iterdir()]
 
 
 class HTMLParser:
@@ -65,11 +61,11 @@ class ResponseUtility:
 
     @property
     def has_attachment(self) -> bool:
+        required = not self.mime_type or (self.mime_type and self.mime_type not in {"text/html", "application/json"})
         return any(
-            bool(x)
+            bool(x and required)
             for x in [
                 self.disposition and "attachment; filename=" in self.disposition,
-                self.mime_type and self.mime_type not in {"text/html", "application/json"},
                 self.length is not None and self.length > 0,
             ]
         )
@@ -82,24 +78,29 @@ class ResponseUtility:
         self._require(attachment=True)
 
         if self.disposition:
-            return self.disposition.split("=", 1)[-1].strip().strip('"').replace(" ", "_")
+            return self.disposition.split("filename=", 1)[-1].strip().split('"')[1]
 
         count = len([*TMP.iterdir()])
         extension = "txt" if not self.mime_type else self.mime_type.split("/", 1)[-1]
+        if ";" in extension:
+            extension = extension.split(";")[0]
 
         return f"attachment_{count}.{extension}"
 
-    def save_attachment(self) -> str:
+    def save_attachment(self) -> tuple[str, str | None]:
         self._require(attachment=True)
 
-        path = TMP / self._get_attachment_name()
+        name = self._get_attachment_name()
+        path = TMP / name
+
+        out = [path.as_posix(), None]
 
         if not path.is_file():
             length = path.write_bytes(self.response.content)
             if self.length and length != self.length:
-                stderr(ValueError("expected_bytes:", self.length, "actual_bytes:", length))
+                out[1] = f"document '{name}' size ({length}) differs from expected ({self.length})"
 
-        return path.as_posix()
+        return tuple(out)
 
     def iter_subresponses(self, runner: Runner) -> Generator[ResponseUtility]:
         self._require(attachment=False)
@@ -134,33 +135,42 @@ class ResponseUtility:
         )
 
 
+@dataclass()
 class Runner(Namespace):
-    input: str
-    email: str = "eservice@crosbyandcrosbylaw.com"
+    input: str = field()
+    email: str = field(init=False, default="eservice@crosbyandcrosbylaw.com")
 
-    _parser: HTMLParser
+    _parser: HTMLParser = field(init=False)
 
-    def _process_href(self, href: str) -> list[str]:
-        res = ResponseUtility(requests.get(href))
-        if res.has_attachment:
-            return [res.save_attachment()]
+    paths: list[str] = field(init=False, default_factory=list)
+    logs: list[str] = field(init=False, default_factory=list)
+    warnings: list[str] = field(init=False, default_factory=list)
+
+    @console.catch
+    def __post_init__(self) -> None:
+        json = JSON()
+        if self.input == "clean":
+            [f.unlink() for f in TMP.iterdir() if self.logs.append(f"removing {f.name}") is None]
         else:
-            return [
-                uri for res in res.iter_subresponses(self) if res.has_attachment and (uri := res.save_attachment())
-            ]
+            self._parser = HTMLParser(self.input)
+            self._download_documents()
+            json["paths"] = self.paths
+        output(json, logs=self.logs, warnings=self.warnings)
+
+    def _process_href(self, href: str) -> None:
+        self.logs.append(f"processing extracted href: {href}")
+        res = ResponseUtility(requests.get(href))
+        responses = [res] if res.has_attachment else res.iter_subresponses(self)
+        for r in responses:
+            if res.has_attachment:
+                path, warning = r.save_attachment()
+                self.logs.append(f"saved document to {path}")
+                self.paths.append(path)
+                if warning:
+                    self.warnings.append(warning)
 
     def _download_documents(self) -> None:
         hrefs = self._parser.find_hrefs(r"Download Document")
-
         if len(hrefs) < 1:
-            return stderr("download link not found")
-
-        out = JSON(hrefs=hrefs, files=[])
-        [out["files"].extend(self._process_href(x)) for x in hrefs]
-
-        return stdout(**out)
-
-    @console.catch
-    def main(self) -> None:
-        self._parser = HTMLParser(self.input)
-        self._download_documents()
+            raise ValueError("download link not found")
+        [self._process_href(h) for h in hrefs]

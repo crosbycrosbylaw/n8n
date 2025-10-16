@@ -1,9 +1,6 @@
 import sys
 
-import * as parser
+from . import main
 
 if __name__ == "__main__":
-    if sys.argv[1] == "clean":
-        parser.clean()
-    else:
-        parser.main()
+    main(sys.argv[1])

@@ -1,20 +1,11 @@
 from __future__ import annotations
 
-__all__ = ["main", "clean"]
+__all__ = ["main"]
 
-import typing
+import sys
 
-from common import parse_args
-
-from .cls import Runner, clear_temporary_files
-
-if typing.TYPE_CHECKING:
-    from typing import Sequence
+from .cls import Runner
 
 
-def main(args: Sequence[str] | None = None):
-    parse_args(namespace=Runner(), program_name="n8n_py.parser", known_args=args).main()
-
-
-def clean():
-    clear_temporary_files()
+def main(input: str):
+    Runner(input=input)
