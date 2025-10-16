@@ -155,7 +155,7 @@ class Runner(Namespace):
             return stderr("download link not found")
 
         out = JSON(hrefs=hrefs, files=[])
-        [out.files.extend(self._process_href(x)) for x in hrefs]
+        [out["files"].extend(self._process_href(x)) for x in hrefs]
 
         return stdout(extra=out)
 
