@@ -1,9 +1,9 @@
 import sys
 
-from . import clean, main
+import * as parser
 
 if __name__ == "__main__":
-    if "clear_temporary_files" in sys.argv:
-        clean()
+    if sys.argv[1] == "clean":
+        parser.clean()
     else:
-        main()
+        parser.main()

@@ -161,6 +161,6 @@ class Runner(Namespace):
         return stdout(**out)
 
     @console.catch
-    def invoke(self) -> None:
+    def main(self) -> None:
         self._parser = HTMLParser(self.input)
         self._download_documents()

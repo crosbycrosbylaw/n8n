@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ["main"]
+__all__ = ["main", "clean"]
 
 import typing
 
@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
 
 
 def main(args: Sequence[str] | None = None):
-    parse_args(namespace=Runner(), program_name="n8n_py.parser", known_args=args).invoke()
+    parse_args(namespace=Runner(), program_name="n8n_py.parser", known_args=args).main()
 
 
 def clean():
