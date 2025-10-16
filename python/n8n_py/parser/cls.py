@@ -28,11 +28,11 @@ class HTMLParser:
     def __init__(self, content: str) -> None:
         self.soup = bs4.BeautifulSoup(content, features="html.parser")
 
-    def tags(self, name: str, string: str | re.Pattern[str] | None = None, **attrs: bool):
+    def tags(self, name: str, string: str | None = None, **attrs: bool):
         return [
             item
-            for item in self.soup.find_all(name=name, string=string, attrs={**attrs})
-            if isinstance(item, bs4.Tag)
+            for item in self.soup.find_all(name=name, attrs={**attrs})
+            if not string or item.string and re.compile(string).match(item.string)
         ]
 
     def find_hrefs(self, string: str = "") -> list[str]:
