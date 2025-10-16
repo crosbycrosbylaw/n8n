@@ -6,7 +6,7 @@ import typing
 
 from common import parse_args
 
-from .cls import Runner
+from .cls import Runner, clear_temporary_files
 
 if typing.TYPE_CHECKING:
     from typing import Sequence
@@ -14,3 +14,7 @@ if typing.TYPE_CHECKING:
 
 def main(args: Sequence[str] | None = None):
     parse_args(namespace=Runner(), program_name="n8n_py.parser", known_args=args).invoke()
+
+
+def clean():
+    clear_temporary_files()

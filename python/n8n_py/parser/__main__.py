@@ -1,4 +1,9 @@
-from . import main
+import sys
+
+from . import clean, main
 
 if __name__ == "__main__":
-    main()
+    if "clear_temporary_files" in sys.argv:
+        clean()
+    else:
+        main()

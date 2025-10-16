@@ -93,10 +93,11 @@ class ResponseUtility:
         self._require(attachment=True)
 
         path = TMP / self._get_attachment_name()
-        length = path.write_bytes(self.response.content)
 
-        if self.length is not None and length != self.length:
-            stderr(ValueError("expected_bytes:", self.length, "actual_bytes:", length))
+        if not path.is_file():
+            length = path.write_bytes(self.response.content)
+            if self.length and length != self.length:
+                stderr(ValueError("expected_bytes:", self.length, "actual_bytes:", length))
 
         return path.as_uri()
 
