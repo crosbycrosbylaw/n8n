@@ -82,7 +82,7 @@ class ResponseUtility:
         self._require(attachment=True)
 
         if self.disposition:
-            return self.disposition.split("=", 1)[-1].strip().strip('"')
+            return html.unescape(self.disposition.split("=", 1)[-1].strip().strip('"'))
 
         count = len([*TMP.iterdir()])
         extension = "txt" if not self.mime_type else self.mime_type.split("/", 1)[-1]
