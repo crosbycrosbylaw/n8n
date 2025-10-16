@@ -99,7 +99,7 @@ class ResponseUtility:
             if self.length and length != self.length:
                 stderr(ValueError("expected_bytes:", self.length, "actual_bytes:", length))
 
-        return path.as_uri()
+        return path.as_posix()
 
     def iter_subresponses(self, runner: Runner) -> Generator[ResponseUtility]:
         self._require(attachment=False)
