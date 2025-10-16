@@ -157,7 +157,7 @@ class Runner(Namespace):
         out = JSON(hrefs=hrefs, files=[])
         [out["files"].extend(self._process_href(x)) for x in hrefs]
 
-        return stdout(extra=out)
+        return stdout(**out)
 
     @console.catch
     def invoke(self) -> None:

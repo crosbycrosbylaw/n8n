@@ -31,7 +31,8 @@ def stderr(error: str | Exception | type[Exception], *info: object) -> None:
     console.error(error, *info)
 
 
-def stdout(text: str = "", **extra: ...) -> None:
+def stdout(**kwds: ...) -> None:
+    text = kwds.pop("text", "")
     console.patch(
-        lambda rec: rec.update(message=repr(JSON(text=rec["message"], **rec["extra"], **extra)), extra={}),
+        lambda rec: rec.update(message=repr(JSON(text=rec["message"], **kwds))),
     ).log("RETURN", text)
