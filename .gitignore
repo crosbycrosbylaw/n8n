@@ -74,3 +74,5 @@ temp/
 
 service/
 !service/.n8n
+
+*.ipynb

@@ -21,7 +21,6 @@ class ArgumentParameters[_T](typing.TypedDict, total=False):
     help: str | None
     metavar: str | tuple[str, ...] | None
     dest: str | None
-    version: str
 
 
 type ArgSpecTuple[T] = Tuple[Sequence[str], ArgumentParameters[T]]
@@ -30,16 +29,25 @@ type ArgSpecDict[T] = MutableMapping[Sequence[str], ArgumentParameters[T]]
 
 def parse_args[N: Namespace](
     *args_ls: ArgSpecTuple[Any],
-    args_dict: ArgSpecDict[Any] = {},
+    args_dict: ArgSpecDict[Any] | None = None,
     namespace: N = Namespace(),
     program_name: str | None = None,
+    known_args: Sequence[str] | None = None,
 ) -> N:
+    args_dict = args_dict or {}
     args_dict.update(args_ls)
+
     parser = ArgumentParser(program_name)
+
     if not any("input" in ls for ls in args_dict.keys()):
         parser.add_argument("input", type=lambda x: rf"{x}".replace("^", '"'))
+
     [parser.add_argument(*als, **args) for als, args in args_dict.items()]
-    return parser.parse_args(namespace=namespace)
+
+    if known_args:
+        return parser.parse_args(args=known_args, namespace=namespace)
+    else:
+        return parser.parse_args(namespace=namespace)
 
 
 def argument[_T](
@@ -54,7 +62,6 @@ def argument[_T](
     help: str | None = None,
     metavar: str | tuple[str, ...] | None = None,
     dest: str | None = None,
-    version: str = "",
     **kwds: ...,
 ) -> ArgSpecTuple[_T]:
     input_dict = {
@@ -68,7 +75,6 @@ def argument[_T](
         "help": help,
         "metavar": metavar,
         "dest": dest,
-        "version": version,
     }
     kwds.update({k: v for k, v in input_dict.items() if v})
     return aliases, typing.cast(ArgumentParameters[_T], kwds)
