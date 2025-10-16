@@ -31,7 +31,7 @@ def stderr(error: str | Exception | type[Exception], *info: object) -> None:
     console.error(error, *info)
 
 
-def stdout(text: str = "", **extra: object) -> None:
+def stdout(text: str = "", **extra: ...) -> None:
     console.patch(
-        lambda rec: rec.update(message=repr(JSON(text=rec["message"], **rec["extra"]))),
-    ).log("RETURN", text, **extra)
+        lambda rec: rec.update(message=repr(JSON(text=rec["message"], **rec["extra"], **extra)), extra={}),
+    ).log("RETURN", text)
