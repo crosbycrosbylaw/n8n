@@ -73,6 +73,6 @@ temp/
 .tmp/
 
 service/
-!service/.n8n
+!service/backup
 
 *.ipynb
