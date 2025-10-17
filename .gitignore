@@ -72,7 +72,8 @@ tmp/
 temp/
 .tmp/
 
-service
-!service/backup/**/*
+service/.cache
+service/.n8n
+service/tmp
 
 *.ipynb
