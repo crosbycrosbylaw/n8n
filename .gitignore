@@ -73,6 +73,7 @@ temp/
 .tmp/
 
 service/
-!service/backup
+!service/backup/credentials
+!service/backup/workflows
 
 *.ipynb
