@@ -29,6 +29,8 @@ ipywidgets = "*"
 python     = "==3.13"
 rampy      = { git = "https://github.com/zaynram/ramda-py", branch = "master" }
 spacy      = ">=3.8.7,<4"
+nameparser = ">=1.0.5,<2"
+rapidfuzz = ">=3.14.1,<4"
 
 [pypi-dependencies]
 n8n-py = { path = "python", editable = true }

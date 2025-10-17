@@ -76,6 +76,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/mkl-2024.2.2-h57928b3_16.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/murmurhash-1.0.13-py313h927ade5_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/nameparser-1.0.5-py_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/nest-asyncio-1.6.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/numpy-2.3.3-py313hce7ae62_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/openssl-3.5.4-h725018a_0.conda
@@ -99,6 +100,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/pywin32-311-py313h40c08fc_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pyzmq-27.1.0-py312hbb5da91_0.conda
       - conda: git+https://github.com/zaynram/ramda-py?branch=master#a5a5f79e95d2ea60583a2f8d26e4c3f1a4b70ddf
+      - conda: https://conda.anaconda.org/conda-forge/win-64/rapidfuzz-3.14.1-py313hfe59770_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/requests-2.32.5-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/rich-14.2.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-80.9.0-pyhff2d567_0.conda
@@ -222,6 +224,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/mkl-2024.2.2-h57928b3_16.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/murmurhash-1.0.13-py313h927ade5_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/nameparser-1.0.5-py_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/nest-asyncio-1.6.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/numpy-2.3.3-py313hce7ae62_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/openssl-3.5.4-h725018a_0.conda
@@ -245,6 +248,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/pywin32-311-py313h40c08fc_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pyzmq-27.1.0-py312hbb5da91_0.conda
       - conda: git+https://github.com/zaynram/ramda-py?branch=master#a5a5f79e95d2ea60583a2f8d26e4c3f1a4b70ddf
+      - conda: https://conda.anaconda.org/conda-forge/win-64/rapidfuzz-3.14.1-py313hfe59770_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/requests-2.32.5-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/rich-14.2.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-80.9.0-pyhff2d567_0.conda
@@ -368,6 +372,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/mkl-2024.2.2-h57928b3_16.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/murmurhash-1.0.13-py313h927ade5_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/nameparser-1.0.5-py_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/nest-asyncio-1.6.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/numpy-2.3.3-py313hce7ae62_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/openssl-3.5.4-h725018a_0.conda
@@ -391,6 +396,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/pywin32-311-py313h40c08fc_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pyzmq-27.1.0-py312hbb5da91_0.conda
       - conda: git+https://github.com/zaynram/ramda-py?branch=master#a5a5f79e95d2ea60583a2f8d26e4c3f1a4b70ddf
+      - conda: https://conda.anaconda.org/conda-forge/win-64/rapidfuzz-3.14.1-py313hfe59770_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/requests-2.32.5-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/rich-14.2.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-80.9.0-pyhff2d567_0.conda
@@ -1375,6 +1381,17 @@ packages:
   - typer-slim
   requires_python: '>=3.13'
   editable: true
+- conda: https://conda.anaconda.org/conda-forge/noarch/nameparser-1.0.5-py_0.tar.bz2
+  sha256: dbdb476550fa208d5bf7e91ff699c36e97e0e641d516cc99ccc26e2157a46f86
+  md5: 6cfaed4df461c9d9c8229fd44d077bd8
+  depends:
+  - python
+  license: LGPL-2.1+
+  license_family: LGPL
+  purls:
+  - pkg:pypi/nameparser?source=hash-mapping
+  size: 23597
+  timestamp: 1576171218611
 - conda: https://conda.anaconda.org/conda-forge/noarch/nest-asyncio-1.6.0-pyhd8ed1ab_1.conda
   sha256: bb7b21d7fd0445ddc0631f64e66d91a179de4ba920b8381f29b9d006a42788c0
   md5: 598fd7d4d0de2455fb74f56063969a97
@@ -1703,6 +1720,22 @@ packages:
   - python >=3.13
   - python *
   channel: null
+- conda: https://conda.anaconda.org/conda-forge/win-64/rapidfuzz-3.14.1-py313hfe59770_0.conda
+  sha256: 189ff87a94379d0611f03f160743406f0f499b66b38b8587309074bb8ca09d39
+  md5: 9e42b4dff9ba3c21c9be80881bc9f22a
+  depends:
+  - numpy
+  - python >=3.13,<3.14.0a0
+  - python_abi 3.13.* *_cp313
+  - ucrt >=10.0.20348.0
+  - vc >=14.3,<15
+  - vc14_runtime >=14.44.35208
+  license: MIT
+  license_family: MIT
+  purls:
+  - pkg:pypi/rapidfuzz?source=hash-mapping
+  size: 1021576
+  timestamp: 1757406026055
 - conda: https://conda.anaconda.org/conda-forge/noarch/requests-2.32.5-pyhd8ed1ab_0.conda
   sha256: 8dc54e94721e9ab545d7234aa5192b74102263d3e704e6d0c8aa7008f2da2a7b
   md5: db0c6b99149880c8ba515cf4abe93ee4

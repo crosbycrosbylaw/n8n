@@ -1,44 +1,16 @@
 from __future__ import annotations
 
 import html
-import re
 import typing
-from argparse import Namespace
 from dataclasses import dataclass, field
 from urllib.parse import urlencode
 
-import bs4
 import requests
-from common import output
-from rampy import console, root
+from common import TMP, HTMLParser, Runner
 from rampy.json import JSON
 
 if typing.TYPE_CHECKING:
     from typing import *
-
-TMP = root() / "service" / "tmp"
-
-if not TMP.is_dir():
-    TMP.mkdir(parents=True, exist_ok=True)
-
-
-class HTMLParser:
-    soup: bs4.BeautifulSoup
-
-    def __init__(self, content: str) -> None:
-        self.soup = bs4.BeautifulSoup(content, features="html.parser")
-
-    def tags(self, name: str, string: str | None = None, **attrs: bool):
-        return [
-            item
-            for item in self.soup.find_all(name=name, attrs={**attrs})
-            if not string or item.string and re.compile(string).match(item.string)
-        ]
-
-    def find_hrefs(self, string: str = "") -> list[str]:
-        return [
-            href for x in self.tags("a", string=string, href=True) if (href := x["href"]) and isinstance(href, str)
-        ]
 
 
 @dataclass()
@@ -102,7 +74,7 @@ class ResponseUtility:
 
         return tuple(out)
 
-    def iter_subresponses(self, runner: Runner) -> Generator[ResponseUtility]:
+    def iter_subresponses(self, runner: EmailParser) -> Generator[ResponseUtility]:
         self._require(attachment=False)
 
         text = self.response.content.decode(self.response.encoding or "utf-8")
@@ -136,41 +108,39 @@ class ResponseUtility:
 
 
 @dataclass()
-class Runner(Namespace):
-    input: str = field()
+class EmailParser(Runner):
+    _parser: HTMLParser = field(init=False)
     email: str = field(init=False, default="eservice@crosbyandcrosbylaw.com")
 
-    _parser: HTMLParser = field(init=False)
+    def setup(self) -> None:
+        if self.input[1] != "clean":
+            self._parser = HTMLParser(self.input[1])
 
-    paths: list[str] = field(init=False, default_factory=list)
-    logs: list[str] = field(init=False, default_factory=list)
-    warnings: list[str] = field(init=False, default_factory=list)
+    def run(self) -> None:
+        match self.input[1]:
+            case "clean":
+                [f.unlink() for f in TMP.iterdir() if self.logs.append(f"removing {f.name}") is None]
+            case _:
+                hrefs = self._parser.find_hrefs(r"Download Document")
+                if len(hrefs) < 1:
+                    raise ValueError("download link not found")
 
-    @console.catch
-    def __post_init__(self) -> None:
-        json = JSON()
-        if self.input == "clean":
-            [f.unlink() for f in TMP.iterdir() if self.logs.append(f"removing {f.name}") is None]
-        else:
-            self._parser = HTMLParser(self.input)
-            self._download_documents()
-            json["paths"] = self.paths
-        output(json, logs=self.logs, warnings=self.warnings)
+                [self._process_href(h) for h in hrefs]
 
     def _process_href(self, href: str) -> None:
         self.logs.append(f"processing extracted href: {href}")
+
         res = ResponseUtility(requests.get(href))
         responses = [res] if res.has_attachment else res.iter_subresponses(self)
+        paths: list[str] = []
+
         for r in responses:
-            if res.has_attachment:
+            if r.has_attachment:
                 path, warning = r.save_attachment()
+                paths.append(path)
+
                 self.logs.append(f"saved document to {path}")
-                self.paths.append(path)
                 if warning:
                     self.warnings.append(warning)
 
-    def _download_documents(self) -> None:
-        hrefs = self._parser.find_hrefs(r"Download Document")
-        if len(hrefs) < 1:
-            raise ValueError("download link not found")
-        [self._process_href(h) for h in hrefs]
+        self.json["paths"] = paths
