@@ -14,11 +14,8 @@ service = ["service"]
 
 [tasks]
   [tasks.push]
-  args = [
-    { arg = "DIRECTORY", default = "." },
-    { arg = "MESSAGE", default = "auto" },
-  ]
-  cmd = "cd {{ DIRECTORY }} && git add --all && git commit -m '{{ MESSAGE }}' && git push"
+  args = [{ arg = "MESSAGE", default = "auto" }]
+  cmd  = "git add --all && git commit -m '{{ MESSAGE }}' && git push"
 
 
 [dependencies]
@@ -26,11 +23,11 @@ bs4        = ">=4.13.5,<5"
 fire       = "*"
 ipykernel  = "*"
 ipywidgets = "*"
+nameparser = ">=1.0.5,<2"
 python     = "==3.13"
 rampy      = { git = "https://github.com/zaynram/ramda-py", branch = "master" }
+rapidfuzz  = ">=3.14.1,<4"
 spacy      = ">=3.8.7,<4"
-nameparser = ">=1.0.5,<2"
-rapidfuzz = ">=3.14.1,<4"
 
 [pypi-dependencies]
 n8n-py = { path = "python", editable = true }
