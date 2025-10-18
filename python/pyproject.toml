@@ -12,6 +12,9 @@ py-modules = ["parser"]
   [tool.setuptools.packages.find]
   include = ["common", "n8n_py"]
 
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]
+
 [build-system]
 build-backend = "setuptools.build_meta"
 requires      = ["setuptools>=61.0"]

@@ -13,6 +13,9 @@ remote  = ["remote"]
 service = ["service"]
 
 [tasks]
+  [tasks.test]
+  cmd = "python -m pytest ."
+  cwd = "python/tests"
   [tasks.push]
   args = [{ arg = "MESSAGE", default = "auto" }]
   cmd  = "git add --all && git commit -m '{{ MESSAGE }}' && git push"
@@ -24,6 +27,7 @@ fire       = "*"
 ipykernel  = "*"
 ipywidgets = "*"
 nameparser = ">=1.0.5,<2"
+pytest     = ">=8.4.2,<9"
 python     = "==3.13"
 rampy      = { git = "https://github.com/zaynram/ramda-py", branch = "master" }
 rapidfuzz  = ">=3.14.1,<4"

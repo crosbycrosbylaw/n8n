@@ -1,12 +1,14 @@
 import html
 import re
-from dataclasses import field
+import unicodedata
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any, Sequence, TypedDict
 
 import bs4
 from common import Runner
 from nameparser import HumanName
+from rampy import js
 
 
 class NormalizedRecord(TypedDict):
@@ -22,12 +24,13 @@ class ExtractionResult(TypedDict):
     original_source: str | None
     found_names: bool
     raw_case_text: str | None
-    parties: list[dict[str, Any]]
-    pair_candidates: list[dict[str, Any]]
+    parties: Sequence[dict[str, Any]]
+    pair_candidates: Sequence[dict[str, Any]]
 
 
+@dataclass
 class NameExtractor(Runner):
-    normalized: list[NormalizedRecord] = field(init=False, default_factory=list)
+    normalized: js.array[NormalizedRecord] = field(init=False, default_factory=js.array[NormalizedRecord])
 
     def setup(self) -> None:
         """Normalize inputs into a list of canonical records.
@@ -100,7 +103,7 @@ class NameExtractor(Runner):
             self.normalized.append(record)
 
     def run(self) -> None:
-        results: list[ExtractionResult] = []
+        results = list[ExtractionResult]()
 
         # permissive v/versus pattern; capture surrounding context but avoid long greedy matches
         vs_rx = re.compile(
@@ -152,6 +155,16 @@ class NameExtractor(Runner):
                 t = t.title()
             return t
 
+        def normalize_for_index(s: str) -> str:
+            # remove accents, lowercase, keep hyphens and letters/numbers, collapse spaces
+            s = unicodedata.normalize("NFKD", s)
+            s = "".join(ch for ch in s if not unicodedata.combining(ch))
+            s = s.lower()
+            # replace anything not alnum or hyphen with space
+            s = re.sub(r"[^a-z0-9\-]+", " ", s)
+            s = re.sub(r"\s+", " ", s).strip()
+            return s
+
         def generate_name_candidates(parsed: HumanName, raw: str) -> list[dict[str, Any]]:
             candidates: list[dict[str, Any]] = []
             first = (parsed.first or "").strip()
@@ -160,22 +173,34 @@ class NameExtractor(Runner):
 
             if first and last:
                 form = f"{first} {last}".strip()
-                candidates.append({"form": form, "first": first, "last": last, "score": 100})
+                norm = normalize_for_index(form)
+                candidates.append({"form": form, "first": first, "last": last, "score": 100, "normalized": norm})
                 # reversed
-                candidates.append({"form": f"{last}, {first}", "first": first, "last": last, "score": 95})
+                form2 = f"{last}, {first}".strip()
+                norm2 = normalize_for_index(f"{first} {last}")
+                candidates.append({"form": form2, "first": first, "last": last, "score": 95, "normalized": norm2})
                 # with middle initial
                 if middle:
                     mi = middle.split()[0]
-                    candidates.append({"form": f"{first} {mi} {last}", "first": first, "last": last, "score": 90})
+                    fm = f"{first} {mi} {last}"
                     candidates.append({
-                        "form": f"{first} {mi[0]}. {last}".strip(),
+                        "form": fm,
+                        "first": first,
+                        "last": last,
+                        "score": 90,
+                        "normalized": normalize_for_index(fm),
+                    })
+                    fm2 = f"{first} {mi[0]}. {last}".strip()
+                    candidates.append({
+                        "form": fm2,
                         "first": first,
                         "last": last,
                         "score": 88,
+                        "normalized": normalize_for_index(fm2),
                     })
             else:
                 # fallback: use raw as a soft candidate
-                candidates.append({"form": raw, "score": 60})
+                candidates.append({"form": raw, "score": 60, "normalized": normalize_for_index(raw)})
 
             return candidates
 
@@ -209,12 +234,21 @@ class NameExtractor(Runner):
             seen = set()
             deduped: list[dict[str, Any]] = []
             for c in candidates:
-                key = c.get("form", "").lower()
+                key = c.get("normalized") or c.get("form", "")
+                key = str(key).lower()
                 if key and key not in seen:
                     seen.add(key)
                     deduped.append(c)
 
             entry["candidates"] = deduped
+            # canonical first/last for easier finder matching
+            if deduped and isinstance(deduped[0].get("first"), str):
+                entry["canonical_first"] = (deduped[0].get("first") or "").lower() or None
+                entry["canonical_last"] = (deduped[0].get("last") or "").lower() or None
+            else:
+                entry["canonical_first"] = None
+                entry["canonical_last"] = None
+
             return entry
 
         def extract_v_style(cleaned: str):
@@ -253,7 +287,7 @@ class NameExtractor(Runner):
 
             return None, None, None
 
-        for record in self.normalized:
+        def process_record(record: NormalizedRecord):
             cleaned = record["cleaned_text"]
             left, right, sep = extract_v_style(cleaned)
             parties: list[dict[str, Any]] = []
@@ -268,12 +302,12 @@ class NameExtractor(Runner):
 
                 # create top pair candidates from top candidate of each side
                 if left_entry["candidates"] and right_entry["candidates"]:
-                    for l in left_entry["candidates"][:3]:  # noqa: E741
-                        for r in right_entry["candidates"][:3]:
+                    for left_cand in left_entry["candidates"][:3]:
+                        for right_cand in right_entry["candidates"][:3]:
                             pair_candidates.append({
-                                "left": l["form"],
-                                "right": r["form"],
-                                "score": l.get("score", 0) + r.get("score", 0),
+                                "left": left_cand["form"],
+                                "right": right_cand["form"],
+                                "score": left_cand.get("score", 0) + right_cand.get("score", 0),
                             })
 
             results.append(
@@ -285,6 +319,8 @@ class NameExtractor(Runner):
                     pair_candidates=pair_candidates,
                 )
             )
+
+        self.normalized.foreach(process_record)
 
         # store in runner json for output
         self.json["results"] = results

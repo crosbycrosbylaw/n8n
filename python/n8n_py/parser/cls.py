@@ -7,9 +7,10 @@ from urllib.parse import urlencode
 
 import requests
 from common import TMP, HTMLParser, Runner
-from rampy.json import JSON
+from rampy import js
 
 if typing.TYPE_CHECKING:
+    from pathlib import Path
     from typing import *
 
 
@@ -74,7 +75,7 @@ class ResponseUtility:
 
         return tuple(out)
 
-    def iter_subresponses(self, runner: EmailParser) -> Generator[ResponseUtility]:
+    def iter_subresponses(self, email: str, parser: HTMLParser) -> Generator[ResponseUtility]:
         self._require(attachment=False)
 
         text = self.response.content.decode(self.response.encoding or "utf-8")
@@ -90,57 +91,66 @@ class ResponseUtility:
 
             return str([x for x in tags if x["id"] == id_str][0]["value"])
 
-        headers = JSON([("Content-Type", "application/x-www-form-urlencoded")])
-        body = JSON(
-            emailAddress=runner.email,
+        headers = js.object([("Content-Type", "application/x-www-form-urlencoded")])
+        body = js.object(
+            emailAddress=email,
             __VIEWSTATE=value_for("viewstate"),
             __VIEWSTATEGENERATOR=value_for("viewstategenerator"),
             __EVENTVALIDATION=value_for("eventvalidation"),
             SubmitEmailAddressButton="Validate",
-            username=runner.email,
-            SubmitUsernameButton=runner.email,
+            username=email,
+            SubmitUsernameButton=email,
         )
 
         return (
             ResponseUtility(requests.post(href, data=urlencode(body), headers=headers.cast()))
-            for href in (html.unescape(raw) for raw in runner._parser.find_hrefs(r"ViewDocuments"))
+            for href in (html.unescape(raw) for raw in parser.find_hrefs(r"ViewDocuments"))
         )
 
 
 @dataclass()
 class EmailParser(Runner):
-    _parser: HTMLParser = field(init=False)
+    content: str | None = field(init=False, default=None)
     email: str = field(init=False, default="eservice@crosbyandcrosbylaw.com")
 
     def setup(self) -> None:
-        if self.input[1] != "clean":
-            self._parser = HTMLParser(self.input[1])
+        item = self.input[0]
+        if item != "clean":
+            self.content = item
 
     def run(self) -> None:
-        match self.input[1]:
-            case "clean":
-                [f.unlink() for f in TMP.iterdir() if self.logs.append(f"removing {f.name}") is None]
+        match self.content:
+            case None:
+
+                def rm(f: Path) -> None:
+                    self.logs.append(f"removing {f.name}")
+                    f.unlink()
+
+                [rm(f) for f in TMP.iterdir()]
+
             case _:
-                hrefs = self._parser.find_hrefs(r"Download Document")
+                parser = HTMLParser(self.content)
+                hrefs = parser.find_hrefs(r"Download Document")
+
                 if len(hrefs) < 1:
                     raise ValueError("download link not found")
 
-                [self._process_href(h) for h in hrefs]
+                paths: list[str] = []
 
-    def _process_href(self, href: str) -> None:
-        self.logs.append(f"processing extracted href: {href}")
+                def process(link: str) -> None:
+                    self.logs.append(f"processing extracted href: {link}")
+                    res = ResponseUtility(requests.get(link))
+                    responses = [res] if res.has_attachment else res.iter_subresponses(self.email, parser)
+                    for r in responses:
+                        if r.has_attachment:
+                            path, warning = r.save_attachment()
+                            if warning:
+                                self.warnings.append(warning)
+                            paths.append(path)
+                            self.logs.append(f"saved document to {path}")
+                        else:
+                            self.warnings.append(f"missing document for link: {link}")
 
-        res = ResponseUtility(requests.get(href))
-        responses = [res] if res.has_attachment else res.iter_subresponses(self)
-        paths: list[str] = []
+                [process(h) for h in hrefs]
 
-        for r in responses:
-            if r.has_attachment:
-                path, warning = r.save_attachment()
-                paths.append(path)
-
-                self.logs.append(f"saved document to {path}")
-                if warning:
-                    self.warnings.append(warning)
-
-        self.json["paths"] = paths
+                self.json["paths"] = paths

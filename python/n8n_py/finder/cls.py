@@ -1,48 +1,121 @@
-from __future__ import annotations
-
-from dataclasses import field
-from typing import Generator, Iterator, Sequence, TypedDict
+import re
+import unicodedata
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Sequence, TypedDict
 
 from common import Runner
-from rampy import root
-from rampy.json import JSON
-from rapidfuzz.process import extract
+from rampy import js, root
+from rapidfuzz import fuzz, process
 
 
-class ExtractionMapping(TypedDict):
-    name: str
-    pathLower: str
+class IndexEntry(TypedDict):
     pathDisplay: str
 
 
-class IndexEntry(ExtractionMapping):
-    id: str
-    type: str
-
-
-def initialize_iterator() -> Iterator[IndexEntry]:
-    dbx_index = root.join("service", "dbx_index.json", resolve=True)
-    index_json = JSON[list[IndexEntry]].loads(f'{{ "entries": "{dbx_index.read_text()}" }}')
-    return iter(index_json["entries"])
-
-
+@dataclass
 class FolderFinder(Runner):
+    """Load dbx_index.json, build normalized index, and fuzzy-match queries to folder entries."""
+
+    dbx_path: Path = field(init=False)
     query: Sequence[str] = field(init=False)
 
-    _iterator: Iterator[IndexEntry] = field(init=False, default_factory=initialize_iterator)
-
-    def iter_choices(self) -> Generator[ExtractionMapping]:
-        try:
-            while True:
-                yield ExtractionMapping(next(self._iterator))
-        except StopIteration:
-            pass
+    index: list[IndexEntry] = field(init=False, default_factory=list)
+    norm_map: dict[str, list[IndexEntry]] = field(init=False, default_factory=dict)
+    choices: list[str] = field(init=False, default_factory=list)
 
     def setup(self) -> None:
-        self.query = [x for x in self.input[1:] if x]
+        self.query = [str(x).strip() for x in self.input if x]
+
+        # locate dbx_index.json managed by n8n
+        self.dbx_path = root() / "service" / "dbx_index.json"
+        try:
+            text = Path(self.dbx_path).read_text(encoding="utf-8")
+            entries = js.array[js.object[str]].loads(text)
+        except Exception as exc:
+            # if unreadable, record and bail gracefully
+            self.json["matches"] = None
+            self.warnings.append(f"could not load dbx_index.json: {exc}")
+            self.index = []
+            return
+
+        # Build index entries and normalized mapping
+        for obj in entries:
+            path = obj.get("pathDisplay")
+            if not path:
+                continue
+            entry: IndexEntry = {"pathDisplay": path}
+            self.index.append(entry)
+
+            # derive candidate labels from path components (skip root like 'Clio')
+            parts = [p for p in path.strip("/").split("/") if p]
+            labels = []
+            # take all non-numeric parts beyond the first
+            for part in parts[1:]:
+                # strip folder index prefixes like '00003-'
+                pclean = re.sub(r"^\d+\-", "", part).strip()
+                # skip small numeric-only parts
+                if not re.search(r"[A-Za-z]", pclean):
+                    continue
+                labels.append(pclean)
+
+            # also add last meaningful part if no labels found
+            if not labels and parts:
+                labels = [parts[-1]]
+
+            for lab in labels:
+                norm = self._normalize(lab)
+                self.norm_map.setdefault(norm, []).append(entry)
+
+        # build choices list for fuzzy search (unique normalized strings)
+        self.choices = [*self.norm_map.keys()]
+
+    def _normalize(self, s: str) -> str:
+        # remove accents, lowercase, keep hyphens, collapse non-alnum to spaces
+        s = str(s or "")
+        s = unicodedata.normalize("NFKD", s)
+        s = "".join(ch for ch in s if not unicodedata.combining(ch))
+        s = s.lower()
+        s = re.sub(r"[^a-z0-9\-]+", " ", s)
+        s = re.sub(r"\s+", " ", s).strip()
+        return s
 
     def run(self) -> None:
-        for choices in self.iter_choices():
-            results = extract(self.query, choices=choices, limit=3)
-            for choice, score, distance in results:
-                ...
+        if not self.index:
+            # setup already recorded error
+            return
+
+        results = []
+
+        for q in self.query:
+            qnorm = self._normalize(q)
+            # exact lookup
+            exact = self.norm_map.get(qnorm)
+            matches = []
+            if exact:
+                for e in exact:
+                    matches.append({**e, "score": 100, "reason": "exact"})
+            else:
+                # fuzzy search among normalized choices
+                fuzzy = process.extract(qnorm, self.choices, scorer=fuzz.token_set_ratio, limit=5)
+                for choice, score, _ in fuzzy:
+                    entries = self.norm_map.get(choice, [])
+                    for e in entries:
+                        matches.append({
+                            **e,
+                            "score": int(score),
+                            "reason": "fuzzy",
+                            "matched_label": choice,
+                        })
+
+            # sort and dedupe by pathDisplay keeping highest score
+            seen = {}
+            for m in matches:
+                pd = m["pathDisplay"]
+                if pd not in seen or m["score"] > seen[pd]["score"]:
+                    seen[pd] = m
+
+            ranked = sorted(seen.values(), key=lambda x: x["score"], reverse=True)[:10]
+            results.append({"query": q, "normalized_query": qnorm, "matches": ranked})
+
+        self.json["matches"] = results

@@ -75,5 +75,8 @@ temp/
 service/.cache
 service/.n8n
 service/tmp
+/service/backup/credentials
 
-*.ipynb
+**/*cache*
+
+**/*.ipynb
