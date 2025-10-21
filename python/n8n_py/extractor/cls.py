@@ -29,10 +29,10 @@ class ExtractionResult(TypedDict):
 
 
 @dataclass
-class NameExtractor(Runner):
+class NameExtractor(Runner[list[ExtractionResult]]):
     normalized: js.array[NormalizedRecord] = field(init=False, default_factory=js.array[NormalizedRecord])
 
-    def setup(self) -> None:
+    def setup(self):
         """Normalize inputs into a list of canonical records.
 
         Each record is a typed_dict with keys:
@@ -102,7 +102,9 @@ class NameExtractor(Runner):
 
             self.normalized.append(record)
 
-    def run(self) -> None:
+        return self
+
+    def run(self):
         results = list[ExtractionResult]()
 
         # permissive v/versus pattern; capture surrounding context but avoid long greedy matches
@@ -324,3 +326,5 @@ class NameExtractor(Runner):
 
         # store in runner json for output
         self.json["results"] = results
+
+        return self

@@ -1,8 +1,10 @@
+# ruff: noqa: F401, F811
 from pathlib import Path
 
 import n8n_py.parser.cls as parsermod
+from rampy import typed
 
-from python.tests.shared import temp
+from . import path
 
 
 class FakeResponse:
@@ -20,10 +22,10 @@ def test_email_parser_saves_pdf(monkeypatch):
 
     pdf_bytes = b"%PDF-1.4 binarycontent"
 
-    tempdir = temp("test-parser")
-    tempdir.mkdir(777, exist_ok=True)
+    tmp = path("parser")
+    tmp.mkdir()
 
-    test_file = tempdir / "test.pdf"
+    test_file = tmp / "test.pdf"
 
     def fake_get(_):
         return FakeResponse(
@@ -35,19 +37,15 @@ def test_email_parser_saves_pdf(monkeypatch):
             },
         )
 
-    monkeypatch.setattr(parsermod, "requests", parsermod.requests)
     monkeypatch.setattr(parsermod.requests, "get", fake_get)
-    monkeypatch.setattr(parsermod, "TMP", tempdir)
+    monkeypatch.setattr(parsermod, "TMP", tmp)
 
-    inst = parsermod.EmailParser(input_text, testing=True)
+    parser = parsermod.EmailParser(input_text, testing=True).setup().run()
 
-    inst.setup()
-    inst.run()
-
-    assert "paths" in inst.json
-    paths = inst.json["paths"]
-    assert isinstance(paths, list)
-    assert len(paths) == 1
+    assert "paths" in parser.json
+    paths = parser.json["paths"]
+    assert typed(list[str])(paths)
+    assert len(paths) == len(input_text)
 
     p = Path(paths[0])
 
@@ -59,4 +57,4 @@ def test_email_parser_saves_pdf(monkeypatch):
     print(test_file.read_bytes())
 
     test_file.unlink()
-    tempdir.rmdir()
+    tmp.rmdir()

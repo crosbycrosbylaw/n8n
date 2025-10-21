@@ -113,12 +113,14 @@ class EmailParser(Runner):
     content: str | None = field(init=False, default=None)
     email: str = field(init=False, default="eservice@crosbyandcrosbylaw.com")
 
-    def setup(self) -> None:
+    def setup(self):
         item = self.input[0]
         if item != "clean":
             self.content = item
 
-    def run(self) -> None:
+        return self
+
+    def run(self):
         match self.content:
             case None:
 
@@ -154,3 +156,5 @@ class EmailParser(Runner):
                 [process(h) for h in hrefs]
 
                 self.json["paths"] = paths
+
+        return self

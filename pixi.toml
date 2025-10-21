@@ -32,6 +32,7 @@ python     = "==3.13"
 rampy      = { git = "https://github.com/zaynram/ramda-py", branch = "master" }
 rapidfuzz  = ">=3.14.1,<4"
 spacy      = ">=3.8.7,<4"
+pytest-cov = ">=7.0.0,<8"
 
 [pypi-dependencies]
 n8n-py = { path = "python", editable = true }

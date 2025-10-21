@@ -25,6 +25,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/comm-0.2.3-pyhe01879c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/confection-0.1.5-pyhecae5ae_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/coverage-7.11.0-py313hd650c13_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/cpython-3.13.9-py313hd8ed1ab_100.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/cymem-2.0.11-py313hfe59770_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/cython-blis-1.3.0-py313h8e081ca_0.conda
@@ -96,13 +97,14 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.19.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyh09c184e_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-cov-7.0.0-pyhcf101f3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.13.0-hf5aa216_101_cp313.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/python-dateutil-2.9.0.post0-pyhe01879c_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/python-gil-3.13.9-h4df99d1_100.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.13-8_cp313.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pywin32-311-py313h40c08fc_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pyzmq-27.1.0-py312hbb5da91_0.conda
-      - conda: git+https://github.com/zaynram/ramda-py?branch=master#5188bef596c0302aa6c4b77c92e4dad0c7481edc
+      - conda: git+https://github.com/zaynram/ramda-py?branch=master#627bc4a016032049828a53b646374a255637976c
       - conda: https://conda.anaconda.org/conda-forge/win-64/rapidfuzz-3.14.1-py313hfe59770_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/requests-2.32.5-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/rich-14.2.0-pyhcf101f3_0.conda
@@ -177,6 +179,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/comm-0.2.3-pyhe01879c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/confection-0.1.5-pyhecae5ae_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/coverage-7.11.0-py313hd650c13_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/cpython-3.13.9-py313hd8ed1ab_100.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/cymem-2.0.11-py313hfe59770_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/cython-blis-1.3.0-py313h8e081ca_0.conda
@@ -248,13 +251,14 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.19.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyh09c184e_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-cov-7.0.0-pyhcf101f3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.13.0-hf5aa216_101_cp313.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/python-dateutil-2.9.0.post0-pyhe01879c_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/python-gil-3.13.9-h4df99d1_100.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.13-8_cp313.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pywin32-311-py313h40c08fc_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pyzmq-27.1.0-py312hbb5da91_0.conda
-      - conda: git+https://github.com/zaynram/ramda-py?branch=master#5188bef596c0302aa6c4b77c92e4dad0c7481edc
+      - conda: git+https://github.com/zaynram/ramda-py?branch=master#627bc4a016032049828a53b646374a255637976c
       - conda: https://conda.anaconda.org/conda-forge/win-64/rapidfuzz-3.14.1-py313hfe59770_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/requests-2.32.5-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/rich-14.2.0-pyhcf101f3_0.conda
@@ -329,6 +333,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/comm-0.2.3-pyhe01879c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/confection-0.1.5-pyhecae5ae_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/coverage-7.11.0-py313hd650c13_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/cpython-3.13.9-py313hd8ed1ab_100.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/cymem-2.0.11-py313hfe59770_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/cython-blis-1.3.0-py313h8e081ca_0.conda
@@ -400,13 +405,14 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.19.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyh09c184e_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-cov-7.0.0-pyhcf101f3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.13.0-hf5aa216_101_cp313.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/python-dateutil-2.9.0.post0-pyhe01879c_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/python-gil-3.13.9-h4df99d1_100.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.13-8_cp313.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pywin32-311-py313h40c08fc_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pyzmq-27.1.0-py312hbb5da91_0.conda
-      - conda: git+https://github.com/zaynram/ramda-py?branch=master#5188bef596c0302aa6c4b77c92e4dad0c7481edc
+      - conda: git+https://github.com/zaynram/ramda-py?branch=master#627bc4a016032049828a53b646374a255637976c
       - conda: https://conda.anaconda.org/conda-forge/win-64/rapidfuzz-3.14.1-py313hfe59770_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/requests-2.32.5-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/rich-14.2.0-pyhcf101f3_0.conda
@@ -676,6 +682,22 @@ packages:
   - pkg:pypi/confection?source=hash-mapping
   size: 37405
   timestamp: 1740630763363
+- conda: https://conda.anaconda.org/conda-forge/win-64/coverage-7.11.0-py313hd650c13_0.conda
+  sha256: 807443799cbad8ee08d94ca68e463a779a1050336d49aab15ac95943774e0a61
+  md5: d167f8a55973119db523057314e526ec
+  depends:
+  - python >=3.13,<3.14.0a0
+  - python_abi 3.13.* *_cp313
+  - tomli
+  - ucrt >=10.0.20348.0
+  - vc >=14.3,<15
+  - vc14_runtime >=14.44.35208
+  license: Apache-2.0
+  license_family: APACHE
+  purls:
+  - pkg:pypi/coverage?source=hash-mapping
+  size: 411234
+  timestamp: 1760545090409
 - conda: https://conda.anaconda.org/conda-forge/noarch/cpython-3.13.9-py313hd8ed1ab_100.conda
   noarch: generic
   sha256: 108fa0c9d7e31bccf57e57543ce4ec3030075a105942ac6726d417364e832108
@@ -1668,6 +1690,21 @@ packages:
   - pkg:pypi/pytest?source=hash-mapping
   size: 276734
   timestamp: 1757011891753
+- conda: https://conda.anaconda.org/conda-forge/noarch/pytest-cov-7.0.0-pyhcf101f3_1.conda
+  sha256: d0f45586aad48ef604590188c33c83d76e4fc6370ac569ba0900906b24fd6a26
+  md5: 6891acad5e136cb62a8c2ed2679d6528
+  depends:
+  - coverage >=7.10.6
+  - pluggy >=1.2
+  - pytest >=7
+  - python >=3.10
+  - python
+  license: MIT
+  license_family: MIT
+  purls:
+  - pkg:pypi/pytest-cov?source=hash-mapping
+  size: 29016
+  timestamp: 1757612051022
 - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.13.0-hf5aa216_101_cp313.conda
   build_number: 101
   sha256: b8eba57bd86c7890b27e67b477b52b5bd547946c354f29b9dbbc70ad83f2863b
@@ -1764,9 +1801,9 @@ packages:
   - pkg:pypi/pyzmq?source=hash-mapping
   size: 185711
   timestamp: 1757387025899
-- conda: git+https://github.com/zaynram/ramda-py?branch=master#5188bef596c0302aa6c4b77c92e4dad0c7481edc
+- conda: git+https://github.com/zaynram/ramda-py?branch=master#627bc4a016032049828a53b646374a255637976c
   name: rampy
-  version: 0.0.23.alpha
+  version: 0.0.24.alpha
   build: pyh4616a5c_0
   subdir: noarch
   depends:

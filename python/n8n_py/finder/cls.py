@@ -1,6 +1,7 @@
 import re
 import unicodedata
 from dataclasses import dataclass, field
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Sequence, TypedDict
 
@@ -13,8 +14,20 @@ class IndexEntry(TypedDict):
     pathDisplay: str
 
 
+class FinderMatch(IndexEntry):
+    score: int
+    reason: str
+    matched_label: str | None
+
+
+class FinderResult(TypedDict):
+    query: str
+    normalized_query: str
+    matches: list[FinderMatch]
+
+
 @dataclass
-class FolderFinder(Runner):
+class FolderFinder(Runner[list[FinderResult]]):
     """Load dbx_index.json, build normalized index, and fuzzy-match queries to folder entries."""
 
     dbx_path: Path = field(init=False)
@@ -24,7 +37,7 @@ class FolderFinder(Runner):
     norm_map: dict[str, list[IndexEntry]] = field(init=False, default_factory=dict)
     choices: list[str] = field(init=False, default_factory=list)
 
-    def setup(self) -> None:
+    def setup(self):
         self.query = [str(x).strip() for x in self.input if x]
 
         # locate dbx_index.json managed by n8n
@@ -32,12 +45,12 @@ class FolderFinder(Runner):
         try:
             text = Path(self.dbx_path).read_text(encoding="utf-8")
             entries = js.array[js.object[str]].loads(text)
-        except Exception as exc:
+        except JSONDecodeError as exc:
             # if unreadable, record and bail gracefully
-            self.json["matches"] = None
+            self.json["results"] = []
             self.warnings.append(f"could not load dbx_index.json: {exc}")
             self.index = []
-            return
+            return self
 
         # Build index entries and normalized mapping
         for obj in entries:
@@ -70,6 +83,8 @@ class FolderFinder(Runner):
         # build choices list for fuzzy search (unique normalized strings)
         self.choices = [*self.norm_map.keys()]
 
+        return self
+
     def _normalize(self, s: str) -> str:
         # remove accents, lowercase, keep hyphens, collapse non-alnum to spaces
         s = str(s or "")
@@ -80,10 +95,10 @@ class FolderFinder(Runner):
         s = re.sub(r"\s+", " ", s).strip()
         return s
 
-    def run(self) -> None:
+    def run(self):
         if not self.index:
             # setup already recorded error
-            return
+            return self
 
         results = []
 
@@ -91,22 +106,31 @@ class FolderFinder(Runner):
             qnorm = self._normalize(q)
             # exact lookup
             exact = self.norm_map.get(qnorm)
-            matches = []
+            matches: list[FinderMatch] = []
             if exact:
                 for e in exact:
-                    matches.append({**e, "score": 100, "reason": "exact"})
+                    matches.append(
+                        FinderMatch(
+                            pathDisplay=e["pathDisplay"],
+                            score=100,
+                            reason="exact",
+                            matched_label=None,
+                        )
+                    )
             else:
                 # fuzzy search among normalized choices
                 fuzzy = process.extract(qnorm, self.choices, scorer=fuzz.token_set_ratio, limit=5)
                 for choice, score, _ in fuzzy:
                     entries = self.norm_map.get(choice, [])
                     for e in entries:
-                        matches.append({
-                            **e,
-                            "score": int(score),
-                            "reason": "fuzzy",
-                            "matched_label": choice,
-                        })
+                        matches.append(
+                            FinderMatch(
+                                pathDisplay=e["pathDisplay"],
+                                score=int(score),
+                                reason="fuzzy",
+                                matched_label=choice,
+                            )
+                        )
 
             # sort and dedupe by pathDisplay keeping highest score
             seen = {}
@@ -118,4 +142,6 @@ class FolderFinder(Runner):
             ranked = sorted(seen.values(), key=lambda x: x["score"], reverse=True)[:10]
             results.append({"query": q, "normalized_query": qnorm, "matches": ranked})
 
-        self.json["matches"] = results
+        self.json["results"] = results
+
+        return self
