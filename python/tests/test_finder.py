@@ -5,7 +5,7 @@ import functools
 import typing as ty
 
 import pytest
-from rampy import js, json, typed
+from rampy import js, json, test, typed
 
 from .shared import hook, path, spec, suite
 
@@ -25,9 +25,9 @@ def finderpatch(monkeypatch):
     return functools.partial(findermod.FolderFinder, testing=True)
 
 
-@suite(
+@test.suite(
     ["input_text", "index_items", "test_extension"],
-    simple_matching=spec(
+    simple_matching=test.spec(
         arguments=(
             ["finder", "John Smith"],
             ["/Clio/Smith, John/00001-Smith", "/Clio/Jones, Mary/00002-Jones"],
@@ -39,11 +39,14 @@ def finderpatch(monkeypatch):
             "len(results) == nargs",
         ],
         hooks=[
-            hook("before", ["nargs", "nitems"], ["len(vars['input_text'])", "len(vars['entries'])"]),
-            hook(lambda _, vars: print(vars["results"])),
+            test.hook(
+                test.on.pre,
+                providers=[lambda ctx: {"nargs": len(ctx["input_text"]), "nitems": len(ctx["entries"])}],
+            ),
+            test.hook(consumers=[lambda ctx, *_: print(ctx["results"])]),
         ],
     ),
-    fuzzy_matching=spec(
+    fuzzy_matching=test.spec(
         arguments=(
             ["finder", "Jon Smth"],
             [
@@ -58,19 +61,25 @@ def finderpatch(monkeypatch):
             "any(any('Smith' in x for x in (m['pathDisplay'], m.get('matched_label')) if x) for m in result['matches'])",
         ],
         hooks=[
-            hook("before", ["query", "result"], ["vars['input_text'][1]", "vars['results'][1]"]),
-            hook(lambda _, vars: {print(f"{vars['query']=}"), print(vars["result"])}),
+            test.hook(
+                test.on.pre,
+                providers=[lambda ctx: {"query": ctx["input_text"][1], "result": ctx["results"][1]}],
+            ),
+            test.hook(consumers=[lambda ctx, *_: print(f"{ctx['query']=}", ctx["result"], sep="\n")]),
         ],
     ),
-    dedupe_keep_highest=spec(
+    dedupe_keep_highest=test.spec(
         arguments=(
             ["finder", "John Smith"],
             ["/Clio/Smith, John/00001-Smith", "/Clio/Smith, John/00001-Smith"],
         ),
         predicates=["typed(list)(matches)", "len(matches) == 1"],
         hooks=[
-            hook("before", ["matches"], ["vars['results'][1]['matches']"]),
-            hook(lambda _, vars: print(vars["matches"])),
+            test.hook(
+                test.on.pre,
+                providers=[lambda ctx: {"matches": ctx["results"][1]["matches"]}],
+            ),
+            test.hook(consumers=[lambda ctx, *_: print(ctx["matches"])]),
         ],
     ),
 )
