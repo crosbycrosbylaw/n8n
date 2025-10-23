@@ -19,6 +19,8 @@ service = ["service"]
   [tasks.push]
   args = [{ arg = "MESSAGE", default = "auto" }]
   cmd  = "git add --all && git commit -m '{{ MESSAGE }}' && git push"
+  [tasks.sync-rampy]
+  cmd = "cd ../ramda-py && pixi run push && cd ../n8n && pixi update rampy && pixi i"
 
 
 [dependencies]
@@ -28,11 +30,11 @@ ipykernel  = "*"
 ipywidgets = "*"
 nameparser = ">=1.0.5,<2"
 pytest     = ">=8.4.2,<9"
+pytest-cov = ">=7.0.0,<8"
 python     = "==3.13"
 rampy      = { git = "https://github.com/zaynram/ramda-py", branch = "master" }
 rapidfuzz  = ">=3.14.1,<4"
 spacy      = ">=3.8.7,<4"
-pytest-cov = ">=7.0.0,<8"
 
 [pypi-dependencies]
 n8n-py = { path = "python", editable = true }

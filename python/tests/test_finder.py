@@ -12,7 +12,7 @@ from .shared import hook, path, spec, suite
 if ty.TYPE_CHECKING:
     from .shared import TestExtensionFunc
 
-SVC = path("service")
+SVC = test.path("service")
 DBX = SVC / "dbx_index.json"
 
 
@@ -26,7 +26,7 @@ def finderpatch(monkeypatch):
 
 
 @test.suite(
-    ["input_text", "index_items", "test_extension"],
+    ["input_text", "index_items"],
     simple_matching=test.spec(
         arguments=(
             ["finder", "John Smith"],
@@ -41,9 +41,9 @@ def finderpatch(monkeypatch):
         hooks=[
             test.hook(
                 test.on.pre,
-                providers=[lambda ctx: {"nargs": len(ctx["input_text"]), "nitems": len(ctx["entries"])}],
+                providers=[lambda: test.ctx.add(nargs=len(test.ctx.input_text), nitems=len(test.ctx.entries))],
             ),
-            test.hook(consumers=[lambda ctx, *_: print(ctx["results"])]),
+            test.hook(consumers=[lambda *errs: test.ctx.print(include={"results"})]),
         ],
     ),
     fuzzy_matching=test.spec(
@@ -63,9 +63,9 @@ def finderpatch(monkeypatch):
         hooks=[
             test.hook(
                 test.on.pre,
-                providers=[lambda ctx: {"query": ctx["input_text"][1], "result": ctx["results"][1]}],
+                providers=[lambda: test.ctx.add(query=test.ctx.input_text[1], result=test.ctx.results[1])],
             ),
-            test.hook(consumers=[lambda ctx, *_: print(f"{ctx['query']=}", ctx["result"], sep="\n")]),
+            test.hook(consumers=[lambda *errs: test.ctx.print(include={"query", "result"})]),
         ],
     ),
     dedupe_keep_highest=test.spec(
@@ -77,16 +77,16 @@ def finderpatch(monkeypatch):
         hooks=[
             test.hook(
                 test.on.pre,
-                providers=[lambda ctx: {"matches": ctx["results"][1]["matches"]}],
+                providers=[lambda: test.ctx.add(matches=test.ctx.results[1]["matches"])],
             ),
-            test.hook(consumers=[lambda ctx, *_: print(ctx["matches"])]),
+            test.hook(consumers=[lambda *errs: test.ctx.print(include={"matches"})]),
         ],
     ),
 )
 def test_finder_paramaterized(
+    __extension,
     input_text: list[str],
     index_items: list[str],
-    test_extension: TestExtensionFunc,
     finderpatch,
 ):
     entries = js.array(index_items).map(lambda pd: json(pathDisplay=pd))
@@ -115,7 +115,7 @@ def test_finder_paramaterized(
     results = f.json.get("results")
     assert results is not None
 
-    test_extension(locals())
+    __extension({**locals(), "typed": typed})
 
     DBX.unlink()
     SVC.rmdir()
