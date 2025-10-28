@@ -2,18 +2,19 @@ import sys
 from dataclasses import InitVar, dataclass, field
 from typing import Self
 
+import rampy
 from rampy import console, js
 
 from .output import output
 
 
 @dataclass(match_args=False)
-class Runner[T: js.serializable[...]]:
+class Runner[T: js.serializable]:
     """A template class for creating python script utilities for use in n8n workflows. Standardizes input and serializes outputs."""
 
     input: list[str] = field(default_factory=lambda: sys.argv[1:])
 
-    json: js.object[T] = field(init=False, default_factory=js.object[T])
+    json: rampy.json[str, T] = field(init=False, default_factory=rampy.json[str, T])
     logs: list[str] = field(init=False, default_factory=list[str])
     warnings: list[str] = field(init=False, default_factory=list[str])
 

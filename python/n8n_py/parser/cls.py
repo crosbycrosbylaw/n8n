@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 
 import requests
 from common import TMP, HTMLParser, Runner
-from rampy import js
+from rampy import json
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
@@ -91,8 +91,8 @@ class ResponseUtility:
 
             return str([x for x in tags if x["id"] == id_str][0]["value"])
 
-        headers = js.object([("Content-Type", "application/x-www-form-urlencoded")])
-        body = js.object(
+        headers = json([("Content-Type", "application/x-www-form-urlencoded")])
+        body = json(
             emailAddress=email,
             __VIEWSTATE=value_for("viewstate"),
             __VIEWSTATEGENERATOR=value_for("viewstategenerator"),

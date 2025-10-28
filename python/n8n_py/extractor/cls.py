@@ -109,7 +109,7 @@ class NameExtractor(Runner[list[ExtractionResult]]):
 
         # permissive v/versus pattern; capture surrounding context but avoid long greedy matches
         vs_rx = re.compile(
-            r"(?P<left>[^\n<>;]{1,300}?)\s*(?P<sep>v\.?|vs\.?|\bvs\b|\bv\b)\s*(?P<right>[^\n<>;]{1,300}?)", flags=re.I
+            r"(?P<left>[^\n<>;]{1,300})\s*(?P<sep>v\.?|vs\.?|\bvs\b|\bv\b)\s*(?P<right>[^\n<>;]{1,300})", flags=re.I
         )
         case_hint_rx = re.compile(
             r"(?:case style|in the matter of|envelope number|case number|case name)[:\s-]*([^\n]{1,1000})", flags=re.I

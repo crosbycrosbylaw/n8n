@@ -3,8 +3,7 @@ from pathlib import Path
 
 import n8n_py.parser.cls as parsermod
 from rampy import typed
-
-from . import path
+from rampy.test import path
 
 
 class FakeResponse:

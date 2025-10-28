@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import sys
 
-from rampy import console
-from rampy.js import object, serializable
+from rampy import console, js, json
+
+serializable = js.serializable
 
 console.remove(0)
 console.level("RETURN", 100)
@@ -21,6 +22,6 @@ console.add(
 console.level("ERROR", icon=" ")
 
 
-def output[T: serializable](json: object[T], *, logs: list[str], warnings: list[str]):
+def output[T: serializable](json: json[str, T], *, logs: list[str], warnings: list[str]):
     console.error("\n".join(warnings))
     console.log("RETURN", "\n".join(logs), **json)

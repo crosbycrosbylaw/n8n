@@ -1,10 +1,10 @@
 import re
 import unicodedata
 from dataclasses import dataclass, field
-from json import JSONDecodeError
 from pathlib import Path
 from typing import Sequence, TypedDict
 
+import rampy
 from common import Runner
 from rampy import js, root
 from rapidfuzz import fuzz, process
@@ -42,16 +42,10 @@ class FolderFinder(Runner[list[FinderResult]]):
 
         # locate dbx_index.json managed by n8n
         self.dbx_path = root() / "service" / "dbx_index.json"
-        try:
-            text = Path(self.dbx_path).read_text(encoding="utf-8")
-            entries = js.array[js.object[str]].loads(text)
-        except JSONDecodeError as exc:
-            # if unreadable, record and bail gracefully
-            self.json["results"] = []
-            self.warnings.append(f"could not load dbx_index.json: {exc}")
-            self.index = []
-            return self
-
+        text = Path(self.dbx_path).read_text().replace("'", '"')
+        print(rf"{text=}")
+        entries = js.array[rampy.json[str, str]].loads(text)
+        print(rf"{entries=}")
         # Build index entries and normalized mapping
         for obj in entries:
             path = obj.get("pathDisplay")

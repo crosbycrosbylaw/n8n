@@ -2,17 +2,12 @@
 from __future__ import annotations
 
 import functools
-import typing as ty
 
 import pytest
-from rampy import js, json, test, typed
+from n8n_py.finder.cls import FinderResult, FolderFinder
+from rampy import js, json, test, typed, typeis
 
-from .shared import hook, path, spec, suite
-
-if ty.TYPE_CHECKING:
-    from .shared import TestExtensionFunc
-
-SVC = test.path("service")
+SVC = test.path("service", override_base="d:/temp")
 DBX = SVC / "dbx_index.json"
 
 
@@ -21,33 +16,58 @@ def finderpatch(monkeypatch):
     import n8n_py.finder.cls as findermod
 
     monkeypatch.setattr(findermod, "root", lambda: SVC.parent)
-
     return functools.partial(findermod.FolderFinder, testing=True)
+
+
+def get_params():
+    return test.ctx.args(tuple[list[str], list[str]])
+
+
+def get_results():
+    return test.ctx.get("results", expect=list[FinderResult])
+
+
+def ext_proper_length():
+    f = test.ctx.get("f", expect=FolderFinder)
+    results = get_results()
+    input_text = get_params()[0]
+
+    nargs = len(input_text)
+    nitems = len(test.ctx.entries)
+
+    assert len(f.index) == nitems
+    assert len(f.choices) == (nargs * nitems)
+    assert len(results) == nargs
+
+
+def ext_match_found():
+    query = get_params()[0][1]
+    result = get_results()[1]
+
+    assert query == result["query"]
+    assert any(any("Smith" in x for x in (m["pathDisplay"], m.get("matched_label")) if x) for m in result["matches"])
+
+
+def ext_unique_matches():
+    matches = test.ctx.results[1]["matches"]
+    assert typeis(matches, list)
+    assert len(matches) == 1
 
 
 @test.suite(
     ["input_text", "index_items"],
     simple_matching=test.spec(
-        arguments=(
+        (
             ["finder", "John Smith"],
             ["/Clio/Smith, John/00001-Smith", "/Clio/Jones, Mary/00002-Jones"],
         ),
-        predicates=[
-            "len(f.index) == nitems",
-            "len(f.choices) == (nargs * nitems)",
-            "typed(list)(results)",
-            "len(results) == nargs",
-        ],
         hooks=[
-            test.hook(
-                test.on.pre,
-                providers=[lambda: test.ctx.add(nargs=len(test.ctx.input_text), nitems=len(test.ctx.entries))],
-            ),
-            test.hook(consumers=[lambda *errs: test.ctx.print(include={"results"})]),
+            test.hook(extensions=[ext_proper_length]),
+            test.hook(handlers=[lambda *_: test.ctx.print(include={"results"})]),
         ],
     ),
     fuzzy_matching=test.spec(
-        arguments=(
+        (
             ["finder", "Jon Smth"],
             [
                 "/Clio/Smith, John/00001-Smith",
@@ -55,31 +75,19 @@ def finderpatch(monkeypatch):
                 "/Clio/ONeil, Patrick/00003-ONeil",
             ],
         ),
-        predicates=[
-            "query == result['query']",
-            "result['matches']",
-            "any(any('Smith' in x for x in (m['pathDisplay'], m.get('matched_label')) if x) for m in result['matches'])",
-        ],
         hooks=[
-            test.hook(
-                test.on.pre,
-                providers=[lambda: test.ctx.add(query=test.ctx.input_text[1], result=test.ctx.results[1])],
-            ),
-            test.hook(consumers=[lambda *errs: test.ctx.print(include={"query", "result"})]),
+            test.hook(extensions=[ext_match_found]),
+            test.hook(handlers=[lambda *_: test.ctx.print(include={"query", "result"})]),
         ],
     ),
     dedupe_keep_highest=test.spec(
-        arguments=(
+        (
             ["finder", "John Smith"],
             ["/Clio/Smith, John/00001-Smith", "/Clio/Smith, John/00001-Smith"],
         ),
-        predicates=["typed(list)(matches)", "len(matches) == 1"],
         hooks=[
-            test.hook(
-                test.on.pre,
-                providers=[lambda: test.ctx.add(matches=test.ctx.results[1]["matches"])],
-            ),
-            test.hook(consumers=[lambda *errs: test.ctx.print(include={"matches"})]),
+            test.hook(extensions=[ext_unique_matches]),
+            test.hook(handlers=[lambda *_: test.ctx.print(include={"matches"})]),
         ],
     ),
 )
@@ -89,23 +97,23 @@ def test_finder_paramaterized(
     index_items: list[str],
     finderpatch,
 ):
-    entries = js.array(index_items).map(lambda pd: json(pathDisplay=pd))
+    entries = js.array(json(pathDisplay=path) for path in index_items)
 
     SVC.mkdir()
-    DBX.write_text(str(entries))
+    DBX.write_text(repr(entries))
 
     f = finderpatch(input_text).setup()
 
     assert f.dbx_path.as_posix() == DBX.as_posix()
 
     try:
-        assert typed(list)(f.index)
+        assert typeis(f.index, list)
     except AssertionError:
         print(f"{f.index=!s}")
         raise
 
     try:
-        assert typed(list[str])(f.choices)
+        assert typeis(f.choices, list[str])
     except AssertionError:
         print(f"{f.choices=!s}")
         raise
@@ -113,9 +121,9 @@ def test_finder_paramaterized(
     f.run()
 
     results = f.json.get("results")
-    assert results is not None
+    assert isinstance(results, list)
 
-    __extension({**locals(), "typed": typed})
+    __extension(locals())
 
     DBX.unlink()
     SVC.rmdir()

@@ -87,5 +87,6 @@ def test_extractor_normalization_accents_and_hyphens():
             assert typed(list[dict])(candidates)
             assert any(s in c.get("normalized", "") for c in candidates)
         except AssertionError:
+            print(f"{first['parties']=!s}")
             print(f"{candidates=!s}")
             raise

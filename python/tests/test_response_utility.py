@@ -4,9 +4,8 @@ from pathlib import Path
 from typing import cast
 
 import n8n_py.parser.cls as parsermod
+from rampy.test import path
 from requests import Response
-
-from . import path
 
 
 class FakeResponse:
