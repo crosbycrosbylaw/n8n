@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 
 import requests
 from common import TMP, HTMLParser, Runner
-from rampy import json
+from rampy import debug, json
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
@@ -65,6 +65,9 @@ class ResponseUtility:
 
         name = self._get_attachment_name()
         path = TMP / name
+
+        if debug():
+            print(str(path))
 
         out = [path.as_posix(), None]
 

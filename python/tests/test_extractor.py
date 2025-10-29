@@ -1,92 +1,93 @@
-import n8n_py.extractor.cls as exmod
-from rampy import typed
+from __future__ import annotations
+
+from n8n_py.extractor import main, result
+from rampy import test, typeis
 
 
-def test_extractor_normalizes_and_parses():
-    input_text = ["Smith v. Jones"]
-    extractor = exmod.NameExtractor(input_text, testing=True).setup().run()
-
-    assert "results" in extractor.json
-
-    results = extractor.json["results"]
-    assert typed(list)(results)
-
-    first = results[0]
-
-    try:
-        assert typed(dict)(first)
-        assert first["found_names"]
-    except AssertionError:
-        print(f"{first=!s}")
-        raise
-
-    parties = first["parties"]
-
-    try:
-        candidates = parties[0]["candidates"]
-        party_type = parties[0]["type"]
-        assert typed(list[dict])(candidates)
-        assert any("smith" in c.get("normalized", "") for c in candidates) or party_type == "company"
-        assert len(parties) == 2
-    except AssertionError:
-        print(f"{parties=!s}")
-        raise
+class namespace(test.ns[list[str]]):
+    results: list[result]
 
 
-def test_extractor_handles_v_vs_and_company():
-    cases = [
-        "Smith v Jones",
-        "Johnson vs. Brown",
-        "ACME CORPORATION v. Doe",
-    ]
-
-    extractor = exmod.NameExtractor(cases, testing=True).setup().run()
-
-    assert "results" in extractor.json
-
-    results = extractor.json["results"]
-    assert typed(list)(results)
-    assert len(results) == 3
-
-    # first two should be people parties
-    for res in results[:2]:
-        assert res["found_names"]
-
-        left, right = res["parties"]
-        assert left["type"] == "person"
-        assert right["type"] == "person"
-
-    # third should detect company on left
-    third = results[2]
-    assert third["found_names"]
-
-    left, right = third["parties"]
-    assert left["type"] == "company"
-    assert right["type"] == "person"
+specs = {}
 
 
-# TODO !!
-def test_extractor_normalization_accents_and_hyphens():
-    inputs = ["José O'Neill v. Mary-Anne"]
-    extractor = exmod.NameExtractor(inputs, testing=True).setup().run()
+def ext_normalizes_and_parses():
+    ns = namespace.get()
+    first = ns.results[0]
 
-    assert "results" in extractor.json
-    results = extractor.json["results"]
-    assert typed(list)(results)
-    assert len(results) >= 1
-
-    first = results[0]
-    assert first
+    assert typeis(first, dict)
     assert first["found_names"]
 
-    for p, s in zip(first["parties"], ("o neill", "mary-anne")):
-        if p["type"] == "company":
-            continue
-        candidates = p["candidates"]
-        try:
-            assert typed(list[dict])(candidates)
-            assert any(s in c.get("normalized", "") for c in candidates)
-        except AssertionError:
-            print(f"{first['parties']=!s}")
-            print(f"{candidates=!s}")
-            raise
+    parties = first["parties"]
+    assert len(parties) == 2
+
+    p1 = parties[0]
+    assert typeis(p1["candidates"], list[dict], strict=True)
+    if p1["type"] != "company":
+        assert any("smith" in c.get("normalized", "") for c in p1["candidates"])
+
+
+specs["normalizes_parses"] = test.spec((["Smith v. Jones"],), [test.hook(ext_normalizes_and_parses)])
+
+
+def ext_handles_v_vs_and_company():
+    ns = namespace.get()
+
+    assert len(ns.results) == 3
+
+    for res in ns.results[:2]:
+        assert res["found_names"]
+        assert all(p["type"] == "person" for p in res["parties"])
+
+    with_company = ns.results[2]
+    assert with_company["found_names"]
+
+    p1, p2 = with_company["parties"]
+    assert p1["type"] == "company"
+    assert p2["type"] == "person"
+
+
+specs["v_vs_and_company"] = test.spec(
+    (["Smith v Jones", "Johnson vs. Brown", "ACME CORPORATION v. Doe"],),
+    [test.hook(ext_handles_v_vs_and_company)],
+)
+
+
+def ext_normalization_accents_hyphens():
+    ns = namespace.get()
+    first = ns.results[0]
+
+    assert first["found_names"]
+    assert all(
+        any(expected in x.get("normalized", "") for x in candidates if typeis(x, dict))
+        for expected, candidates in zip(
+            ["o neill", "mary-anne"],
+            [p["candidates"] for p in first["parties"] if p["type"] != "company"],
+            strict=True,
+        )
+    )
+
+
+specs["accents_and_hyphens"] = test.spec(
+    (["José O'Neill v. Mary-Anne"],),
+    [
+        test.hook(ext_normalization_accents_hyphens),
+        test.hook(lambda *_: print(f"{test.ctx.parties=!s}\n{test.ctx.candidates=!s}"), event=test.on.error),
+    ],
+)
+
+
+@test.suite(["input_text"], **specs)
+def test_parameterized(__extension, input_text: list[str]):
+    extractor = main(input_text, testing=True)
+
+    extractor.setup()
+    assert len(extractor.normalized) > 0
+
+    extractor.run()
+
+    results = extractor.json.get("results", [])
+    typeis(results, list[result], strict=True)
+    assert len(results) > 0
+
+    __extension(locals())
