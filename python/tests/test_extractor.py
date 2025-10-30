@@ -27,7 +27,7 @@ def ext_normalizes_and_parses():
         assert any("smith" in c.get("normalized", "") for c in p1["candidates"])
 
 
-specs["normalizes_parses"] = test.spec((["Smith v. Jones"],), [test.hook(ext_normalizes_and_parses)])
+specs["normalizes_parses"] = test.spec((["Smith v. Jones"],), [ext_normalizes_and_parses])
 
 
 def ext_handles_v_vs_and_company():
@@ -49,7 +49,7 @@ def ext_handles_v_vs_and_company():
 
 specs["v_vs_and_company"] = test.spec(
     (["Smith v Jones", "Johnson vs. Brown", "ACME CORPORATION v. Doe"],),
-    [test.hook(ext_handles_v_vs_and_company)],
+    [ext_handles_v_vs_and_company],
 )
 
 
@@ -71,8 +71,8 @@ def ext_normalization_accents_hyphens():
 specs["accents_and_hyphens"] = test.spec(
     (["José O'Neill v. Mary-Anne"],),
     [
-        test.hook(ext_normalization_accents_hyphens),
-        test.hook(lambda *_: print(f"{test.ctx.parties=!s}\n{test.ctx.candidates=!s}"), event=test.on.error),
+        ext_normalization_accents_hyphens,
+        lambda _: print(f"{test.ctx.parties=!s}\n{test.ctx.candidates=!s}"),
     ],
 )
 

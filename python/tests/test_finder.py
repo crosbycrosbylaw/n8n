@@ -5,7 +5,7 @@ import functools
 from typing import NamedTuple
 
 import pytest
-from n8n_py.finder.cls import FinderResult, FolderFinder
+from n8n_py.finder.cls import FinderResult, FolderFinder, IndexEntry
 from rampy import js, json, test, typeis
 
 tmp = test.path("service")
@@ -23,7 +23,7 @@ specs = {}
 
 
 class namespace(test.ns[list[str], list[str]]):
-    f: FolderFinder
+    finder: FolderFinder
     results: list[FinderResult]
     entries: js.array[json[str, str]]
 
@@ -33,14 +33,14 @@ def ext_proper_length():
 
     nargs, nitems = len(ns.args[0]), len(ns.entries)
 
-    assert len(ns.f.index) == nitems
-    assert len(ns.f.choices) == (nargs * nitems)
+    assert len(ns.finder.index) == nitems
+    assert len(ns.finder.choices) == (nargs * nitems)
     assert len(ns.results) == nargs
 
 
 specs["simple_matching"] = test.spec(
     (["finder", "John Smith"], ["/Clio/Smith, John/00001-Smith", "/Clio/Jones, Mary/00002-Jones"]),
-    [test.hook(ext_proper_length), test.hook(lambda *_: test.ctx.print(include={"results"}), event=test.on.error)],
+    [ext_proper_length, lambda *_: test.ctx.print(include={"results"})],
 )
 
 
@@ -71,10 +71,7 @@ specs["fuzzy_matching"] = test.spec(
             "/Clio/ONeil, Patrick/00003-ONeil",
         ],
     ),
-    [
-        test.hook(ext_match_found),
-        test.hook(lambda *_: test.ctx.print(include={"query", "result"}), event=test.on.error),
-    ],
+    [ext_match_found, lambda _: test.ctx.print(include={"query", "result"})],
 )
 
 
@@ -89,12 +86,12 @@ def ext_unique_matches():
 
 specs["dedupe_keep_highest"] = test.spec(
     (["finder", "John Smith"], ["/Clio/Smith, John/00001-Smith", "/Clio/Smith, John/00001-Smith"]),
-    [test.hook(ext_unique_matches), test.hook(lambda *_: test.ctx.print(include={"matches"}), event=test.on.error)],
+    [ext_unique_matches, lambda _: test.ctx.print(include={"matches"})],
 )
 
 
 @test.suite(["input_text", "index_items"], **specs)
-def test_paramaterized(
+def test_finder_paramaterized(
     __extension,
     input_text: list[str],
     index_items: list[str],
@@ -107,26 +104,16 @@ def test_paramaterized(
     dbx_index = tmp / "dbx_index.json"
     dbx_index.write_text(repr(entries))
 
-    f = finderpatch(input_text).setup()
+    finder = finderpatch(input_text).setup()
 
-    assert f.dbx_path.as_posix() == dbx_index.as_posix()
+    assert finder.dbx_path.as_posix() == dbx_index.as_posix()
+    assert typeis(finder.index, list[IndexEntry])
+    assert typeis(finder.choices, list[str])
 
-    try:
-        assert typeis(f.index, list)
-    except AssertionError:
-        print(f"{f.index=!s}")
-        raise
+    finder.run()
+    results = finder.json.get("results")
 
-    try:
-        assert typeis(f.choices, list[str])
-    except AssertionError:
-        print(f"{f.choices=!s}")
-        raise
-
-    f.run()
-
-    results = f.json.get("results")
-    assert isinstance(results, list)
+    assert typeis(results, list[FinderResult])
 
     __extension(locals())
 
