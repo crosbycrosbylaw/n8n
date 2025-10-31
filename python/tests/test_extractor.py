@@ -8,11 +8,13 @@ class namespace(test.ns[list[str]]):
     results: list[result]
 
 
+ctx = test.context.bind(namespace)
+
 specs = {}
 
 
 def ext_normalizes_and_parses():
-    ns = namespace.get()
+    ns = ctx.get()
     first = ns.results[0]
 
     assert typeis(first, dict)
@@ -27,11 +29,11 @@ def ext_normalizes_and_parses():
         assert any("smith" in c.get("normalized", "") for c in p1["candidates"])
 
 
-specs["normalizes_parses"] = test.spec((["Smith v. Jones"],), [ext_normalizes_and_parses])
+specs["normalizes_parses"] = test.case((["Smith v. Jones"],), [ext_normalizes_and_parses])
 
 
 def ext_handles_v_vs_and_company():
-    ns = namespace.get()
+    ns = ctx.get()
 
     assert len(ns.results) == 3
 
@@ -47,14 +49,14 @@ def ext_handles_v_vs_and_company():
     assert p2["type"] == "person"
 
 
-specs["v_vs_and_company"] = test.spec(
+specs["v_vs_and_company"] = test.case(
     (["Smith v Jones", "Johnson vs. Brown", "ACME CORPORATION v. Doe"],),
     [ext_handles_v_vs_and_company],
 )
 
 
 def ext_normalization_accents_hyphens():
-    ns = namespace.get()
+    ns = ctx.get()
     first = ns.results[0]
 
     assert first["found_names"]
@@ -68,17 +70,14 @@ def ext_normalization_accents_hyphens():
     )
 
 
-specs["accents_and_hyphens"] = test.spec(
+specs["accents_and_hyphens"] = test.case(
     (["José O'Neill v. Mary-Anne"],),
-    [
-        ext_normalization_accents_hyphens,
-        lambda _: print(f"{test.ctx.parties=!s}\n{test.ctx.candidates=!s}"),
-    ],
+    [ext_normalization_accents_hyphens],
 )
 
 
 @test.suite(["input_text"], **specs)
-def test_parameterized(__extension, input_text: list[str]):
+def test_parameterized(input_text: list[str]):
     extractor = main(input_text, testing=True)
 
     extractor.setup()
@@ -90,4 +89,4 @@ def test_parameterized(__extension, input_text: list[str]):
     typeis(results, list[result], strict=True)
     assert len(results) > 0
 
-    __extension(locals())
+    ctx(**locals())

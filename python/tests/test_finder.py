@@ -2,20 +2,18 @@
 from __future__ import annotations
 
 import functools
-from typing import NamedTuple
 
 import pytest
 from n8n_py.finder.cls import FinderResult, FolderFinder, IndexEntry
 from rampy import js, json, test, typeis
-
-tmp = test.path("service")
 
 
 @pytest.fixture
 def finderpatch(monkeypatch):
     import n8n_py.finder.cls as findermod
 
-    monkeypatch.setattr(findermod, "root", lambda: tmp.parent)
+    with test.path("service") as path:
+        monkeypatch.setattr(findermod, "root", lambda: path.parent)
     return functools.partial(findermod.FolderFinder, testing=True)
 
 
@@ -28,8 +26,11 @@ class namespace(test.ns[list[str], list[str]]):
     entries: js.array[json[str, str]]
 
 
+ctx = test.context.bind(namespace)
+
+
 def ext_proper_length():
-    ns = namespace.get()
+    ns = ctx.get()
 
     nargs, nitems = len(ns.args[0]), len(ns.entries)
 
@@ -38,14 +39,14 @@ def ext_proper_length():
     assert len(ns.results) == nargs
 
 
-specs["simple_matching"] = test.spec(
+specs["simple_matching"] = test.case(
     (["finder", "John Smith"], ["/Clio/Smith, John/00001-Smith", "/Clio/Jones, Mary/00002-Jones"]),
-    [ext_proper_length, lambda *_: test.ctx.print(include={"results"})],
+    [ext_proper_length, lambda *_: ctx.print(include={"results"})],
 )
 
 
 def ext_match_found():
-    ns = namespace.get()
+    ns = ctx.get()
 
     query = ns.args[0][1]
     result = ns.results[1]
@@ -62,7 +63,7 @@ def ext_match_found():
                 break
 
 
-specs["fuzzy_matching"] = test.spec(
+specs["fuzzy_matching"] = test.case(
     (
         ["finder", "Jon Smth"],
         [
@@ -71,12 +72,12 @@ specs["fuzzy_matching"] = test.spec(
             "/Clio/ONeil, Patrick/00003-ONeil",
         ],
     ),
-    [ext_match_found, lambda _: test.ctx.print(include={"query", "result"})],
+    [ext_match_found, lambda _: ctx.print(include={"query", "result"})],
 )
 
 
 def ext_unique_matches():
-    ns = namespace.get()
+    ns = ctx.get()
 
     matches = ns.results[1]["matches"]
 
@@ -84,37 +85,35 @@ def ext_unique_matches():
     assert len(matches) == 1
 
 
-specs["dedupe_keep_highest"] = test.spec(
+specs["dedupe_keep_highest"] = test.case(
     (["finder", "John Smith"], ["/Clio/Smith, John/00001-Smith", "/Clio/Smith, John/00001-Smith"]),
-    [ext_unique_matches, lambda _: test.ctx.print(include={"matches"})],
+    [ext_unique_matches, lambda _: ctx.print(include={"matches"})],
 )
 
 
 @test.suite(["input_text", "index_items"], **specs)
 def test_finder_paramaterized(
-    __extension,
     input_text: list[str],
     index_items: list[str],
     finderpatch,
 ):
     entries = js.array(json(pathDisplay=path) for path in index_items)
 
-    tmp.mkdir()
+    with test.path("service", mkdir=True) as tmp:
+        tmp.mkdir()
 
-    dbx_index = tmp / "dbx_index.json"
-    dbx_index.write_text(repr(entries))
+        dbx_index = tmp / "dbx_index.json"
+        dbx_index.write_text(repr(entries))
 
-    finder = finderpatch(input_text).setup()
+        finder = finderpatch(input_text).setup()
 
-    assert finder.dbx_path.as_posix() == dbx_index.as_posix()
-    assert typeis(finder.index, list[IndexEntry])
-    assert typeis(finder.choices, list[str])
+        assert finder.dbx_path.as_posix() == dbx_index.as_posix()
+        assert typeis(finder.index, list[IndexEntry])
+        assert typeis(finder.choices, list[str])
 
-    finder.run()
-    results = finder.json.get("results")
+        finder.run()
+        results = finder.json.get("results")
 
-    assert typeis(results, list[FinderResult])
+        assert typeis(results, list[FinderResult])
 
-    __extension(locals())
-
-    tmp.clean()
+        ctx(**locals())
