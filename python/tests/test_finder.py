@@ -12,9 +12,15 @@ from rampy import js, json, test, typeis
 def finderpatch(monkeypatch):
     import n8n_py.finder.cls as findermod
 
-    with test.path("service") as path:
-        monkeypatch.setattr(findermod, "root", lambda: path.parent)
+    with test.path() as tmp_root:
+        monkeypatch.setattr(findermod, "root", lambda: tmp_root)
     return functools.partial(findermod.FolderFinder, testing=True)
+
+
+@pytest.fixture()
+def dbx_index():
+    with test.path("service", mkdir=True) as tmp:
+        yield tmp / "dbx_index.json"
 
 
 specs = {}
@@ -26,7 +32,7 @@ class namespace(test.ns[list[str], list[str]]):
     entries: js.array[json[str, str]]
 
 
-ctx = test.context.bind(namespace)
+ctx, cases = test.context.bind(namespace)
 
 
 def ext_proper_length():
@@ -91,29 +97,21 @@ specs["dedupe_keep_highest"] = test.case(
 )
 
 
-@test.suite(["input_text", "index_items"], **specs)
-def test_finder_paramaterized(
-    input_text: list[str],
-    index_items: list[str],
-    finderpatch,
-):
+@test.suite(cases, **specs)
+def test_finder_paramaterized(input_text: list[str], index_items: list[str], finderpatch, dbx_index):
     entries = js.array(json(pathDisplay=path) for path in index_items)
 
-    with test.path("service", mkdir=True) as tmp:
-        tmp.mkdir()
+    dbx_index.write_text(repr(entries))
 
-        dbx_index = tmp / "dbx_index.json"
-        dbx_index.write_text(repr(entries))
+    finder = finderpatch(input_text).setup()
 
-        finder = finderpatch(input_text).setup()
+    assert finder.dbx_path.as_posix() == dbx_index.as_posix()
+    assert typeis(finder.index, list[IndexEntry])
+    assert typeis(finder.choices, list[str])
 
-        assert finder.dbx_path.as_posix() == dbx_index.as_posix()
-        assert typeis(finder.index, list[IndexEntry])
-        assert typeis(finder.choices, list[str])
+    finder.run()
+    results = finder.json.get("results")
 
-        finder.run()
-        results = finder.json.get("results")
+    assert typeis(results, list[FinderResult])
 
-        assert typeis(results, list[FinderResult])
-
-        ctx(**locals())
+    ctx(**locals())

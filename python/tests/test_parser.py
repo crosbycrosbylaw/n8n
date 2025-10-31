@@ -39,13 +39,10 @@ with test.path("parser", mkdir=True) as tmp:
             p: Path
             warning: str | None
 
-    ctx = test.context.bind(namespace.parser)
-
-    b = b""
-    specs = {}
+    env1 = test.context.bind(namespace.parser)
 
     def ext_saves_pdf():
-        ns = ctx.get()
+        ns = env1.ctx.get()
 
         assert (paths := ns.parser.json.get("paths"))
         assert typeis(paths, list[str], strict=True)
@@ -57,25 +54,23 @@ with test.path("parser", mkdir=True) as tmp:
         assert p.read_bytes() == file.read_bytes() == b
 
     b = b"%PDF-1.4 binarycontent"
-    specs["saves_pdf"] = test.case(
+    env1.reg["saves_pdf"] = test.case(
         (['<html><body><a href="http://example/doc1">Download Document</a></body></html>'],),
         [
             ext_saves_pdf,
-            lambda *_: print(f"args={ctx.get().args}\nactual_bytes={file.read_bytes()}"),
+            lambda *_: print(f"args={env1.ctx.get().args}\nactual_bytes={file.read_bytes()}"),
         ],
     )
 
-    @test.suite(["input_text"], **specs)
+    @test.suite(env1)
     def test_parser_parameterized(input_text: list[str], parserpatch):
         with test.path("parser", mkdir=True):
             parser = parserpatch(input_text)
-            ctx(**locals())
+            env1.ctx(**locals())
 
     # -- Response Utility --
 
-    specs.clear()
-
-    ctx = test.context.bind(namespace.resputil)
+    env2 = test.context.bind(namespace.resputil)
 
     @pytest.fixture
     def rupatch(monkeypatch):
@@ -85,7 +80,7 @@ with test.path("parser", mkdir=True) as tmp:
         return parsermod.ResponseUtility
 
     def ext_size_mismatch_warning():
-        ns = ctx.get()
+        ns = env2.ctx.get()
         pdf_bytes = ns.args[0]
 
         assert ns.p.exists()
@@ -93,20 +88,20 @@ with test.path("parser", mkdir=True) as tmp:
         assert ns.warning and "differs" in ns.warning
 
     b = b"ABC"
-    specs["size_warning"] = test.case(
+    env2.reg["size_warning"] = test.case(
         (b, {"Content-Type": "application/pdf", "Content-Length": str(len(b) + 2)}),
         [(ext_size_mismatch_warning)],
     )
 
     def ext_filename_from_disposition():
-        ns = ctx.get()
+        ns = env2.ctx.get()
         assert ns.p.exists()
         assert ns.p.name == "file.pdf"
         assert ns.p.read_bytes() == ns.args[0]
         assert ns.warning is None
 
     b = b"PDFDATA"
-    specs["gets_filename"] = test.case(
+    env2.reg["gets_filename"] = test.case(
         (
             b,
             {
@@ -118,7 +113,7 @@ with test.path("parser", mkdir=True) as tmp:
         [(ext_filename_from_disposition)],
     )
 
-    @test.suite(["pdf_bytes", "headers"], **specs)
+    @test.suite(env2)
     def test_response_util_parameterized(pdf_bytes: bytes, headers: dict[str, str], rupatch):
         response = Response(pdf_bytes, headers=headers)
         parser = rupatch(response)
@@ -126,4 +121,4 @@ with test.path("parser", mkdir=True) as tmp:
         strpath, warning = parser.save_attachment()
         p = Path(strpath)
 
-        ctx(**locals())
+        env2.ctx(**locals())
