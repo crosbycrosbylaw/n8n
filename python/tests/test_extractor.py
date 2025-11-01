@@ -64,15 +64,15 @@ def case_normalize_accents_hyphens():
 @test.suite(
     cases,
     normalizes_and_parses=test.case(
-        (["Smith v. Jones"],),
-        [case_normalize_parse],
+        ["Smith v. Jones"],
+        hooks=[case_normalize_parse],
     ),
     v_vs_company=test.case(
-        (["Smith v Jones", "Johnson vs. Brown", "ACME CORPORATION v. Doe"],), [case_v_vs_and_company]
+        ["Smith v Jones", "Johnson vs. Brown", "ACME CORPORATION v. Doe"], hooks=[case_v_vs_and_company]
     ),
     accents_and_hyphens=test.case(
-        (["José O'Neill v. Mary-Anne"],),
-        [case_normalize_accents_hyphens],
+        ["José O'Neill v. Mary-Anne"],
+        hooks=[case_normalize_accents_hyphens],
     ),
 )
 def test_parameterized(input_text: list[str]):

@@ -44,8 +44,9 @@ def ext_proper_length():
 
 
 cases["simple_matching"] = test.case(
-    (["finder", "John Smith"], ["/Clio/Smith, John/00001-Smith", "/Clio/Jones, Mary/00002-Jones"]),
-    [ext_proper_length, lambda *_: ctx.print(include={"results"})],
+    ["finder", "John Smith"],
+    ["/Clio/Smith, John/00001-Smith", "/Clio/Jones, Mary/00002-Jones"],
+    hooks=[ext_proper_length, lambda *_: ctx.print(include={"results"})],
 )
 
 
@@ -68,15 +69,13 @@ def ext_match_found():
 
 
 cases["fuzzy_matching"] = test.case(
-    (
-        ["finder", "Jon Smth"],
-        [
-            "/Clio/Smith, John/00001-Smith",
-            "/Clio/Smith-Jones, Anna/00002-SmithJones",
-            "/Clio/ONeil, Patrick/00003-ONeil",
-        ],
-    ),
-    [ext_match_found, lambda _: ctx.print(include={"query", "result"})],
+    ["finder", "Jon Smth"],
+    [
+        "/Clio/Smith, John/00001-Smith",
+        "/Clio/Smith-Jones, Anna/00002-SmithJones",
+        "/Clio/ONeil, Patrick/00003-ONeil",
+    ],
+    hooks=[ext_match_found, lambda _: ctx.print(include={"query", "result"})],
 )
 
 
@@ -90,8 +89,9 @@ def ext_unique_matches():
 
 
 cases["dedupe_keep_highest"] = test.case(
-    (["finder", "John Smith"], ["/Clio/Smith, John/00001-Smith", "/Clio/Smith, John/00001-Smith"]),
-    [ext_unique_matches, lambda _: ctx.print(include={"matches"})],
+    ["finder", "John Smith"],
+    ["/Clio/Smith, John/00001-Smith", "/Clio/Smith, John/00001-Smith"],
+    hooks=[ext_unique_matches, lambda _: ctx.print(include={"matches"})],
 )
 
 

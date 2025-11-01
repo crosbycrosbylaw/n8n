@@ -9,6 +9,15 @@ from rampy import typeis, test
 from . import Response
 
 
+def with_bytes(*headers: tuple[str, str], size_offset: int = 0) -> tuple[bytes, dict[str, str]]:
+    global b
+
+    head = {"Content-Type": "application/pdf", "Content-Length": str(len(b) + size_offset)}
+    head.update(headers)
+
+    return b, head
+
+
 file = test.path("parser", "file.pdf", context=False)
 
 
@@ -22,15 +31,10 @@ def tempdir():
 def parserpatch(monkeypatch, tempdir):
     import n8n_py.parser.cls as parsermod
 
+    b, headers = with_bytes(("Content-Disposition", f'attachment; filename="{file.name}"'))
+
     def fake_get(_):
-        return Response(
-            b,
-            headers={
-                "Content-Type": "application/pdf",
-                "Content-Length": str(len(b)),
-                "Content-Disposition": f'attachment; filename="{file.name}"',
-            },
-        )
+        return Response(b, headers=headers)
 
     monkeypatch.setattr(parsermod.requests, "get", fake_get)
     monkeypatch.setattr(parsermod, "TMP", tempdir)
@@ -64,9 +68,10 @@ def ext_saves_pdf():
 
 
 b = b"%PDF-1.4 binarycontent"
+
 env1.reg["saves_pdf"] = test.case(
-    (['<html><body><a href="http://example/doc1">Download Document</a></body></html>'],),
-    [
+    ['<html><body><a href="http://example/doc1">Download Document</a></body></html>'],
+    hooks=[
         ext_saves_pdf,
         lambda *_: print(f"args={env1.ctx.get().args}\nactual_bytes={file.read_bytes()}"),
     ],
@@ -103,8 +108,8 @@ def ext_size_mismatch_warning():
 
 b = b"ABC"
 env2.reg["size_warning"] = test.case(
-    (b, {"Content-Type": "application/pdf", "Content-Length": str(len(b) + 2)}),
-    [(ext_size_mismatch_warning)],
+    with_bytes(size_offset=-2),
+    hooks=[ext_size_mismatch_warning],
 )
 
 
@@ -118,15 +123,8 @@ def ext_filename_from_disposition():
 
 b = b"PDFDATA"
 env2.reg["gets_filename"] = test.case(
-    (
-        b,
-        {
-            "Content-Type": "application/pdf",
-            "Content-Length": str(len(b)),
-            "Content-Disposition": 'attachment; filename="file.pdf"',
-        },
-    ),
-    [(ext_filename_from_disposition)],
+    with_bytes(("Content-Disposition", f'attachment; filename="{file.name}"')),
+    hooks=[ext_filename_from_disposition],
 )
 
 
