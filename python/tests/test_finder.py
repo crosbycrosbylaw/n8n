@@ -1,4 +1,5 @@
 # ruff: noqa: F401, F811
+# %%
 from __future__ import annotations
 
 import functools
@@ -23,9 +24,6 @@ def dbx_index():
         yield tmp / "dbx_index.json"
 
 
-specs = {}
-
-
 class namespace(test.ns[list[str], list[str]]):
     finder: FolderFinder
     results: list[FinderResult]
@@ -45,7 +43,7 @@ def ext_proper_length():
     assert len(ns.results) == nargs
 
 
-specs["simple_matching"] = test.case(
+cases["simple_matching"] = test.case(
     (["finder", "John Smith"], ["/Clio/Smith, John/00001-Smith", "/Clio/Jones, Mary/00002-Jones"]),
     [ext_proper_length, lambda *_: ctx.print(include={"results"})],
 )
@@ -69,7 +67,7 @@ def ext_match_found():
                 break
 
 
-specs["fuzzy_matching"] = test.case(
+cases["fuzzy_matching"] = test.case(
     (
         ["finder", "Jon Smth"],
         [
@@ -91,13 +89,13 @@ def ext_unique_matches():
     assert len(matches) == 1
 
 
-specs["dedupe_keep_highest"] = test.case(
+cases["dedupe_keep_highest"] = test.case(
     (["finder", "John Smith"], ["/Clio/Smith, John/00001-Smith", "/Clio/Smith, John/00001-Smith"]),
     [ext_unique_matches, lambda _: ctx.print(include={"matches"})],
 )
 
 
-@test.suite(cases, **specs)
+@test.suite(cases)
 def test_finder_paramaterized(input_text: list[str], index_items: list[str], finderpatch, dbx_index):
     entries = js.array(json(pathDisplay=path) for path in index_items)
 
@@ -115,3 +113,7 @@ def test_finder_paramaterized(input_text: list[str], index_items: list[str], fin
     assert typeis(results, list[FinderResult])
 
     ctx(**locals())
+
+
+if __name__ == "__main__":
+    pytest.main([__file__])
