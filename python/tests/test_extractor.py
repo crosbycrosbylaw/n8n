@@ -2,8 +2,30 @@
 
 from __future__ import annotations
 
+import re
+
+import pytest
+from common.metadata import refresh_metadata_cache
+from common.parsehtml import DocumentInfo
 from n8n_py.extractor import main, result
-from rampy import test, typeis
+from rampy import json, test, typeis
+
+
+@pytest.fixture
+def metadata_env(monkeypatch):
+    import common.metadata as metadata_mod
+    import common.temp as tempmod
+
+    with test.path("service", mkdir=True) as service_dir:
+        tmp_dir = service_dir / "tmp"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setattr(tempmod, "TMP", tmp_dir)
+        monkeypatch.setattr(metadata_mod, "_METADATA_PATH", tmp_dir / "metadata.json")
+        refresh_metadata_cache()
+        try:
+            yield tmp_dir / "metadata.json"
+        finally:
+            refresh_metadata_cache()
 
 
 class namespace(test.ns[list[str]]):
@@ -88,3 +110,32 @@ def test_parameterized(input_text: list[str]):
     assert len(results) > 0
 
     ctx(**locals())
+
+
+def test_extractor_metadata_shortcut(metadata_env):
+    doc: DocumentInfo = {
+        "hrefs": [],
+        "filename": "Motion to Modify Maintenance RTF.pdf",
+        "court": "",
+        "case_no": "2014-D-0000740",
+        "case_name": "Candace R Boudreau vs. Christopher R Boudreau",
+        "filed_by": "Mason Crosby",
+        "path": None,
+        "path_display": None,
+    }
+
+    metadata_store = json[str, DocumentInfo]({doc["filename"]: doc})
+    metadata_env.write_text(str(metadata_store))
+    refresh_metadata_cache()
+
+    extractor = main([doc["filename"]], testing=True)
+    extractor.setup()
+    extractor.run()
+
+    results = extractor.json.get("results", [])
+    assert results
+    first = results[0]
+    assert first["found_names"]
+    norm_expected = re.sub(r"\W+", "", doc["case_name"].lower())
+    norm_actual = re.sub(r"\W+", "", (first["raw_case_text"] or "").lower())
+    assert norm_actual == norm_expected

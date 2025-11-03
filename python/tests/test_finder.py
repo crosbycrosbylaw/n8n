@@ -5,23 +5,44 @@ from __future__ import annotations
 import functools
 
 import pytest
+from common.metadata import refresh_metadata_cache
+from common.parsehtml import DocumentInfo
 from n8n_py.finder.cls import FinderResult, FolderFinder, IndexEntry
 from rampy import js, json, test, typeis
 
 
 @pytest.fixture
-def finderpatch(monkeypatch):
+def workspace_root():
+    with test.path() as tmp_root:
+        yield tmp_root
+
+
+@pytest.fixture
+def finderpatch(monkeypatch, workspace_root):
+    import common.metadata as metadata_mod
+    import common.temp as tempmod
     import n8n_py.finder.cls as findermod
 
-    with test.path() as tmp_root:
-        monkeypatch.setattr(findermod, "root", lambda: tmp_root)
-    return functools.partial(findermod.FolderFinder, testing=True)
+    monkeypatch.setattr(findermod, "root", lambda: workspace_root)
+
+    metadata_dir = workspace_root / "service" / "tmp"
+    metadata_dir.mkdir(parents=True, exist_ok=True)
+
+    monkeypatch.setattr(tempmod, "TMP", metadata_dir)
+    monkeypatch.setattr(metadata_mod, "_METADATA_PATH", metadata_dir / "metadata.json")
+    refresh_metadata_cache()
+
+    try:
+        yield functools.partial(findermod.FolderFinder, testing=True)
+    finally:
+        refresh_metadata_cache()
 
 
 @pytest.fixture()
-def dbx_index():
-    with test.path("service", mkdir=True) as tmp:
-        yield tmp / "dbx_index.json"
+def dbx_index(workspace_root):
+    service_dir = workspace_root / "service"
+    service_dir.mkdir(parents=True, exist_ok=True)
+    return service_dir / "dbx_index.json"
 
 
 class namespace(test.ns[list[str], list[str]]):
@@ -113,6 +134,41 @@ def test_finder_paramaterized(input_text: list[str], index_items: list[str], fin
     assert typeis(results, list[FinderResult])
 
     ctx(**locals())
+
+
+def test_finder_metadata_shortcut(finderpatch, dbx_index):
+    doc: DocumentInfo = {
+        "hrefs": [],
+        "filename": "Motion to Modify Maintenance RTF.pdf",
+        "court": "",
+        "case_no": "2014-D-0000740",
+        "case_name": "Candace R Boudreau vs. Christopher R Boudreau",
+        "filed_by": "Mason Crosby",
+        "path": "/Clio/Boudreau, Candace/00001-Boudreau",
+        "path_display": "/Clio/Boudreau, Candace/00001-Boudreau",
+    }
+
+    entries = js.array([json(pathDisplay=doc["path_display"])])
+    dbx_index.write_text(repr(entries))
+
+    metadata_store = json[str, DocumentInfo]({doc["filename"]: doc})
+    metadata_path = dbx_index.parent / "tmp" / "metadata.json"
+    metadata_path.parent.mkdir(parents=True, exist_ok=True)
+    metadata_path.write_text(str(metadata_store))
+    refresh_metadata_cache()
+
+    finder = finderpatch(["finder", doc["case_name"]])
+    finder.setup().run()
+
+    results = finder.json.get("results", [])
+    assert len(results) == 2
+    matches = results[1]["matches"]
+    assert matches
+    top = matches[0]
+    assert top["pathDisplay"] == doc["path_display"]
+    assert top["reason"] in {"exact", "metadata"}
+    if top["reason"] == "metadata":
+        assert top["matched_label"] == doc["case_name"]
 
 
 if __name__ == "__main__":

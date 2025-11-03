@@ -19,16 +19,23 @@ class Runner[T: js.serializable]:
     warnings: list[str] = field(init=False, default_factory=list[str])
 
     testing: InitVar[bool] = False
+    pipeline: InitVar[bool] = False
 
     def submit(self) -> None:
         """Prints serialized output in a standardized format for ease of ingestion within the n8n instance."""
         return output(self.json, logs=self.logs, warnings=self.warnings)
 
     @console.catch
-    def __post_init__(self, testing: bool) -> None:
-        if not testing:
-            self.setup().run().submit()
+    def __post_init__(self, testing: bool, pipeline: bool) -> None:
+        if pipeline:
+            self.setup().run()
+            self.pipe = pipeline
+            return
+
         self.test = testing
+        if testing:
+            return
+        self.setup().run().submit()
 
     def setup(self) -> Self:
         """Implement this method if the class requires any internal setup before invoking the primary logic."""
@@ -39,3 +46,9 @@ class Runner[T: js.serializable]:
         """This method will be invoked after setup, but before output."""
 
         return self
+
+    def info(self, *info: str) -> None:
+        self.logs.extend(info)
+
+    def warn(self, *warnings: str) -> None:
+        self.warnings.extend(warnings)

@@ -5,7 +5,8 @@ from pathlib import Path
 from typing import Sequence, TypedDict
 
 import rampy
-from common import Runner
+from common import Runner, get_metadata_view
+from common.metadata import MetadataView
 from rampy import js, root
 from rapidfuzz import fuzz, process
 
@@ -36,6 +37,7 @@ class FolderFinder(Runner[list[FinderResult]]):
     index: list[IndexEntry] = field(init=False, default_factory=list)
     norm_map: dict[str, list[IndexEntry]] = field(init=False, default_factory=dict)
     choices: list[str] = field(init=False, default_factory=list)
+    metadata_view: MetadataView = field(init=False, repr=False)
 
     def setup(self):
         self.query = [str(x).strip() for x in self.input if x]
@@ -46,6 +48,7 @@ class FolderFinder(Runner[list[FinderResult]]):
         print(rf"{text=}")
         entries = js.array[rampy.json[str, str]].loads(text)
         print(rf"{entries=}")
+        self.metadata_view = get_metadata_view()
         # Build index entries and normalized mapping
         for obj in entries:
             path = obj.get("pathDisplay")
@@ -74,6 +77,15 @@ class FolderFinder(Runner[list[FinderResult]]):
                 norm = self._normalize(lab)
                 self.norm_map.setdefault(norm, []).append(entry)
 
+            for doc in self.metadata_view.for_path(path):
+                for alias in self.metadata_view.aliases_for(doc):
+                    norm = self._normalize(alias)
+                    if not norm:
+                        continue
+                    entries_for_norm = self.norm_map.setdefault(norm, [])
+                    if entry not in entries_for_norm:
+                        entries_for_norm.append(entry)
+
         # build choices list for fuzzy search (unique normalized strings)
         self.choices = [*self.norm_map.keys()]
 
@@ -94,6 +106,7 @@ class FolderFinder(Runner[list[FinderResult]]):
             # setup already recorded error
             return self
 
+        metadata_view = getattr(self, "metadata_view", get_metadata_view())
         results = []
 
         for q in self.query:
@@ -104,12 +117,7 @@ class FolderFinder(Runner[list[FinderResult]]):
             if exact:
                 for e in exact:
                     matches.append(
-                        FinderMatch(
-                            pathDisplay=e["pathDisplay"],
-                            score=100,
-                            reason="exact",
-                            matched_label=None,
-                        )
+                        FinderMatch(pathDisplay=e["pathDisplay"], score=100, reason="exact", matched_label=None)
                     )
             else:
                 # fuzzy search among normalized choices
@@ -125,6 +133,21 @@ class FolderFinder(Runner[list[FinderResult]]):
                                 matched_label=choice,
                             )
                         )
+
+            if not matches:
+                for doc in metadata_view.lookup(q):
+                    display = doc.get("path_display") or doc.get("path") or doc.get("filename")
+                    if not display:
+                        continue
+                    label = doc.get("case_name") or doc.get("filename")
+                    matches.append(
+                        FinderMatch(
+                            pathDisplay=str(display),
+                            score=90,
+                            reason="metadata",
+                            matched_label=str(label) if label else None,
+                        )
+                    )
 
             # sort and dedupe by pathDisplay keeping highest score
             seen = {}

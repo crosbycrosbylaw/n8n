@@ -2,9 +2,11 @@
 # TODO !!
 from pathlib import Path
 
+import n8n_py.parser.cls as parsermod
 import pytest
+from common import samples
 from n8n_py.parser.cls import EmailParser
-from rampy import typeis, test
+from rampy import debug, json, strict, test, typeis
 
 from . import Response
 
@@ -18,26 +20,32 @@ def with_bytes(*headers: tuple[str, str], size_offset: int = 0) -> tuple[bytes, 
     return b, head
 
 
-file = test.path("parser", "file.pdf", context=False)
+tmp = test.path("parser", context=False)
+file = tmp / "file.pdf"
 
 
 @pytest.fixture
 def tempdir():
-    with test.path("parser", mkdir=True) as tmp:
+    try:
+        tmp.mkdir()
         yield tmp
+    finally:
+        tmp.clean()
 
 
 @pytest.fixture
-def parserpatch(monkeypatch, tempdir):
-    import n8n_py.parser.cls as parsermod
-
+def requestspatch(monkeypatch):
     b, headers = with_bytes(("Content-Disposition", f'attachment; filename="{file.name}"'))
 
     def fake_get(_):
         return Response(b, headers=headers)
 
     monkeypatch.setattr(parsermod.requests, "get", fake_get)
-    monkeypatch.setattr(parsermod, "TMP", tempdir)
+
+
+@pytest.fixture
+def parserpatch(monkeypatch):
+    monkeypatch.setattr(parsermod, "TMP", tmp)
 
     return parsermod.EmailParser
 
@@ -54,8 +62,10 @@ class namespace:
 env1 = test.context.bind(namespace.parser)
 
 
-def ext_saves_pdf():
+def case_saves_pdf():
     ns = env1.ctx.get()
+
+    ns.parser.setup().run()
 
     assert (paths := ns.parser.json.get("paths"))
     assert typeis(paths, list[str], strict=True)
@@ -68,19 +78,18 @@ def ext_saves_pdf():
 
 
 b = b"%PDF-1.4 binarycontent"
-
 env1.reg["saves_pdf"] = test.case(
     ['<html><body><a href="http://example/doc1">Download Document</a></body></html>'],
     hooks=[
-        ext_saves_pdf,
+        case_saves_pdf,
         lambda *_: print(f"args={env1.ctx.get().args}\nactual_bytes={file.read_bytes()}"),
     ],
 )
 
 
 @test.suite(env1)
-def test_parser_parameterized(input_text: list[str], parserpatch):
-    parser = parserpatch(input_text)
+def test_parameterized_a(input_text: list[str], requestspatch, parserpatch, tempdir):
+    parser = parserpatch(input_text, testing=True)
     env1.ctx(**locals())
 
 
@@ -97,7 +106,7 @@ def rupatch(monkeypatch, tempdir):
     return parsermod.ResponseUtility
 
 
-def ext_size_mismatch_warning():
+def case_size_mismatch_warning():
     ns = env2.ctx.get()
     pdf_bytes = ns.args[0]
 
@@ -109,11 +118,11 @@ def ext_size_mismatch_warning():
 b = b"ABC"
 env2.reg["size_warning"] = test.case(
     with_bytes(size_offset=-2),
-    hooks=[ext_size_mismatch_warning],
+    hooks=[case_size_mismatch_warning],
 )
 
 
-def ext_filename_from_disposition():
+def case_filename_from_disposition():
     ns = env2.ctx.get()
     assert ns.p.exists()
     assert ns.p.name == "file.pdf"
@@ -124,16 +133,73 @@ def ext_filename_from_disposition():
 b = b"PDFDATA"
 env2.reg["gets_filename"] = test.case(
     with_bytes(("Content-Disposition", f'attachment; filename="{file.name}"')),
-    hooks=[ext_filename_from_disposition],
+    hooks=[case_filename_from_disposition],
 )
 
 
 @test.suite(env2)
-def test_response_util_parameterized(pdf_bytes: bytes, headers: dict[str, str], rupatch):
+def test_parameterized_b(pdf_bytes: bytes, headers: dict[str, str], rupatch, tempdir):
     response = Response(pdf_bytes, headers=headers)
-    parser = rupatch(response)
+    parser = rupatch(response, {})
 
     strpath, warning = parser.save_attachment()
     p = Path(strpath)
 
     env2.ctx(**locals())
+
+
+env3 = test.context.bind(namespace.parser)
+
+sample = samples.FA[0]
+
+
+def case_saves_real_pdf():
+    ns = env3.ctx.get()
+
+    assert strict() and debug()
+
+    ns.parser.setup()
+
+    assert ns.parser.content == sample["raw_text"]
+
+    ns.parser.run()
+    paths = ns.parser.json.get("paths")
+
+    assert typeis(paths, list[str])
+    assert len(paths) == 1
+    assert tmp.is_dir()
+
+    metadata_path = tmp / "metadata.json"
+    assert metadata_path.exists()
+
+    metadata_text = metadata_path.read_text()
+    assert len(metadata_text) > 0
+
+    download_path = Path(next(iter(paths)))
+
+    assert download_path in [*tmp.iterdir()]
+    assert download_path.exists()
+    assert len(download_path.read_bytes()) > 0
+
+    metadata_json = json[str, dict].loads(metadata_text)
+    assert download_path.name in metadata_json
+
+    metadata = metadata_json[download_path.name]
+
+    assert typeis(metadata, dict[str, object])
+    assert "case_name" in metadata
+
+    case_name = metadata.get("case_name", "")
+    assert typeis(case_name, str)
+
+    expected_parties = [" ".join(s for s in x if s) for x in sample["related_parties"]]
+    assert all(x in case_name for x in expected_parties)
+
+
+env3.reg["actual_email"] = test.case([sample["raw_text"]], hooks=[case_saves_real_pdf])
+
+
+@test.suite(env3)
+def test_parameterized_c(input_text: list[str], parserpatch, tempdir):
+    parser = parserpatch(input_text, testing=True)
+    env3.ctx(**locals())

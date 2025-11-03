@@ -6,7 +6,14 @@ from dataclasses import dataclass, field
 from urllib.parse import urlencode
 
 import requests
-from common import TMP, HTMLParser, Runner
+from common import (
+    TMP,
+    HTMLParser,
+    Runner,
+    collect_document_information,
+    refresh_metadata_cache,
+)
+from common.parsehtml import DocumentInfo, get_default_doc_info
 from rampy import debug, json
 
 if typing.TYPE_CHECKING:
@@ -17,6 +24,8 @@ if typing.TYPE_CHECKING:
 @dataclass()
 class ResponseUtility:
     response: requests.Response = field(init=True, repr=False)
+    parser: HTMLParser = field(init=True, repr=False)
+    doc_info: DocumentInfo = field(repr=False, default_factory=get_default_doc_info)
 
     def __post_init__(self) -> None:
         res = self.response
@@ -50,6 +59,11 @@ class ResponseUtility:
     def _get_attachment_name(self) -> str:
         self._require(attachment=True)
 
+        parsed = self.doc_info["filename"]
+
+        if parsed != "untitled":
+            return parsed
+
         if self.disposition:
             return self.disposition.split("filename=", 1)[-1].strip().split('"')[1]
 
@@ -58,7 +72,7 @@ class ResponseUtility:
         if ";" in extension:
             extension = extension.split(";")[0]
 
-        return f"attachment_{count}.{extension}"
+        return f"{parsed}_{count}.{extension}"
 
     def save_attachment(self) -> tuple[str, str | None]:
         self._require(attachment=True)
@@ -67,18 +81,29 @@ class ResponseUtility:
         path = TMP / name
 
         if debug():
-            print(str(path))
+            print(f"{name=}", f"{path=!s}", sep="\n")
 
         out = [path.as_posix(), None]
 
+        metadata_path = TMP / "metadata.json"
+
+        metadata_path.touch()
+        metadata_dict = json[str, DocumentInfo].loads(metadata_path.read_bytes() or b"{}")
+
+        updated_info: DocumentInfo = {**self.doc_info, "path": str(path)}
+        metadata_dict[name] = updated_info
+        metadata_path.write_text(str(metadata_dict))
+        refresh_metadata_cache()
+
         if not path.is_file():
             length = path.write_bytes(self.response.content)
+
             if self.length and length != self.length:
                 out[1] = f"document '{name}' size ({length}) differs from expected ({self.length})"
 
         return tuple(out)
 
-    def iter_subresponses(self, email: str, parser: HTMLParser) -> Generator[ResponseUtility]:
+    def iter_subresponses(self, email: str) -> Generator[ResponseUtility]:
         self._require(attachment=False)
 
         text = self.response.content.decode(self.response.encoding or "utf-8")
@@ -89,10 +114,9 @@ class ResponseUtility:
         tags = HTMLParser(text).tags("input", string=r"__(VIEW|EVENT)\w+", value=True)
 
         def value_for(id: str, *, prefix: str = "__", upper: bool = True) -> str:
-            id_str = f"{prefix}{id}"
-            upper and (id_str := id_str.upper())
-
-            return str([x for x in tags if x["id"] == id_str][0]["value"])
+            text = f"{prefix}{id}"
+            text = text if not upper else text.upper()
+            return str([x for x in tags if x["id"] == text][0]["value"])
 
         headers = json([("Content-Type", "application/x-www-form-urlencoded")])
         body = json(
@@ -106,8 +130,12 @@ class ResponseUtility:
         )
 
         return (
-            ResponseUtility(requests.post(href, data=urlencode(body), headers=headers.cast()))
-            for href in (html.unescape(raw) for raw in parser.find_hrefs(r"ViewDocuments"))
+            ResponseUtility(
+                requests.post(href, data=urlencode(body), headers=headers.cast()),
+                self.parser,
+                self.doc_info,
+            )
+            for href in (html.unescape(raw) for raw in self.parser.find_hrefs(r"ViewDocuments"))
         )
 
 
@@ -116,11 +144,12 @@ class EmailParser(Runner):
     content: str | None = field(init=False, default=None)
     email: str = field(init=False, default="eservice@crosbyandcrosbylaw.com")
 
+    doc_info: DocumentInfo = field(init=False)
+
     def setup(self):
         item = self.input[0]
         if item != "clean":
             self.content = item
-
         return self
 
     def run(self):
@@ -128,14 +157,16 @@ class EmailParser(Runner):
             case None:
 
                 def rm(f: Path) -> None:
-                    self.logs.append(f"removing {f.name}")
+                    self.info(f"removing {f.name}")
                     f.unlink()
 
                 [rm(f) for f in TMP.iterdir()]
 
             case _:
                 parser = HTMLParser(self.content)
-                hrefs = parser.find_hrefs(r"Download Document")
+                doc_info = self.doc_info = collect_document_information(parser)
+
+                hrefs = doc_info["hrefs"]
 
                 if len(hrefs) < 1:
                     raise ValueError("download link not found")
@@ -143,18 +174,20 @@ class EmailParser(Runner):
                 paths: list[str] = []
 
                 def process(link: str) -> None:
-                    self.logs.append(f"processing extracted href: {link}")
-                    res = ResponseUtility(requests.get(link))
-                    responses = [res] if res.has_attachment else res.iter_subresponses(self.email, parser)
+                    self.info(f"processing extracted href: {link}")
+
+                    res = ResponseUtility(requests.get(link), parser, doc_info)
+                    responses = [res] if res.has_attachment else res.iter_subresponses(self.email)
+
                     for r in responses:
                         if r.has_attachment:
                             path, warning = r.save_attachment()
                             if warning:
                                 self.warnings.append(warning)
                             paths.append(path)
-                            self.logs.append(f"saved document to {path}")
+                            self.info(f"saved document to {path}")
                         else:
-                            self.warnings.append(f"missing document for link: {link}")
+                            self.warn(f"missing document for link: {link}")
 
                 [process(h) for h in hrefs]
 
