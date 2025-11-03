@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -8,6 +9,14 @@ from common.metadata import MetadataView
 from common.parsehtml import DocumentInfo
 from n8n_py import extractor, finder, parser
 from rampy import json
+
+
+def _inputs_with_default(*strings: str | None) -> list[str]:
+    if not strings and len(sys.argv) > 1:
+        argv = sys.argv.copy()
+        argv.pop(0)
+        return argv
+    return [x for x in strings if x]
 
 
 def _unique(strings: Iterable[str]) -> list[str]:
@@ -47,30 +56,27 @@ def _lookup_doc(metadata_view: MetadataView, path: str) -> DocumentInfo | None:
 
 
 def _run_parser(content: str | None) -> tuple[list[str], parser.main | None]:
-    if content is None:
-        return [], None
-
-    runner = parser.main([content], pipeline=True)
-    paths = runner.json.get("paths", [])
-    return paths, runner
-
-
-def _run_extractor(inputs: Sequence[str]) -> tuple[list[extractor.result], extractor.main | None]:
-    if not inputs:
-        return [], None
-
-    runner = extractor.main(list(inputs), pipeline=True)
-    results = runner.json.get("results", [])
-    return results, runner
+    if inputs := _inputs_with_default(content):
+        runner = parser.main(inputs, pipeline=True)
+        paths = runner.json.get("paths", [])
+        return paths, runner
+    return [], None
 
 
-def _run_finder(queries: Sequence[str]) -> tuple[list[finder.result], finder.main | None]:
-    if not queries:
-        return [], None
+def _run_extractor(inputs: Sequence[str] = ()) -> tuple[list[extractor.result], extractor.main | None]:
+    if inputs := _inputs_with_default(*inputs):
+        runner = extractor.main([*inputs], pipeline=True)
+        results = runner.json.get("results", [])
+        return results, runner
+    return [], None
 
-    runner = finder.main(list(queries), pipeline=True)
-    results = runner.json.get("results", [])
-    return list(results), runner
+
+def _run_finder(queries: Sequence[str] = ()) -> tuple[list[finder.result], finder.main | None]:
+    if queries := _inputs_with_default(*queries):
+        runner = finder.main([*queries], pipeline=True)
+        results = runner.json.get("results", [])
+        return list(results), runner
+    return [], None
 
 
 def main(content: str | None = None) -> json[str, object]:
