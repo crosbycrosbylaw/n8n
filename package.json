@@ -3,9 +3,8 @@
     "version": "2.0.0",
     "private": true,
     "scripts": {
-        "gcp": "git add --all && git commit -m 'latest changes' && git push",
-        "lint": "oxlint --type-aware",
-        "px": "pixi run"
+        "gcp": "pixi run push",
+        "lint": "oxlint --type-aware"
     },
     "prettier": {
         "arrowParens": "avoid",

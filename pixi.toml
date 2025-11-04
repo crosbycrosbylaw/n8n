@@ -13,14 +13,22 @@ remote  = ["remote"]
 service = ["service"]
 
 [tasks]
+get-tod = "pwsh -nop -noni -c '\"$((get-date).timeofday)\"'"
   [tasks.test]
   cmd = "python -m pytest ."
   cwd = "python/tests"
   [tasks.push]
-  args = [{ arg = "MESSAGE", default = "auto" }]
-  cmd  = "git add --all && git commit -m '{{ MESSAGE }}' && git push"
-  [tasks.sync-rampy]
-  cmd = "cd ../ramda-py && pixi run push && cd ../n8n && pixi update rampy && pixi i"
+  args       = [{ arg = "MESSAGE", default = "$(pixi run get-tod)" }]
+  cmd        =  "git commit -a -m \"{{ MESSAGE }}\" && git push "
+  [tasks.push-rampy]
+  args = [
+    { arg = "path", default = "../ramda-py" },
+    { arg = "root", default = "$PIXI_PROJECT_ROOT" },
+  ]
+  cmd = "cd \"{{ path }} \" && pixi run push && cd \"{{ root }}\""
+  [tasks.update-rampy]
+  args = [{ arg = "path", default = "../ramda-py" }]
+  cmd  = "pixi run push-rampy {{ path }} && pixi update rampy && pixi i"
 
 
 [dependencies]
