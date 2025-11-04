@@ -23,7 +23,7 @@ PDF_HEADERS = {
     "Content-Disposition": f'attachment; filename="{PDF_NAME}"',
 }
 
-TMP_ROOT = test.path("pipeline", context=False)
+TMP_ROOT = test.path("pipeline")
 SERVICE_DIR = TMP_ROOT / "service"
 DBX_INDEX = SERVICE_DIR / "dbx_index.json"
 

@@ -13,7 +13,7 @@ from common import (
     collect_document_information,
     refresh_metadata_cache,
 )
-from common.parsehtml import DocumentInfo, get_default_doc_info
+from common.parsehtml import DocumentInfo
 from rampy import debug, json
 
 if typing.TYPE_CHECKING:
@@ -25,7 +25,7 @@ if typing.TYPE_CHECKING:
 class ResponseUtility:
     response: requests.Response = field(init=True, repr=False)
     parser: HTMLParser = field(init=True, repr=False)
-    doc_info: DocumentInfo = field(repr=False, default_factory=get_default_doc_info)
+    doc_info: DocumentInfo = field(repr=False, default_factory=DocumentInfo)
 
     def __post_init__(self) -> None:
         res = self.response
@@ -59,9 +59,7 @@ class ResponseUtility:
     def _get_attachment_name(self) -> str:
         self._require(attachment=True)
 
-        parsed = self.doc_info["filename"]
-
-        if parsed != "untitled":
+        if (parsed := self.doc_info.name) != "untitled":
             return parsed
 
         if self.disposition:
@@ -88,10 +86,11 @@ class ResponseUtility:
         metadata_path = TMP / "metadata.json"
 
         metadata_path.touch()
-        metadata_dict = json[str, DocumentInfo].loads(metadata_path.read_bytes() or b"{}")
+        metadata_dict = json[str, dict[str, str | None]].loads(metadata_path.read_bytes() or b"{}")
 
-        updated_info: DocumentInfo = {**self.doc_info, "path": str(path)}
-        metadata_dict[name] = updated_info
+        self.doc_info.path = str(path)
+
+        metadata_dict[name] = self.doc_info.as_dict()
         metadata_path.write_text(str(metadata_dict))
         refresh_metadata_cache()
 

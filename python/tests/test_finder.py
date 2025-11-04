@@ -5,15 +5,15 @@ from __future__ import annotations
 import functools
 
 import pytest
+from common.document import Document, DocumentSet, _DocumentMetadata
 from common.metadata import refresh_metadata_cache
-from common.parsehtml import DocumentInfo
 from n8n_py.finder.cls import FinderResult, FolderFinder, IndexEntry
 from rampy import js, json, test, typeis
 
 
 @pytest.fixture
 def workspace_root():
-    with test.path() as tmp_root:
+    with test.path(context=True) as tmp_root:
         yield tmp_root
 
 
@@ -54,7 +54,7 @@ class namespace(test.ns[list[str], list[str]]):
 ctx, cases = test.context.bind(namespace)
 
 
-def ext_proper_length():
+def base():
     ns = ctx.get()
 
     nargs, nitems = len(ns.args[0]), len(ns.entries)
@@ -64,14 +64,14 @@ def ext_proper_length():
     assert len(ns.results) == nargs
 
 
-cases["simple_matching"] = test.case(
+cases["base"] = test.case(
     ["finder", "John Smith"],
     ["/Clio/Smith, John/00001-Smith", "/Clio/Jones, Mary/00002-Jones"],
-    hooks=[ext_proper_length, lambda *_: ctx.print(include={"results"})],
+    hooks=[base, lambda *_: ctx.print(include={"results"})],
 )
 
 
-def ext_match_found():
+def fuzzy_matching():
     ns = ctx.get()
 
     query = ns.args[0][1]
@@ -80,13 +80,8 @@ def ext_match_found():
     assert query == result["query"]
 
     for m in result["matches"]:
-        try:
-            assert "Smith" in m["pathDisplay"]
-            break
-        except AssertionError:
-            if matched := m.get("matched_label"):
-                assert "Smith" in matched
-                break
+        search = m["pathDisplay"], m.get("matched_label")
+        assert any("Smith" in s for s in search if s)
 
 
 cases["fuzzy_matching"] = test.case(
@@ -96,11 +91,11 @@ cases["fuzzy_matching"] = test.case(
         "/Clio/Smith-Jones, Anna/00002-SmithJones",
         "/Clio/ONeil, Patrick/00003-ONeil",
     ],
-    hooks=[ext_match_found, lambda _: ctx.print(include={"query", "result"})],
+    hooks=[fuzzy_matching, lambda _: ctx.print(include={"query", "result"})],
 )
 
 
-def ext_unique_matches():
+def keep_highest_unique():
     ns = ctx.get()
 
     matches = ns.results[1]["matches"]
@@ -109,10 +104,10 @@ def ext_unique_matches():
     assert len(matches) == 1
 
 
-cases["dedupe_keep_highest"] = test.case(
+cases["keep_highest_unique"] = test.case(
     ["finder", "John Smith"],
     ["/Clio/Smith, John/00001-Smith", "/Clio/Smith, John/00001-Smith"],
-    hooks=[ext_unique_matches, lambda _: ctx.print(include={"matches"})],
+    hooks=[keep_highest_unique, lambda _: ctx.print(include={"matches"})],
 )
 
 
@@ -136,28 +131,25 @@ def test_finder_paramaterized(input_text: list[str], index_items: list[str], fin
     ctx(**locals())
 
 
-def test_finder_metadata_shortcut(finderpatch, dbx_index):
-    doc: DocumentInfo = {
-        "hrefs": [],
-        "filename": "Motion to Modify Maintenance RTF.pdf",
-        "court": "",
-        "case_no": "2014-D-0000740",
-        "case_name": "Candace R Boudreau vs. Christopher R Boudreau",
-        "filed_by": "Mason Crosby",
-        "path": "/Clio/Boudreau, Candace/00001-Boudreau",
-        "path_display": "/Clio/Boudreau, Candace/00001-Boudreau",
-    }
+@pytest.fixture
+def doc_info():
+    DocumentSet
 
-    entries = js.array([json(pathDisplay=doc["path_display"])])
+
+# TODO
+def test_finder_metadata_shortcut(finderpatch, dbx_index):
+    doc = DocumentSet
+
+    entries = js.array([json(pathDisplay=doc.path_display)])
     dbx_index.write_text(repr(entries))
 
-    metadata_store = json[str, DocumentInfo]({doc["filename"]: doc})
+    metadata_store = {}  # json[str, _DocumentMetadata]({doc.name: doc["metadata"]})
     metadata_path = dbx_index.parent / "tmp" / "metadata.json"
     metadata_path.parent.mkdir(parents=True, exist_ok=True)
     metadata_path.write_text(str(metadata_store))
     refresh_metadata_cache()
 
-    finder = finderpatch(["finder", doc["case_name"]])
+    finder = finderpatch(["finder", doc.desc])
     finder.setup().run()
 
     results = finder.json.get("results", [])
@@ -165,10 +157,10 @@ def test_finder_metadata_shortcut(finderpatch, dbx_index):
     matches = results[1]["matches"]
     assert matches
     top = matches[0]
-    assert top["pathDisplay"] == doc["path_display"]
+    assert top["pathDisplay"] == doc.path_display
     assert top["reason"] in {"exact", "metadata"}
     if top["reason"] == "metadata":
-        assert top["matched_label"] == doc["case_name"]
+        assert top["matched_label"] == doc.desc
 
 
 if __name__ == "__main__":

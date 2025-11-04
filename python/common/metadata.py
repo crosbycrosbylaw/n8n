@@ -3,16 +3,25 @@ from __future__ import annotations
 import functools
 import re
 import unicodedata
-from typing import Iterable
+from typing import Iterable, TypedDict
 
 from rampy import json
 
-from .parsehtml import DocumentInfo
 from .temp import TMP
 
 _METADATA_PATH = TMP / "metadata.json"
 
-MetadataJSON = json[str, DocumentInfo]
+
+class _DocumentMetadata(TypedDict):
+    processed: bool
+    document: dict[str, str]
+    response: dict[str, str | dict[str, str]]
+
+
+class MetadataDict(TypedDict):
+    updated: float | None
+    desc: str | None
+    docs: list[_DocumentMetadata]
 
 
 def _read_metadata():
@@ -35,7 +44,7 @@ def _normalize(text: str) -> str:
     return text.strip()
 
 
-def _split_case_name(case_name: str) -> Iterable[str]:
+def _split_case_name(case_name: str | None) -> Iterable[str]:
     if not case_name:
         return []
 
@@ -65,44 +74,31 @@ class MetadataView:
 
     def _build_indexes(self) -> None:
         for key, doc in self.store.items():
-            aliases = set[str]()
-            aliases.add(str(key))
+            aliases: set[str] = {key}
 
-            for field in ("filename", "case_name", "filed_by"):
-                value = doc.get(field)
-                if value:
-                    aliases.add(str(value))
+            if href := doc.href:
+                aliases.add(href)
 
-            aliases.update(doc.get("hrefs", []) or [])
+            if name := doc.name:
+                self._filename_map.setdefault(name.lower(), []).append(doc)
+                aliases.add(name)
 
-            for part in _split_case_name(doc.get("case_name", "")):
-                if part:
-                    aliases.add(part)
+            [aliases.add(p) for p in _split_case_name(doc.desc) if p]
 
-            path_value = doc.get("path")
-            if path_value:
-                self._path_map.setdefault(str(path_value).lower(), []).append(doc)
-                aliases.add(str(path_value))
+            def update_path_map(strpath: str):
+                self._path_map.setdefault(strpath.lower(), []).append(doc)
+                aliases.add(strpath)
 
-            path_display = doc.get("path_display")
-            if path_display:
-                self._path_map.setdefault(str(path_display).lower(), []).append(doc)
-                aliases.add(str(path_display))
+            [update_path_map(s) for f in ["path", "path_display"] if (s := getattr(doc, f, ""))]
 
-            filename = doc.get("filename")
-            if filename:
-                self._filename_map.setdefault(str(filename).lower(), []).append(doc)
+            normalized = []
+            for a in aliases:
+                if norm := _normalize(a):
+                    self._alias_map.setdefault(norm, []).append((a, doc))
+                    normalized.append(a)
 
-            alias_list = []
-            for alias in aliases:
-                norm = _normalize(alias)
-                if not norm:
-                    continue
-                self._alias_map.setdefault(norm, []).append((alias, doc))
-                alias_list.append(alias)
-
-            if alias_list:
-                self._doc_aliases[id(doc)] = alias_list
+            if normalized:
+                self._doc_aliases[id(doc)] = normalized
 
     def lookup(self, value: str) -> list[DocumentInfo]:
         norm = _normalize(value)

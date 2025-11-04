@@ -7,6 +7,9 @@ from contextlib import suppress
 
 import bs4
 
+if ty.TYPE_CHECKING:
+    pass
+
 
 class Options(ty.TypedDict, total=False):
     recursive: bool
@@ -44,17 +47,19 @@ class HTMLParser:
             href for x in self.tags("a", string=string, href=True) if (href := x["href"]) and isinstance(href, str)
         ]
 
-    def collect_table_dict(
+    def find_table_strings(
         self,
-        include_keys: ty.Sequence[str] | None = None,
-        exclude_keys: ty.Sequence[str] = (),
+        include: ty.Sequence[str] | ty.Mapping[str, str] | None = None,
+        exclude: ty.Sequence[str] = (),
+        tag: str = "tr",
     ) -> dict[str, str]:
+        remap: bool = isinstance(include, ty.Mapping)
         out: dict[str, str] = {}
 
         def selector(k: str) -> bool:
-            return k not in exclude_keys and (not include_keys or k in include_keys)
+            return k not in exclude and (not include or k in include)
 
-        for tr in self.tags("tr"):
+        for tr in self.tags(tag):
             key: str | None = None
             for c in tr.children:
                 with suppress(StopIteration):
@@ -63,54 +68,6 @@ class HTMLParser:
                         if selector(string):
                             key = string
                         continue
-                    out[key] = string
+                    out[key if not remap else include[key]] = string
 
         return out
-
-
-class DocumentInfo(ty.TypedDict):
-    hrefs: list[str]
-    filename: str
-
-    court: str
-    case_no: str
-    case_name: str
-    filed_by: str
-
-    path: str | None
-    path_display: str | None
-
-
-def get_default_doc_info():
-    return DocumentInfo(
-        hrefs=[],
-        filename="untitled",
-        case_name="",
-        court="",
-        case_no="",
-        filed_by="",
-        path=None,
-        path_display=None,
-    )
-
-
-@ty.overload
-def collect_document_information(__parser: HTMLParser) -> DocumentInfo: ...
-@ty.overload
-def collect_document_information(__content: str) -> DocumentInfo: ...
-def collect_document_information(argument):
-    parser = argument if isinstance(argument, HTMLParser) else HTMLParser(argument)
-
-    relevant_keys = ["Court", "Case Name", "Case Number", "Filed By", "Lead Document"]
-    table_dict = parser.collect_table_dict(relevant_keys)
-
-    return DocumentInfo(
-        hrefs=parser.find_hrefs("Download Document"),
-        filename=table_dict.get("Lead Document", "untitled"),
-        court=table_dict.get("Court", ""),
-        case_name=table_dict.get("Case Name", ""),
-        case_no=table_dict.get("Case Number", ""),
-        filed_by=table_dict.get("Filed By", table_dict.get("Filing Attorney", "")),
-        path=None,
-        path_display=None,
-    )
