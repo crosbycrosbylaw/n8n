@@ -52,12 +52,10 @@ n8n-py = { path = "python", editable = true }
 
 [feature.service]
   [feature.service.tasks]
-  install = "bun i"
   serve   = "pixi run n8n &"
     [feature.service.tasks.n8n]
-    cmd        = "bun n8n"
+    cmd        = "bun x n8n"
     cwd        = "service"
-    depends-on = ["install"]
       [feature.service.tasks.n8n.env]
       DB_SQLITE_POOL_SIZE             = '1'
       GENERIC_TIMEZONE                = 'America/Chicago'
