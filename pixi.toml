@@ -34,8 +34,8 @@ pytest-cov = ">=7.0.0,<8"
 python     = "==3.13"
 rampy      = { git = "https://github.com/zaynram/ramda-py", branch = "master" }
 rapidfuzz  = ">=3.14.1,<4"
+requests   = ">=2.32.5,<3"
 spacy      = ">=3.8.7,<4"
-requests = ">=2.32.5,<3"
 
 [pypi-dependencies]
 n8n-py = { path = "python", editable = true }
@@ -52,10 +52,13 @@ n8n-py = { path = "python", editable = true }
 
 [feature.service]
   [feature.service.tasks]
-  serve   = "pixi run n8n &"
+    [feature.service.tasks.svc]
+    args = [{ arg = "COMMAND", default = "status" }]
+    cmd  = "pwsh -nop -noni ./service.ps1 {{ COMMAND }}"
+    cwd  = "scripts"
     [feature.service.tasks.n8n]
-    cmd        = "n8n"
-    cwd        = "service"
+    cmd = "n8n"
+    cwd = "service"
       [feature.service.tasks.n8n.env]
       DB_SQLITE_POOL_SIZE             = '1'
       GENERIC_TIMEZONE                = 'America/Chicago'
