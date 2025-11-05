@@ -1,14 +1,8 @@
-﻿[CmdletBinding()]
-param(
-  [parameter()]
-  [validateset('start', 'stop', 'reload', 'status', 'monitor', 'poll')]
-  $action = 'monitor'
-)
+# /usr/env/sh
 
-
-$STARTUP_TIMEOUT = 60
-$HEALTH_INTERVAL = 10
-$MAX_ATTEMPTS = (($STARTUP_TIMEOUT - $HEALTH_INTERVAL) / $HEALTH_INTERVAL)
+STARTUP_TIMEOUT=60
+HEALTH_INTERVAL=10
+MAX_ATTEMPTS=(($STARTUP_TIMEOUT - $HEALTH_INTERVAL) / $HEALTH_INTERVAL)
 
 $n8n = @{
   name = 'n8n.service'

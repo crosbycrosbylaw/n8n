@@ -13,13 +13,15 @@ remote  = ["remote"]
 service = ["service"]
 
 [tasks]
-get-tod = "pwsh -nop -noni -c '\"$((get-date).timeofday)\"'"
+  [tasks.pwsh]
+  args = [{ arg = "cmd" }]
+  cmd = "pwsh -nop -noni -c '\"$({{ cmd }})\"'"
   [tasks.test]
   cmd = "python -m pytest ."
   cwd = "python/tests"
   [tasks.push]
-  args       = [{ arg = "MESSAGE", default = "$(pixi run get-tod)" }]
-  cmd        =  "git commit -a -m \"{{ MESSAGE }}\" && git push "
+  args       = [{ arg = "msg", default = "$(pixi run pwsh (get-date).timeofday)" }]
+  cmd        =  "git commit -a -m \"{{ msg }}\" && git push "
   [tasks.push-rampy]
   args = [
     { arg = "path", default = "../ramda-py" },
@@ -65,9 +67,10 @@ n8n-py = { path = "python", editable = true }
     cmd  = "pwsh -nop -noni ./service.ps1 {{ COMMAND }}"
     cwd  = "scripts"
     [feature.service.tasks.n8n]
-    cmd = "n8n"
+    cmd = "sudo --preserve-env --disable-input run n8n"
     cwd = "service"
       [feature.service.tasks.n8n.env]
+      N8N_CUSTOM_EXTENSIONS = './.n8n/nodes'
       DB_SQLITE_POOL_SIZE             = '1'
       GENERIC_TIMEZONE                = 'America/Chicago'
       N8N_BASIC_AUTH_ACTIVE           = 'true'

@@ -1,14 +1,42 @@
-﻿[CmdletBinding()]
-param(
-  [parameter()]
-  [validateset('start', 'stop', 'reload', 'status', 'monitor', 'poll')]
-  $action = 'monitor'
-)
+import os
+import sys
+
+from contextlib import redirect_stdout
+from io import StringIO
+from pathlib import Path
+from types import SimpleNamespace
+from rampy import root, sh
 
 
-$STARTUP_TIMEOUT = 60
-$HEALTH_INTERVAL = 10
-$MAX_ATTEMPTS = (($STARTUP_TIMEOUT - $HEALTH_INTERVAL) / $HEALTH_INTERVAL)
+if not userprofile := os.getenv("USERPROFILE"):
+    raise EnvironmentError("USERPROFILE")
+    
+STARTUP_TIMEOUT = 60
+HEALTH_INTERVAL = 10
+MAX_ATTEMPTS = int((STARTUP_TIMEOUT - HEALTH_INTERVAL) / HEALTH_INTERVAL)
+
+
+class ccn8n(SimpleNamespace):
+      executable: Path = Path(userprofile, ".bun", "bin", 'n8n')
+      directory: Path = root() / "service"
+      
+      def _ps(self) -> str | None:
+          buffer = StringIO()
+          command = r"""get-process 'node' -erroraction silentlycontinue |
+          where-object commandline -like '*n8n*' | 
+          where-object commandline -notlike '*task*'"""
+          with redirect_stdout(buffer):
+            sh.pwsh()
+            
+          if text := buffer.getvalue():
+              return Text
+              
+          return None
+      def __init__(self) -> None:
+          [p.resolve(strict=True) for p in (self.executable, self.directory)]
+          
+            
+            
 
 $n8n = @{
   name = 'n8n.service'
@@ -17,8 +45,7 @@ $n8n = @{
 }
 
 function get_n8n_processes() {
-      get-process 'node' -erroraction silentlycontinue |
-          where-object commandline -like '*n8n*' | where-object commandline -notlike '*task*'
+      
 }
 
 function is_n8n_running() { !!"$(get_n8n_processes)" }
