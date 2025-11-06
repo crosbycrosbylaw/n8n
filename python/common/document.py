@@ -25,7 +25,7 @@ if ty.TYPE_CHECKING:
 class FieldMetadataMixin:
     def __getitem__[T: dict[Any, Any] = dict[str, Any]](self, name: str, default: T | None = None) -> T:
         if not dc.is_dataclass(self):
-            raise TypeError("not_a_dataclass")
+            raise TypeError(_ := "not_a_dataclass")
         try:
             return self.__dataclass_fields__[name].metadata
         except KeyError:
@@ -43,7 +43,7 @@ class FieldMetadataMixin:
 class Metadata:
     __slots__ = ("_dict",)
 
-    def __init__(self, dictionary: MetadataDict):
+    def __init__(self, dictionary: MetadataDict) -> None:
         self._dict = dictionary
 
     def serialize(self) -> str:
@@ -86,20 +86,22 @@ class Document(FieldMetadataMixin):
             def value_for(id: str, *, prefix: str = "__", upper: bool = True) -> str:
                 text = f"{prefix}{id}"
                 text = text if not upper else text.upper()
-                return str([x for x in tags if x["id"] == text][0]["value"])
+                return str(next(x for x in tags if x["id"] == text)["value"])
 
             email = "eservice@crosbyandcrosbylaw.com"
             response = requests.post(
                 self.href,
-                data=urlencode({
-                    "emailAddress": email,
-                    "__VIEWSTATE": value_for("viewstate"),
-                    "__VIEWSTATEGENERATOR": value_for("viewstategenerator"),
-                    "__EVENTVALIDATION": value_for("eventvalidation"),
-                    "SubmitEmailAddressButton": "Validate",
-                    "username": email,
-                    "SubmitUsernameButton": email,
-                }),
+                data=urlencode(
+                    {
+                        "emailAddress": email,
+                        "__VIEWSTATE": value_for("viewstate"),
+                        "__VIEWSTATEGENERATOR": value_for("viewstategenerator"),
+                        "__EVENTVALIDATION": value_for("eventvalidation"),
+                        "SubmitEmailAddressButton": "Validate",
+                        "username": email,
+                        "SubmitUsernameButton": email,
+                    },
+                ),
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
 
