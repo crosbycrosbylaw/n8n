@@ -5,15 +5,15 @@ param(
   $action = 'monitor'
 )
 
-
 $STARTUP_TIMEOUT = 60
 $HEALTH_INTERVAL = 10
 $MAX_ATTEMPTS = (($STARTUP_TIMEOUT - $HEALTH_INTERVAL) / $HEALTH_INTERVAL)
 
 $n8n = @{
   name = 'n8n.service'
-  path = (get-command 'n8n').source
-  root = (join-path $psscriptroot '..')
+  path = (get-command 'bun').source
+  args = "start"
+  root = (join-path $psscriptroot '..' 'service')
 }
 
 function get_n8n_processes() {
@@ -24,7 +24,7 @@ function get_n8n_processes() {
 function is_n8n_running() { !!"$(get_n8n_processes)" }
 
 function start_n8n_process() {
-    start-process -filepath $n8n.path -workingdirectory $n8n.root
+    start-process -filepath $n8n.path $n8n.args -workingdirectory $n8n.root
 }
 
 $script = join-path $psscriptroot 'service.ps1'

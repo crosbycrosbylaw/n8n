@@ -2,9 +2,11 @@
     "name": "crosbies-n8n",
     "version": "2.0.0",
     "private": true,
+    "workspaces": ["./service", "./service/.n8n/nodes"],
     "scripts": {
         "gcp": "pixi run push",
-        "lint": "oxlint --type-aware"
+        "lint": "oxlint --type-aware",
+        "start": "bun run --filter='n8n.service' start"
     },
     "prettier": {
         "arrowParens": "avoid",
@@ -21,9 +23,7 @@
         "tabWidth": 4,
         "overrides": []
     },
-    "dependencies": {
-        "@n8n/task-runner": "^1.52.0"
-    },
+    "dependencies": {},
     "devDependencies": {
         "@types/node": "^24.6.2",
         "oxlint": "1.19.0",
