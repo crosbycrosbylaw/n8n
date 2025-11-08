@@ -1,80 +1,80 @@
 [workspace]
-authors = ["zaynram <ramdasszayn@gmail.com>"]
-channels = ["conda-forge"]
-name = "crosbydev.n8n"
+authors   = ["zaynram <ramdasszayn@gmail.com>"]
+channels  = ["conda-forge"]
+name      = "crosbydev.n8n"
 platforms = ["win-64"]
-preview = ["pixi-build"]
-version = "0.0.1"
+preview   = ["pixi-build"]
+version   = "0.0.1"
 
 [environments]
 default = ["dev", "remote"]
-remote = { features = ["remote", "service"], no-default-feature = true }
+next    = { features = ["next"], no-default-feature = true, solve-group = "next" }
+remote  = { features = ["remote", "service"], no-default-feature = true }
 service = { features = ["service"], no-default-feature = true }
-next = { features = ["next"], no-default-feature = true, solve-group = "next" }
 
 [tasks]
-[tasks.pwsh]
-args = [{ arg = "cmd" }]
-cmd = "pwsh -nop -noni -c '\"$({{ cmd }})\"'"
+  [tasks.pwsh]
+  args = [{ arg = "cmd" }]
+  cmd  = "pwsh -nop -noni -c '\"$({{ cmd }})\"'"
 
 [dependencies]
-python = ">=3.13"
-bs4 = ">=4.13.5,<5"
-fire = "*"
+bs4        = ">=4.13.5,<5"
+fire       = "*"
 nameparser = ">=1.0.5,<2"
-rampy = { git = "https://github.com/zaynram/ramda-py", branch = "master" }
-rapidfuzz = ">=3.14.1,<4"
-requests = ">=2.32.5,<3"
-spacy = ">=3.8.7,<4"
+python     = ">=3.13"
+rampy      = { git = "https://github.com/zaynram/ramda-py", branch = "master" }
+rapidfuzz  = ">=3.14.1,<4"
+requests   = ">=2.32.5,<3"
+spacy      = ">=3.8.7,<4"
 
 [pypi-dependencies]
 n8n-py = { path = "python", editable = true }
 
 [feature.next]
-[feature.next.dependencies]
-python = ">=3.14"
+  [feature.next.dependencies]
+  python = ">=3.14"
 
 [feature.dev]
-[feature.dev.dependencies]
-ipykernel = "*"
-ipywidgets = "*"
-pytest = ">=8.4.2,<9"
-pytest-cov = ">=7.0.0,<8"
+  [feature.dev.dependencies]
+  ipykernel  = "*"
+  ipywidgets = "*"
+  pytest     = ">=8.4.2,<9"
+  pytest-cov = ">=7.0.0,<8"
 
-[feature.dev.tasks]
-[feature.dev.tasks.test]
-cmd = "python -m pytest ."
-cwd = "python/tests"
+  [feature.dev.tasks]
+    [feature.dev.tasks.test]
+    cmd = "python -m pytest ."
+    cwd = "python/tests"
 
-[feature.dev.tasks.push]
-args = [{ arg = "msg", default = "$(pixi run pwsh (get-date).timeofday)" }]
-cmd = "git commit -a -m \"{{ msg }}\" && git push "
+    [feature.dev.tasks.push]
+    args = [{ arg = "msg", default = "pixi run pwsh (get-date).timeofday" }]
+    cmd  = "git commit -a -m \"{{ msg }}\" && git push "
 
-[feature.dev.tasks.push-rampy]
-args = [
-  { arg = "path", default = "../ramda-py" },
-  { arg = "root", default = "$PIXI_PROJECT_ROOT" },
-]
-cmd = "cd \"{{ path }} \" && pixi run push && cd \"{{ root }}\""
+    [feature.dev.tasks.push-rampy]
+    args = [
+      { arg = "path", default = "../ramda-py" },
+      { arg = "root", default = "$PIXI_PROJECT_ROOT" },
+    ]
+    cmd = "cd \"{{ path }} \" && pixi run push && cd \"{{ root }}\""
 
-[feature.dev.tasks.update-rampy]
-args = [{ arg = "path", default = "../ramda-py" }]
-cmd = "pixi run push-rampy {{ path }} && pixi update rampy && pixi i"
+    [feature.dev.tasks.update-rampy]
+    args = [{ arg = "path", default = "../ramda-py" }]
+    cmd  = "pixi run push-rampy {{ path }} && pixi update rampy && pixi i"
 
 [feature.remote]
-[feature.remote.tasks]
-remote = "python scripts/server-cmd.py"
+  [feature.remote.tasks]
+  remote = "python scripts/server-cmd.py"
 
-[feature.remote.tasks.update]
-cmd = "python scripts/server-cmd.py 'git pull origin main'"
-depends-on = [{ task = "push" }]
+    [feature.remote.tasks.update]
+    cmd        = "python scripts/server-cmd.py 'git pull origin main'"
+    depends-on = [{ task = "push" }]
 
-[feature.remote.tasks.maintenance]
-cmd = "python scripts/server-cmd.py './scripts/service.ps1 reload'"
-depends-on = [{ task = "update" }]
+    [feature.remote.tasks.maintenance]
+    cmd        = "python scripts/server-cmd.py './scripts/service.ps1 reload'"
+    depends-on = [{ task = "update" }]
 
 [feature.service]
-[feature.service.tasks]
-[feature.service.tasks.svc]
-args = [{ arg = "cmd", default = "status" }]
-cmd = "pwsh ./scripts/service.ps1 {{ cmd }}"
+  [feature.service.tasks]
+    [feature.service.tasks.svc]
+    args = [{ arg = "cmd", default = "status" }]
+    cmd  = "pwsh ./scripts/service.ps1 {{ cmd }}"
