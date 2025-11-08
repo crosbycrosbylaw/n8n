@@ -47,7 +47,7 @@ n8n-py = { path = "python", editable = true }
     cwd = "python/tests"
 
     [feature.dev.tasks.push]
-    args = [{ arg = "msg", default = "pixi run pwsh (get-date).timeofday" }]
+    args = [{ arg = "msg", default = "autocommit" }]
     cmd  = "git commit -a -m \"{{ msg }}\" && git push "
 
     [feature.dev.tasks.push-rampy]
