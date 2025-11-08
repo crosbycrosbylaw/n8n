@@ -1,0 +1,20 @@
+[project]
+authors         = [{ name = "zaynram", email = "ramdasszayn@gmail.com" }]
+dependencies    = ["beautifulsoup4", "typer-slim"]
+description     = "python utilities for n8n workflow automation"
+name            = "eserv"
+requires-python = ">=3.13"
+version         = "0.0.1.alpha"
+
+# --
+[tool.setuptools]
+py-modules = ["download", "extract", "resolve", "serialize", "store"]
+  [tool.setuptools.packages.find]
+  include = ["__init__.py"]
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]
+
+[build-system]
+build-backend = "setuptools.build_meta"
+requires      = ["setuptools>=61.0"]
