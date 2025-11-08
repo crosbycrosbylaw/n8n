@@ -47,8 +47,8 @@ eserv = { path = "python/eserv", editable = true }
     cwd = "python/tests"
 
     [feature.dev.tasks.push]
-    args = [{ arg = "msg", default = "$(pwsh get-date)" }]
-    cmd  = "git commit -a -m \"{{ msg }}\" && git push "
+    args = [{ arg = "msg", default = "$(pwsh -c get-date)" }]
+    cmd  = "git commit -a -m \"{{ msg }}\" "
 
 
 [feature.remote]
