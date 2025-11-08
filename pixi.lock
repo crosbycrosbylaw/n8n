@@ -152,7 +152,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-3.23.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.25.0-py313h5fd188c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-hbeecb71_2.conda
-      - pypi: ./python
+      - pypi: ./python/eserv
   next:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -491,6 +491,15 @@ packages:
   - pkg:pypi/decorator?source=hash-mapping
   size: 14129
   timestamp: 1740385067843
+- pypi: ./python/eserv
+  name: eserv
+  version: 0.0.1a0
+  sha256: 2b2558eb2109c366b5ec377c9dafe805657bfe8aad87100a81b753d57f0e6633
+  requires_dist:
+  - beautifulsoup4
+  - typer-slim
+  requires_python: '>=3.13'
+  editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.0-pyhd8ed1ab_0.conda
   sha256: ce61f4f99401a4bd455b89909153b40b9c823276aefcbb06f2044618696009ca
   md5: 72e42d28960d875c7654614f8b50939a
@@ -1143,15 +1152,6 @@ packages:
   - pkg:pypi/murmurhash?source=hash-mapping
   size: 31874
   timestamp: 1756660184446
-- pypi: ./python
-  name: n8n-py
-  version: 0.0.1a0
-  sha256: e446f5dd4e4d0a55ad3361d544158fcbf392b45a2699589c8de94bab4ffddf91
-  requires_dist:
-  - beautifulsoup4
-  - typer-slim
-  requires_python: '>=3.13'
-  editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/nameparser-1.0.5-py_0.tar.bz2
   sha256: dbdb476550fa208d5bf7e91ff699c36e97e0e641d516cc99ccc26e2157a46f86
   md5: 6cfaed4df461c9d9c8229fd44d077bd8

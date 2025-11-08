@@ -2,7 +2,10 @@
     "name": "crosbies-n8n",
     "version": "2.0.0",
     "private": true,
-    "workspaces": ["./service", "./service/.n8n/nodes"],
+    "workspaces": [
+        "./service",
+        "./service/.n8n/*"
+    ],
     "scripts": {
         "gcp": "pixi run push",
         "lint": "oxlint --type-aware",
