@@ -28,7 +28,7 @@ requests   = ">=2.32.5,<3"
 spacy      = ">=3.8.7,<4"
 
 [pypi-dependencies]
-eserv = { path = "python/eserv", editable = true }
+eserv = { path = "python", editable = true }
 
 [feature.next]
   [feature.next.dependencies]

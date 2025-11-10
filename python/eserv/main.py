@@ -4,7 +4,10 @@ import typing
 
 from bs4 import BeautifulSoup
 
-from . import download_documents, extract_upload_info, resolve_document_desination, serialize_output
+from .download import download_documents
+from .extract import extract_upload_info
+from .resolve import resolve_document_desination
+from .serialize import serialize_output
 
 if typing.TYPE_CHECKING:
     from pathlib import Path

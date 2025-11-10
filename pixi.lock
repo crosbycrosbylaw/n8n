@@ -103,7 +103,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.13-8_cp313.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pywin32-311-py313h40c08fc_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pyzmq-27.1.0-py312hbb5da91_0.conda
-      - conda: git+https://github.com/zaynram/ramda-py?branch=master#a270f97e4c22a454ed2c4dc0e2ee6cc162cccd9b
+      - conda: git+https://github.com/zaynram/ramda-py?branch=master#64f609487acaecd598d3c89ee9532e6da83a3d85
       - conda: https://conda.anaconda.org/conda-forge/win-64/rapidfuzz-3.14.3-py313hfe59770_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/requests-2.32.5-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/rich-14.2.0-pyhcf101f3_0.conda
@@ -152,7 +152,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-3.23.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.25.0-py313h5fd188c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-hbeecb71_2.conda
-      - pypi: ./python/eserv
+      - pypi: ./python
   next:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -491,10 +491,10 @@ packages:
   - pkg:pypi/decorator?source=hash-mapping
   size: 14129
   timestamp: 1740385067843
-- pypi: ./python/eserv
+- pypi: ./python
   name: eserv
   version: 0.0.1a0
-  sha256: 2b2558eb2109c366b5ec377c9dafe805657bfe8aad87100a81b753d57f0e6633
+  sha256: b1b7bd041620326b5a35ec12d070daa570daa5fd2bfd38e8de5ba660594fe9bd
   requires_dist:
   - beautifulsoup4
   - typer-slim
@@ -1564,7 +1564,7 @@ packages:
   - pkg:pypi/pyzmq?source=hash-mapping
   size: 185711
   timestamp: 1757387025899
-- conda: git+https://github.com/zaynram/ramda-py?branch=master#a270f97e4c22a454ed2c4dc0e2ee6cc162cccd9b
+- conda: git+https://github.com/zaynram/ramda-py?branch=master#64f609487acaecd598d3c89ee9532e6da83a3d85
   name: rampy
   version: 0.0.36.alpha
   build: pyh4616a5c_0

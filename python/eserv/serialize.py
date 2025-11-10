@@ -7,6 +7,7 @@ import sys
 import traceback
 import typing
 from functools import wraps
+from typing import NoReturn
 
 if typing.TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
@@ -32,7 +33,7 @@ class OutputDict(typing.TypedDict):
     data: Mapping[str, js.serializable]
 
 
-def serialize_output[**P, T](func: Callable[P, T]) -> Callable[P, None]:
+def serialize_output[**P, T](func: Callable[P, T]) -> Callable[P, NoReturn]:
     """Serialize the output of the decorated function into JSON format.
 
     This wrapper catches the return value of the decorated function and converts it into
@@ -44,7 +45,7 @@ def serialize_output[**P, T](func: Callable[P, T]) -> Callable[P, None]:
             The function to recieve and handle the output for.
 
     Returns:
-        None: This function always exits the program and does not return.
+        NoReturn: This function always exits the program and does not return.
     Output Format:
         Success (stdout):
             - If result is str: {"text": result, "items": [], "data": {}}
@@ -62,7 +63,7 @@ def serialize_output[**P, T](func: Callable[P, T]) -> Callable[P, None]:
     """
 
     @wraps(func)
-    def wrapper(*args: P.args, **kwds: P.kwargs) -> None:
+    def wrapper(*args: P.args, **kwds: P.kwargs) -> NoReturn:
         try:
             output_dict: OutputDict = {"text": None, "items": [], "data": {}}
             result = func(*args, **kwds)

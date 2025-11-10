@@ -48,7 +48,7 @@ from bs4 import BeautifulSoup, Tag
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
     from re import Pattern
-    from typing import Literal
+    from typing import Any, Literal
 
     from bs4 import Tag
 
@@ -59,7 +59,10 @@ class _Extractor[T = str](Protocol):
 
     soup: BeautifulSoup
     rules: dict[str, str | Pattern[str]]
-    pattern: Pattern[str] | Literal[True] = True
+
+    @property
+    def attrs(self) -> dict[str, Any]:
+        return self.rules
 
     def __init__(
         self,
@@ -85,12 +88,11 @@ class _Extractor[T = str](Protocol):
         target: str,
         *,
         require: bool | None = None,
-        **const_rules: str | Pattern[str],
     ) -> None:
         """Initialize subclass with the target tag name."""
         cls.target = target
         cls.require = require
-        cls.rules = const_rules
+        cls.rules = {}
 
     def _select(self, tag: Tag) -> bool:
         """Selector method for the target tag.
@@ -105,7 +107,7 @@ class _Extractor[T = str](Protocol):
         Default implementation extracts and returns the text content of the tag.
         """
         if tag is not None:
-            return typing.cast("T", tag.get_text(strip=True))
+            return typing.cast('T', tag.get_text(strip=True))
 
         return None
 
@@ -124,17 +126,17 @@ class _Extractor[T = str](Protocol):
         """
 
     def _find_one(self, *, required=False):
-        tag = self.soup.find(self._select, kwargs=self.rules)
+        tag = self.soup.find(self._select, **self.attrs)
 
         if required and not tag:
-            message = "failed to find required html element"
+            message = 'failed to find required html element'
             raise ValueError(message, tag)
 
         return tag
 
     def _find_many(self) -> list[Tag]:
         """Find multiple tags matching the selector and additional criteria."""
-        return self.soup.find_all(self._select, kwargs=self.rules)
+        return self.soup.find_all(self._select, **self.attrs)
 
     def get_one(self) -> ...:
         """Get a single extracted value, optionally matching attributes for the given string criteria.
@@ -161,16 +163,17 @@ class _Extractor[T = str](Protocol):
 # -- Download Info -- #
 
 
-class _LinkExtractor(
-    _Extractor[str],
-    target="a",
-    href=r"(https:\/\/illinois.tylertech.cloud\/ViewDocuments.aspx\?\w+=[\w-]+)",
-):
-    def _select(self, tag: Tag) -> bool:
-        return super()._select(tag) and tag.has_attr("href")
+class _LinkExtractor(_Extractor[str], target='a'):
+    regex: Pattern[str] = re.compile(r'(https:\/\/illinois.tylertech.cloud\/ViewDocuments.aspx\?\w+=[\w-]+)')
 
-    def _process(self, tag: ...) -> str | None:
-        href = tag.get("href")
+    def _select(self, tag: Tag) -> bool:
+        return self.regex.match(f'{tag.get("href", "")}'.strip()) is not None
+
+    def _process(self, tag: Tag | None) -> str | None:
+        if not tag:
+            return None
+
+        href = tag.get('href')
 
         if isinstance(href, list):
             href = next(iter(href), None)
@@ -184,16 +187,16 @@ class _LinkExtractor(
         return super().get_one()
 
 
-class _DocumentNameExtractor(_Extractor[str], target="td", require=True):
+class _DocumentNameExtractor(_Extractor[str], target='td'):
     def _select(self, tag: Tag) -> bool:
         return bool(
             super()._select(tag)
-            and (prev := tag.find_previous("td"))
+            and (prev := tag.find_previous('td'))
             and (text := prev.text)
-            and ("Lead Document" in text and "Page Count" not in text),
+            and ('Lead Document' in text and 'Page Count' not in text),
         )
 
-    def get_one(self) -> str:
+    def get_one(self) -> str | None:
         """Get the document name from the document details table.
 
         Raises ValueError if the document name cannot be found.
@@ -211,7 +214,7 @@ class DownloadInfo(NamedTuple):
     """
 
     link: str
-    name: str
+    name: str | None
 
 
 def extract_download_info(soup: BeautifulSoup) -> DownloadInfo:
@@ -243,7 +246,7 @@ def extract_download_info(soup: BeautifulSoup) -> DownloadInfo:
     link = _LinkExtractor(soup).get_one()
 
     if not link:
-        message = "could not find download link in email content."
+        message = 'could not find download link in email content.'
         raise ValueError(message)
 
     doc_name = _DocumentNameExtractor(soup).get_one()
@@ -254,16 +257,16 @@ def extract_download_info(soup: BeautifulSoup) -> DownloadInfo:
 # -- Upload Info -- #
 
 
-class _CaseNameExtractor(_Extractor[str], target="td"):
+class _CaseNameExtractor(_Extractor[str], target='td'):
     def _process(self, tag: Tag | None) -> str | None:
-        if not tag or "CONFIDENTIAL" in tag.text:
+        if not tag or 'CONFIDENTIAL' in tag.text:
             return None
         return tag.get_text(strip=True)
 
     def _select(self, tag: Tag) -> bool:
         return bool(
             super()._select(tag)
-            and (prev := tag.find_previous("td"))
+            and (prev := tag.find_previous_sibling("td"))
             and ("Case Name" in prev.text),
         )  # fmt: skip
 
@@ -305,30 +308,27 @@ def extract_upload_info(soup: BeautifulSoup, store: Path) -> UploadInfo:
 # -- Request / Response Info -- #
 
 
-class _ViewStateValueExtractor(
-    _Extractor[tuple[str, str]],
-    target="input",
-    name=r"/(^__VIEWSTATE|__VIEWSTATEGENERATOR|__EVENTVALIDATION$)/",
-):
+class _ViewStateValueExtractor(_Extractor[tuple[str, str]], target='input'):
+    regex: Pattern[str] = re.compile(r'^(__VIEWSTATE|__VIEWSTATEGENERATOR|__EVENTVALIDATION)$')
+
     def _process(self, tag: Tag | None) -> tuple[str, str] | None:
         if not tag:
             return None
 
-        name, value = items = tag.get("name"), tag.get("value")
+        name, value = items = tag.get('name', ''), tag.get('value', '')
 
-        if not all(isinstance(x, str) for x in items):
-            message = f"expected strings; recieved {type(name)}, {type(value)}"
+        if not all(x and isinstance(x, str) for x in items):
+            message = f'expected strings; recieved {type(name)}, {type(value)}'
             raise TypeError(message)
 
-        return typing.cast("tuple[str, str]", items)
+        return typing.cast('tuple[str, str]', items)
 
     def _select(self, tag: Tag) -> bool:
         return bool(
             super()._select(tag)
-            and (name := tag["name"])
-            and isinstance(name, str)
-            and name.startswith("__")
-            and tag.has_attr("value"),
+            and tag.has_attr('name')
+            and tag.has_attr('value')
+            and self.regex.match(f'{tag["name"]!s}')
         )
 
 
@@ -362,36 +362,36 @@ def extract_aspnet_form_data(content: str, email: str) -> str:
         >>> # Returns URL-encoded form data string
 
     """
-    soup = BeautifulSoup(content, "html.parser")
+    soup = BeautifulSoup(content, 'html.parser')
     generator = _ViewStateValueExtractor(soup).get_iterator()
 
     out = {}
     out.update(item for _ in range(3) if (item := next(generator, None)))
 
-    for key in "__VIEWSTATE", "__VIEWSTATEGENERATOR", "__EVENTVALIDATION":
+    for key in '__VIEWSTATE', '__VIEWSTATEGENERATOR', '__EVENTVALIDATION':
         if key in out:
             continue
         message = f"missing required ASP.NET field: '{key}'"
         raise ValueError(message)
 
-    out.update((key, email) for key in ["emailAddress", "username"])
+    out.update((key, email) for key in ['emailAddress', 'username'])
     out.update(
-        (key, "Validate")
+        (key, 'Validate')
         for key in [
-            "SubmitEmailAddressButton",
-            "SubmitUsernameButton",
+            'SubmitEmailAddressButton',
+            'SubmitUsernameButton',
         ]
     )
 
     return urlencode(out)
 
 
-class _TargetUrlExtractor(_Extractor[str], target="form"):
+class _TargetUrlExtractor(_Extractor[str], target='form'):
     def _process(self, tag: Tag | None) -> str | None:
         if not tag:
             return None
 
-        post_url = tag.get("action")
+        post_url = tag.get('action')
 
         if not isinstance(post_url, str):
             return None
@@ -399,7 +399,7 @@ class _TargetUrlExtractor(_Extractor[str], target="form"):
         return post_url
 
     def _select(self, tag: Tag) -> bool:
-        return super()._select(tag) and tag.has_attr("action")
+        return super()._select(tag) and tag.has_attr('action')
 
     def get_one(self) -> str | None:
         return super().get_one()
@@ -423,10 +423,10 @@ def extract_post_request_url(content: str, initial_url: str) -> str:
              If no URL is found, returns the initial_url.
 
     """
-    soup = BeautifulSoup(content, "html.parser")
+    soup = BeautifulSoup(content, 'html.parser')
     extracted = _TargetUrlExtractor(soup).get_one() or initial_url
 
-    if extracted.startswith("http"):
+    if extracted.startswith('http'):
         return extracted
 
     return urljoin(initial_url, extracted)
@@ -460,8 +460,8 @@ def extract_filename_from_disposition(disposition: str) -> str | None:
     return None
 
 
-class _ResponseLinkExtractor(_Extractor[tuple[str, str]], target="a"):
-    extensions: tuple[str, ...] = ".pdf", ".tif", ".tiff", ".doc", ".docx", ".jpg", ".png"
+class _ResponseLinkExtractor(_Extractor[tuple[str, str]], target='a'):
+    extensions: tuple[str, ...] = '.pdf', '.tif', '.tiff', '.doc', '.docx', '.jpg', '.png'
 
     def _select(self, tag: Tag) -> bool:
         return bool(
@@ -475,7 +475,7 @@ class _ResponseLinkExtractor(_Extractor[tuple[str, str]], target="a"):
         if not tag:
             return None
 
-        href = tag.get("href")
+        href = tag.get('href')
 
         if not isinstance(href, str):
             return None
@@ -514,7 +514,7 @@ def extract_links_from_response_html(
         - Links containing 'viewstate' or 'validation' are excluded from the results.
 
     """
-    soup = BeautifulSoup(content, "html.parser")
+    soup = BeautifulSoup(content, 'html.parser')
     iterator = _ResponseLinkExtractor(soup).get_iterator()
 
     min_chars = 5
@@ -525,11 +525,11 @@ def extract_links_from_response_html(
         link = urljoin(initial_url, href)
 
         if text and len(text) > min_chars:
-            name = text.replace(" ", "_")
+            name = text.replace(' ', '_')
         else:
-            name = Path(text.split("?")[0]).name
+            name = Path(text.split('?')[0]).name
 
-        if not any(tkn in link for tkn in ["viewstate", "validation"]):
+        if not any(tkn in link for tkn in ['viewstate', 'validation']):
             out.append(DownloadInfo(link, name))
 
     return out
