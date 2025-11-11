@@ -25,7 +25,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/comm-0.2.3-pyhe01879c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/confection-0.1.5-pyhecae5ae_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/coverage-7.11.0-py313hd650c13_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/coverage-7.11.3-py313hd650c13_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/cpython-3.13.9-py313hd8ed1ab_101.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/cymem-2.0.11-py313hfe59770_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/cython-blis-1.3.0-py313h8e081ca_0.conda
@@ -41,7 +41,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/importlib-metadata-8.7.0-pyhe01879c_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/iniconfig-2.3.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/ipykernel-7.1.0-pyh6dadd2b_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/ipython-9.6.0-pyh6be1c34_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/ipython-9.7.0-pyhe2676ad_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/ipython_pygments_lexers-1.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/ipywidgets-8.1.8-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/jedi-0.19.2-pyhd8ed1ab_1.conda
@@ -50,8 +50,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/jupyter_core-5.9.1-pyh6dadd2b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/jupyterlab_widgets-3.0.16-pyhcf101f3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/krb5-1.21.3-hdf4eb48_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/langcodes-3.4.1-pyhd8ed1ab_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/language-data-1.3.0-pyhff2d567_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/libblas-3.9.0-38_hf2e6a31_mkl.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/libcblas-3.9.0-38_h2a3cdd5_mkl.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/libexpat-2.7.1-hac47afa_0.conda
@@ -60,17 +58,15 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/libiconv-1.18-hc1393d2_2.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/liblapack-3.9.0-38_hf9ab0e9_mkl.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/liblzma-5.8.1-h2466b09_2.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/liblzma-devel-5.8.1-h2466b09_2.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/libmpdec-4.0.0-h2466b09_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/libsodium-1.0.20-hc70643c_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/libsqlite-3.50.4-hf5d6505_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/libsqlite-3.51.0-hf5d6505_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/libwinpthread-12.0.0.r4.gg4f2fc60ca-h57928b3_10.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/libxml2-16-2.15.1-h692994f_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/libxml2-2.15.1-h5d26750_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/libzlib-1.3.1-h2466b09_2.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/llvm-openmp-21.1.4-hfa2b4ca_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/llvm-openmp-21.1.5-hfa2b4ca_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/loguru-0.7.3-pyh7428d3b_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/marisa-trie-1.2.1-py313hfe59770_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-4.0.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/markupsafe-3.0.3-py313hd650c13_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/matplotlib-inline-0.2.1-pyhd8ed1ab_0.conda
@@ -83,7 +79,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/openssl-3.5.4-h725018a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-25.0-pyh29332c3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/parso-0.8.5-pyhcf101f3_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pickleshare-0.7.5-pyhd8ed1ab_1004.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.5.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/preshed-3.0.10-py313hfe59770_0.conda
@@ -91,39 +86,39 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/psutil-7.1.3-py313h5fd188c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pure_eval-0.2.3-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pycparser-2.22-pyh29332c3_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pydantic-2.12.3-pyh3cfb1c2_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/pydantic-core-2.41.4-py313hfbe8231_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pydantic-2.12.4-pyh3cfb1c2_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/pydantic-core-2.41.5-py313hfbe8231_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.19.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyh09c184e_7.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-cov-7.0.0-pyhcf101f3_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.13.0-hf5aa216_101_cp313.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.13.9-h09917c8_101_cp313.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/python-dateutil-2.9.0.post0-pyhe01879c_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/python-gil-3.13.9-h4df99d1_101.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.13-8_cp313.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pywin32-311-py313h40c08fc_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pyzmq-27.1.0-py312hbb5da91_0.conda
-      - conda: git+https://github.com/zaynram/ramda-py?branch=master#64f609487acaecd598d3c89ee9532e6da83a3d85
-      - conda: https://conda.anaconda.org/conda-forge/win-64/rapidfuzz-3.14.3-py313hfe59770_0.conda
+      - conda: git+https://github.com/zaynram/ramda-py?branch=master#ef090678794fab7e894ebaaf9b840ea860795d7b
+      - conda: https://conda.anaconda.org/conda-forge/win-64/rapidfuzz-3.14.3-py313hfe59770_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/requests-2.32.5-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/rich-14.2.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-80.9.0-pyhff2d567_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/shellingham-1.5.4-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/six-1.17.0-pyhe01879c_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/smart-open-7.4.3-h2488dc6_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/smart_open-7.4.3-pyhcf101f3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/smart-open-7.5.0-h0f9f196_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/smart_open-7.5.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/soupsieve-2.8-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/spacy-3.8.7-py313he18703e_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/spacy-3.8.8-py313he18703e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/spacy-legacy-3.0.12-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/spacy-loggers-1.0.5-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/srsly-2.5.1-py313h5813708_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/stack_data-0.6.3-pyhd8ed1ab_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/tbb-2022.3.0-hd094cb3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tbb-2022.3.0-hd094cb3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/termcolor-3.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/thinc-8.3.6-py313h7084e01_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/tk-8.6.13-h2c6b04d_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tomli-2.3.0-pyhcf101f3_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/tornado-6.5.2-py313h5ea7bf4_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tornado-6.5.2-py313h5ea7bf4_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tqdm-4.67.1-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/traitlets-5.14.3-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/typer-0.20.0-pyhdb1f59b_0.conda
@@ -141,16 +136,14 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.44.35208-h818238b_32.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/wasabi-1.1.3-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/wcwidth-0.2.14-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/weasel-0.4.1-pyhd8ed1ab_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/weasel-0.4.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/widgetsnbextension-4.0.15-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/win32_setctime-1.2.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/win_inet_pton-1.1.0-pyh7428d3b_8.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/wrapt-2.0.0-py313h5ea7bf4_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/xz-5.8.1-h208afaa_2.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/xz-tools-5.8.1-h2466b09_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/wrapt-2.0.1-py313h5ea7bf4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zeromq-4.3.5-h5bddc39_9.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-3.23.0-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.25.0-py313h5fd188c_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.25.0-py313h5fd188c_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-hbeecb71_2.conda
       - pypi: ./python
   next:
@@ -404,9 +397,9 @@ packages:
   - pkg:pypi/confection?source=hash-mapping
   size: 37405
   timestamp: 1740630763363
-- conda: https://conda.anaconda.org/conda-forge/win-64/coverage-7.11.0-py313hd650c13_0.conda
-  sha256: 807443799cbad8ee08d94ca68e463a779a1050336d49aab15ac95943774e0a61
-  md5: d167f8a55973119db523057314e526ec
+- conda: https://conda.anaconda.org/conda-forge/win-64/coverage-7.11.3-py313hd650c13_0.conda
+  sha256: 4970f139c13b5a3f2aa731bd6ce95447ae7190197f4ab279131c4fb0b3ca4ba7
+  md5: b83dee6985f407115e912e31ddb78f3e
   depends:
   - python >=3.13,<3.14.0a0
   - python_abi 3.13.* *_cp313
@@ -415,11 +408,10 @@ packages:
   - vc >=14.3,<15
   - vc14_runtime >=14.44.35208
   license: Apache-2.0
-  license_family: APACHE
   purls:
   - pkg:pypi/coverage?source=hash-mapping
-  size: 411234
-  timestamp: 1760545090409
+  size: 414641
+  timestamp: 1762739362949
 - conda: https://conda.anaconda.org/conda-forge/noarch/cpython-3.13.9-py313hd8ed1ab_101.conda
   noarch: generic
   sha256: 31da683e8a15e2062adfb29c9fb23d4253550a0b3c9be1cd45530f88796b4644
@@ -633,22 +625,20 @@ packages:
   - pkg:pypi/ipykernel?source=hash-mapping
   size: 132418
   timestamp: 1761567966860
-- conda: https://conda.anaconda.org/conda-forge/noarch/ipython-9.6.0-pyh6be1c34_0.conda
-  sha256: 0ff7971573863a912ee397c5696f551f4d1a6fb77db59947f6aee4ba04aa25fe
-  md5: ee8541586a0ba8824b5072a540bcc016
+- conda: https://conda.anaconda.org/conda-forge/noarch/ipython-9.7.0-pyhe2676ad_0.conda
+  sha256: 3f48685fce2d2d75d24e9b18eba7d6d55f973d56cd4092064c98bb7f95a77dcc
+  md5: a1ac3cd378490356e0299d0ca95809d1
   depends:
   - __win
-  - colorama
-  - decorator
-  - exceptiongroup
-  - ipython_pygments_lexers
-  - jedi >=0.16
-  - matplotlib-inline
-  - pickleshare
+  - colorama >=0.4.4
+  - decorator >=4.3.2
+  - ipython_pygments_lexers >=1.0.0
+  - jedi >=0.18.1
+  - matplotlib-inline >=0.1.5
   - prompt-toolkit >=3.0.41,<3.1.0
-  - pygments >=2.4.0
+  - pygments >=2.11.0
   - python >=3.11
-  - stack_data
+  - stack_data >=0.6.0
   - traitlets >=5.13.0
   - typing_extensions >=4.6
   - python
@@ -656,8 +646,8 @@ packages:
   license_family: BSD
   purls:
   - pkg:pypi/ipython?source=hash-mapping
-  size: 638142
-  timestamp: 1759151854383
+  size: 641867
+  timestamp: 1762350976678
 - conda: https://conda.anaconda.org/conda-forge/noarch/ipython_pygments_lexers-1.1.1-pyhd8ed1ab_0.conda
   sha256: 894682a42a7d659ae12878dbcb274516a7031bbea9104e92f8e88c1f2765a104
   md5: bd80ba060603cc228d9d81c257093119
@@ -771,30 +761,6 @@ packages:
   purls: []
   size: 712034
   timestamp: 1719463874284
-- conda: https://conda.anaconda.org/conda-forge/noarch/langcodes-3.4.1-pyhd8ed1ab_1.conda
-  sha256: 09dabbe71c333b2a89dd31eb167afc75d23019414fbaf8f24a011072ac5e97ab
-  md5: 50727f5554dc6436399c9c1760263acc
-  depends:
-  - language-data >=1.2
-  - python >=3.9
-  license: MIT
-  license_family: MIT
-  purls:
-  - pkg:pypi/langcodes?source=hash-mapping
-  size: 155393
-  timestamp: 1734376571010
-- conda: https://conda.anaconda.org/conda-forge/noarch/language-data-1.3.0-pyhff2d567_0.conda
-  sha256: 69ee9a45ab26c0a52eebe18201a4863c3129b82022fe1803626e345bf098386f
-  md5: 03791f1242445cf08900118f5bea86e6
-  depends:
-  - marisa-trie >=0.7.7
-  - python >=3.9
-  license: MIT
-  license_family: MIT
-  purls:
-  - pkg:pypi/language-data?source=hash-mapping
-  size: 4234469
-  timestamp: 1732032510329
 - conda: https://conda.anaconda.org/conda-forge/win-64/libblas-3.9.0-38_hf2e6a31_mkl.conda
   build_number: 38
   sha256: 363920dbd6a4c09f419a4e032568d5468dc9196e8c9e401af4e8026ecf88f2b7
@@ -906,18 +872,6 @@ packages:
   purls: []
   size: 104935
   timestamp: 1749230611612
-- conda: https://conda.anaconda.org/conda-forge/win-64/liblzma-devel-5.8.1-h2466b09_2.conda
-  sha256: 1ccff927a2d768403bad85e36ca3e931d96890adb4f503e1780c3412dd1e1298
-  md5: 42c90c4941c59f1b9f8fab627ad8ae76
-  depends:
-  - liblzma 5.8.1 h2466b09_2
-  - ucrt >=10.0.20348.0
-  - vc >=14.2,<15
-  - vc14_runtime >=14.29.30139
-  license: 0BSD
-  purls: []
-  size: 129344
-  timestamp: 1749230637001
 - conda: https://conda.anaconda.org/conda-forge/win-64/libmpdec-4.0.0-h2466b09_0.conda
   sha256: fc529fc82c7caf51202cc5cec5bb1c2e8d90edbac6d0a4602c966366efe3c7bf
   md5: 74860100b2029e2523cf480804c76b9b
@@ -941,17 +895,6 @@ packages:
   purls: []
   size: 202344
   timestamp: 1716828757533
-- conda: https://conda.anaconda.org/conda-forge/win-64/libsqlite-3.50.4-hf5d6505_0.conda
-  sha256: 5dc4f07b2d6270ac0c874caec53c6984caaaa84bc0d3eb593b0edf3dc8492efa
-  md5: ccb20d946040f86f0c05b644d5eadeca
-  depends:
-  - ucrt >=10.0.20348.0
-  - vc >=14.3,<15
-  - vc14_runtime >=14.44.35208
-  license: blessing
-  purls: []
-  size: 1288499
-  timestamp: 1753948889360
 - conda: https://conda.anaconda.org/conda-forge/win-64/libsqlite-3.51.0-hf5d6505_0.conda
   sha256: 2373bd7450693bd0f624966e1bee2f49b0bf0ffbc114275ed0a43cf35aec5b21
   md5: d2c9300ebd2848862929b18c264d1b1e
@@ -960,6 +903,7 @@ packages:
   - vc >=14.3,<15
   - vc14_runtime >=14.44.35208
   license: blessing
+  purls: []
   size: 1292710
   timestamp: 1762299749044
 - conda: https://conda.anaconda.org/conda-forge/win-64/libwinpthread-12.0.0.r4.gg4f2fc60ca-h57928b3_10.conda
@@ -1024,21 +968,21 @@ packages:
   purls: []
   size: 55476
   timestamp: 1727963768015
-- conda: https://conda.anaconda.org/conda-forge/win-64/llvm-openmp-21.1.4-hfa2b4ca_0.conda
-  sha256: 397d1874330592e57c6378a83dff194c6d1875cab44a41f9fdee8c3fe20bbe6b
-  md5: 5d56fdf8c9dc4c385704317e6743fca4
+- conda: https://conda.anaconda.org/conda-forge/win-64/llvm-openmp-21.1.5-hfa2b4ca_0.conda
+  sha256: 8c5106720e5414f48344fd28eae4db4f1a382336d8a0f30f71d41d8ae730fbb6
+  md5: 3bd3154b24a1b9489d4ab04d62ffcc86
   depends:
   - ucrt >=10.0.20348.0
   - vc >=14.3,<15
   - vc14_runtime >=14.44.35208
   constrains:
+  - openmp 21.1.5|21.1.5.*
   - intel-openmp <0.0a0
-  - openmp 21.1.4|21.1.4.*
   license: Apache-2.0 WITH LLVM-exception
   license_family: APACHE
   purls: []
-  size: 347267
-  timestamp: 1761131531490
+  size: 347688
+  timestamp: 1762315988146
 - conda: https://conda.anaconda.org/conda-forge/noarch/loguru-0.7.3-pyh7428d3b_0.conda
   sha256: 647ce9601c1a63af4710a2d718a74fa521da28262c41bbf86189f6c0906b23f6
   md5: a6c25c54d8d524735db2e5785aec0a4e
@@ -1053,21 +997,6 @@ packages:
   - pkg:pypi/loguru?source=hash-mapping
   size: 60119
   timestamp: 1746634872414
-- conda: https://conda.anaconda.org/conda-forge/win-64/marisa-trie-1.2.1-py313hfe59770_1.conda
-  sha256: b01abee2f33168c86b080f7367fd60a475e55a055babd006d7d81034c8a49fae
-  md5: 4dd22490dcfae25f86ed06906c0155ef
-  depends:
-  - python >=3.13,<3.14.0a0
-  - python_abi 3.13.* *_cp313
-  - ucrt >=10.0.20348.0
-  - vc >=14.3,<15
-  - vc14_runtime >=14.44.35208
-  license: MIT
-  license_family: MIT
-  purls:
-  - pkg:pypi/marisa-trie?source=hash-mapping
-  size: 136061
-  timestamp: 1759429423214
 - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-it-py-4.0.0-pyhd8ed1ab_0.conda
   sha256: 7b1da4b5c40385791dbc3cc85ceea9fad5da680a27d5d3cb8bfaa185e304a89e
   md5: 5b5203189eb668f042ac2b0826244964
@@ -1234,17 +1163,6 @@ packages:
   - pkg:pypi/parso?source=hash-mapping
   size: 81562
   timestamp: 1755974222274
-- conda: https://conda.anaconda.org/conda-forge/noarch/pickleshare-0.7.5-pyhd8ed1ab_1004.conda
-  sha256: e2ac3d66c367dada209fc6da43e645672364b9fd5f9d28b9f016e24b81af475b
-  md5: 11a9d1d09a3615fc07c3faf79bc0b943
-  depends:
-  - python >=3.9
-  license: MIT
-  license_family: MIT
-  purls:
-  - pkg:pypi/pickleshare?source=hash-mapping
-  size: 11748
-  timestamp: 1733327448200
 - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.5.0-pyhcf101f3_0.conda
   sha256: 7efd51b48d908de2d75cbb3c4a2e80dd9454e1c5bb8191b261af3136f7fa5888
   md5: 5c7a868f8241e64e1cf5fdf4962f23e2
@@ -1340,12 +1258,12 @@ packages:
   - pkg:pypi/pycparser?source=hash-mapping
   size: 110100
   timestamp: 1733195786147
-- conda: https://conda.anaconda.org/conda-forge/noarch/pydantic-2.12.3-pyh3cfb1c2_0.conda
-  sha256: 6a940747e8445653224dcff95fadf1060c66b9e544fdb0ed469b70a98c3aee7e
-  md5: 2cb5d62fdf68deb0263663598feb9fc5
+- conda: https://conda.anaconda.org/conda-forge/noarch/pydantic-2.12.4-pyh3cfb1c2_0.conda
+  sha256: c51297f0f6ef13776cc5b61c37d00c0d45faaed34f81d196e64bebc989f3e497
+  md5: bf6ce72315b6759453d8c90a894e9e4c
   depends:
   - annotated-types >=0.6.0
-  - pydantic-core 2.41.4
+  - pydantic-core 2.41.5
   - python >=3.10
   - typing-extensions >=4.6.1
   - typing-inspection >=0.4.2
@@ -1353,12 +1271,12 @@ packages:
   license: MIT
   license_family: MIT
   purls:
-  - pkg:pypi/pydantic?source=compressed-mapping
-  size: 320015
-  timestamp: 1760749357338
-- conda: https://conda.anaconda.org/conda-forge/win-64/pydantic-core-2.41.4-py313hfbe8231_0.conda
-  sha256: e2380a4d4cccf20486a913b73a9ba7ea269efe947d5b768a47d1233cc621698c
-  md5: 4ddbaacc801f1a36b4ab20c0219ec60f
+  - pkg:pypi/pydantic?source=hash-mapping
+  size: 320446
+  timestamp: 1762379584494
+- conda: https://conda.anaconda.org/conda-forge/win-64/pydantic-core-2.41.5-py313hfbe8231_0.conda
+  sha256: 82ee80cb7272551031d7e8a42494ce3d67897288605bcb76269c995ea8aa69fc
+  md5: 639e9460fc15dce7b0eed455c84d6c8d
   depends:
   - python
   - typing-extensions >=4.6.0,!=4.7.0
@@ -1373,8 +1291,8 @@ packages:
   license_family: MIT
   purls:
   - pkg:pypi/pydantic-core?source=hash-mapping
-  size: 1971720
-  timestamp: 1760442435699
+  size: 1976270
+  timestamp: 1762358914181
 - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.19.2-pyhd8ed1ab_0.conda
   sha256: 5577623b9f6685ece2697c6eb7511b4c9ac5fb607c9babc2646c811b428fd46a
   md5: 6b6ece66ebcae2d5f326c77ef2c5a066
@@ -1399,26 +1317,27 @@ packages:
   - pkg:pypi/pysocks?source=hash-mapping
   size: 21784
   timestamp: 1733217448189
-- conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhd8ed1ab_0.conda
-  sha256: 41053d9893e379a3133bb9b557b98a3d2142fca474fb6b964ba5d97515f78e2d
-  md5: 1f987505580cb972cf28dc5f74a0f81b
+- conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
+  sha256: 39f41a52eb6f927caf5cd42a2ff98a09bb850ce9758b432869374b6253826962
+  md5: da0c42269086f5170e2b296878ec13a6
   depends:
-  - colorama >=0.4
-  - exceptiongroup >=1
+  - pygments >=2.7.2
+  - python >=3.10
   - iniconfig >=1
   - packaging >=20
   - pluggy >=1.5,<2
-  - pygments >=2.7.2
-  - python >=3.10
   - tomli >=1
+  - colorama >=0.4
+  - exceptiongroup >=1
+  - python
   constrains:
   - pytest-faulthandler >=2
   license: MIT
   license_family: MIT
   purls:
-  - pkg:pypi/pytest?source=hash-mapping
-  size: 276734
-  timestamp: 1757011891753
+  - pkg:pypi/pytest?source=compressed-mapping
+  size: 294852
+  timestamp: 1762354779909
 - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-cov-7.0.0-pyhcf101f3_1.conda
   sha256: d0f45586aad48ef604590188c33c83d76e4fc6370ac569ba0900906b24fd6a26
   md5: 6891acad5e136cb62a8c2ed2679d6528
@@ -1434,29 +1353,30 @@ packages:
   - pkg:pypi/pytest-cov?source=hash-mapping
   size: 29016
   timestamp: 1757612051022
-- conda: https://conda.anaconda.org/conda-forge/win-64/python-3.13.0-hf5aa216_101_cp313.conda
+- conda: https://conda.anaconda.org/conda-forge/win-64/python-3.13.9-h09917c8_101_cp313.conda
   build_number: 101
-  sha256: b8eba57bd86c7890b27e67b477b52b5bd547946c354f29b9dbbc70ad83f2863b
-  md5: 158d6077a635cf0c0c23bec3955a4833
+  sha256: bc855b513197637c2083988d5cbdcc407a23151cdecff381bd677df33d516a01
+  md5: 89d992b9d4b9e88ed54346c9c4a24c1c
   depends:
   - bzip2 >=1.0.8,<2.0a0
-  - libexpat >=2.6.4,<3.0a0
-  - libffi >=3.4,<4.0a0
+  - libexpat >=2.7.1,<3.0a0
+  - libffi >=3.5.2,<3.6.0a0
+  - liblzma >=5.8.1,<6.0a0
   - libmpdec >=4.0.0,<5.0a0
-  - libsqlite >=3.47.0,<4.0a0
+  - libsqlite >=3.50.4,<4.0a0
   - libzlib >=1.3.1,<2.0a0
-  - openssl >=3.4.0,<4.0a0
+  - openssl >=3.5.4,<4.0a0
   - python_abi 3.13.* *_cp313
   - tk >=8.6.13,<8.7.0a0
   - tzdata
   - ucrt >=10.0.20348.0
-  - vc >=14.2,<15
-  - vc14_runtime >=14.29.30139
-  - xz >=5.2.6,<6.0a0
+  - vc >=14.3,<15
+  - vc14_runtime >=14.44.35208
   license: Python-2.0
   purls: []
-  size: 16697406
-  timestamp: 1732734725404
+  size: 16613183
+  timestamp: 1761175050438
+  python_site_packages_path: Lib/site-packages
 - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.14.0-h4b44e0e_102_cp314.conda
   build_number: 102
   sha256: 2b8c8fcafcc30690b4c5991ee28eb80c962e50e06ce7da03b2b302e2d39d6a81
@@ -1564,7 +1484,7 @@ packages:
   - pkg:pypi/pyzmq?source=hash-mapping
   size: 185711
   timestamp: 1757387025899
-- conda: git+https://github.com/zaynram/ramda-py?branch=master#64f609487acaecd598d3c89ee9532e6da83a3d85
+- conda: git+https://github.com/zaynram/ramda-py?branch=master#ef090678794fab7e894ebaaf9b840ea860795d7b
   name: rampy
   version: 0.0.36.alpha
   build: pyh4616a5c_0
@@ -1574,9 +1494,9 @@ packages:
   - python >=3.13
   - python *
   channel: null
-- conda: https://conda.anaconda.org/conda-forge/win-64/rapidfuzz-3.14.3-py313hfe59770_0.conda
-  sha256: 53f6a822683cb25f9c540c5b02567a86bb77ee5d59931f74b66da0ea53257aef
-  md5: 88dfa5c7fdd0ffb0ba718c7e978d384f
+- conda: https://conda.anaconda.org/conda-forge/win-64/rapidfuzz-3.14.3-py313hfe59770_1.conda
+  sha256: 12a24d257a78a7bd697f0ad7bf2b3f9fdbd9550b21b7abd9d562b5405719f25d
+  md5: d385f2cc13b95e5e42000ed04636b412
   depends:
   - numpy
   - python >=3.13,<3.14.0a0
@@ -1588,8 +1508,8 @@ packages:
   license_family: MIT
   purls:
   - pkg:pypi/rapidfuzz?source=hash-mapping
-  size: 1018504
-  timestamp: 1762004725638
+  size: 1018102
+  timestamp: 1762523246373
 - conda: https://conda.anaconda.org/conda-forge/noarch/requests-2.32.5-pyhd8ed1ab_0.conda
   sha256: 8dc54e94721e9ab545d7234aa5192b74102263d3e704e6d0c8aa7008f2da2a7b
   md5: db0c6b99149880c8ba515cf4abe93ee4
@@ -1656,29 +1576,27 @@ packages:
   - pkg:pypi/six?source=hash-mapping
   size: 18455
   timestamp: 1753199211006
-- conda: https://conda.anaconda.org/conda-forge/noarch/smart-open-7.4.3-h2488dc6_0.conda
-  sha256: 6fae2de70d004aa01aaf56bf4bbb4db85687ee17b4b93d94e790a08b1cce0536
-  md5: 20eb4f26bd53910289231c222e470713
+- conda: https://conda.anaconda.org/conda-forge/noarch/smart-open-7.5.0-h0f9f196_0.conda
+  sha256: 16f0537ce0cc20b265d161765f94a720e5f1a2e1772c27601a3926ecc25c4fc3
+  md5: 6ef36c6a6ce87cc57cf0094abfa3d35b
   depends:
-  - smart_open ==7.4.3 pyhcf101f3_0
+  - smart_open ==7.5.0 pyhcf101f3_0
   license: MIT
-  license_family: MIT
   purls: []
-  size: 4840
-  timestamp: 1762177960830
-- conda: https://conda.anaconda.org/conda-forge/noarch/smart_open-7.4.3-pyhcf101f3_0.conda
-  sha256: 39fda436bc76ca9ac17a86b92f5d7801efe734b52248abc1c334f69a20efddba
-  md5: d2be8759526447ac311b6e39f7da520a
+  size: 4834
+  timestamp: 1762641207785
+- conda: https://conda.anaconda.org/conda-forge/noarch/smart_open-7.5.0-pyhcf101f3_0.conda
+  sha256: 8b4684aac4547852fdf6339edb99d1aeb8dbd8280436ce9b27b463341fd68dde
+  md5: 9d1659c8332e9822e347e115e6bb4d0c
   depends:
   - python >=3.10
   - wrapt
   - python
   license: MIT
-  license_family: MIT
   purls:
   - pkg:pypi/smart-open?source=hash-mapping
-  size: 55856
-  timestamp: 1762177960821
+  size: 56781
+  timestamp: 1762641207780
 - conda: https://conda.anaconda.org/conda-forge/noarch/soupsieve-2.8-pyhd8ed1ab_0.conda
   sha256: c978576cf9366ba576349b93be1cfd9311c00537622a2f9e14ba2b90c97cae9c
   md5: 18c019ccf43769d211f2cf78e9ad46c2
@@ -1690,14 +1608,13 @@ packages:
   - pkg:pypi/soupsieve?source=hash-mapping
   size: 37803
   timestamp: 1756330614547
-- conda: https://conda.anaconda.org/conda-forge/win-64/spacy-3.8.7-py313he18703e_0.conda
-  sha256: 58179a2fc7c8874958c8aa8924e3bceee4a972b625c06d011602a3f6397e7977
-  md5: e3d755be48e3817ccf316141b69b09e5
+- conda: https://conda.anaconda.org/conda-forge/win-64/spacy-3.8.8-py313he18703e_0.conda
+  sha256: f5bc839dbe242c06b66ac220744a411ceeeb192f3d9c77bf216c6355ba22a873
+  md5: 92e89cbc70c6f787d6ad465cce4b271d
   depends:
   - catalogue >=2.0.6,<2.1.0
   - cymem >=2.0.2,<2.1.0
   - jinja2
-  - langcodes >=3.2.0,<4.0.0
   - murmurhash >=0.28.0,<1.1.0
   - numpy >=1.23,<3
   - packaging >=20.0
@@ -1710,20 +1627,19 @@ packages:
   - spacy-legacy >=3.0.11,<3.1.0
   - spacy-loggers >=1.0.0,<2.0.0
   - srsly >=2.4.3,<3.0.0
-  - thinc >=8.3.0,<8.4.0
+  - thinc >=8.3.4,<8.4.0
   - tqdm >=4.38.0,<5.0.0
   - typer >=0.3.0,<1.0.0
   - ucrt >=10.0.20348.0
   - vc >=14.2,<15
   - vc14_runtime >=14.29.30139
   - wasabi >=0.9.1,<1.2.0
-  - weasel >=0.1.0,<0.5.0
+  - weasel >=0.4.2,<0.5.0
   license: MIT
-  license_family: MIT
   purls:
   - pkg:pypi/spacy?source=hash-mapping
-  size: 6619053
-  timestamp: 1751804606849
+  size: 7063055
+  timestamp: 1762663874614
 - conda: https://conda.anaconda.org/conda-forge/noarch/spacy-legacy-3.0.12-pyhd8ed1ab_0.conda
   sha256: c121bea3de8a53dbbb695c4914c792b22e71db99cb1dc15e95b387a5fce31ee8
   md5: bbe68ced56ea855f0223c329f1fd2fc0
@@ -1778,19 +1694,18 @@ packages:
   - pkg:pypi/stack-data?source=hash-mapping
   size: 26988
   timestamp: 1733569565672
-- conda: https://conda.anaconda.org/conda-forge/win-64/tbb-2022.3.0-hd094cb3_0.conda
-  sha256: 290b1ae188d614d7e1fb98dc04b8afd9762dd82d3a0e2de2a8616c750de7cfab
-  md5: d21952ac3d528fa8ca2f268f262f9ec6
+- conda: https://conda.anaconda.org/conda-forge/win-64/tbb-2022.3.0-hd094cb3_1.conda
+  sha256: c31cac57913a699745d124cdc016a63e31c5749f16f60b3202414d071fc50573
+  md5: 17c38aaf14c640b85c4617ccb59c1146
   depends:
   - libhwloc >=2.12.1,<2.12.2.0a0
   - ucrt >=10.0.20348.0
   - vc >=14.3,<15
   - vc14_runtime >=14.44.35208
   license: Apache-2.0
-  license_family: APACHE
   purls: []
-  size: 154726
-  timestamp: 1761756665176
+  size: 155714
+  timestamp: 1762510341121
 - conda: https://conda.anaconda.org/conda-forge/noarch/termcolor-3.2.0-pyhd8ed1ab_0.conda
   sha256: a06b613f6f1d4b87200d775c6625cf0b5eff49856b0dd44625ec50797c99b64a
   md5: ac2888874deebb7c177b5cb6781cc48b
@@ -1852,9 +1767,9 @@ packages:
   - pkg:pypi/tomli?source=compressed-mapping
   size: 20973
   timestamp: 1760014679845
-- conda: https://conda.anaconda.org/conda-forge/win-64/tornado-6.5.2-py313h5ea7bf4_1.conda
-  sha256: ec4d9ef994018acc59d83e1024f7b08a3e8f2d917ec42d6db873aaf6102fec3c
-  md5: ae40ad307ecb3181694714a40002af6c
+- conda: https://conda.anaconda.org/conda-forge/win-64/tornado-6.5.2-py313h5ea7bf4_2.conda
+  sha256: 79a13678078dbdcb800b75d32e7d60f460a2284f1d6ede15ff5478b656608a28
+  md5: 81bf54645cb6686c47158450cd913ec2
   depends:
   - python >=3.13,<3.14.0a0
   - python_abi 3.13.* *_cp313
@@ -1865,8 +1780,8 @@ packages:
   license_family: Apache
   purls:
   - pkg:pypi/tornado?source=hash-mapping
-  size: 876511
-  timestamp: 1756855260509
+  size: 876064
+  timestamp: 1762506921139
 - conda: https://conda.anaconda.org/conda-forge/noarch/tqdm-4.67.1-pyhd8ed1ab_1.conda
   sha256: 11e2c85468ae9902d24a27137b6b39b4a78099806e551d390e394a8c34b48e40
   md5: 9efbfdc37242619130ea42b1cc4ed861
@@ -2075,26 +1990,27 @@ packages:
   - pkg:pypi/wcwidth?source=hash-mapping
   size: 33670
   timestamp: 1758622418893
-- conda: https://conda.anaconda.org/conda-forge/noarch/weasel-0.4.1-pyhd8ed1ab_2.conda
-  sha256: 737da689fdf8a056d24ec104585b9e500849369a7b2e78c1923373c85b17cabf
-  md5: c909d5a153ce7e0af0ff051b851dd38a
+- conda: https://conda.anaconda.org/conda-forge/noarch/weasel-0.4.2-pyhd8ed1ab_0.conda
+  sha256: bb7db2d3815c54647f067c487e8fa39e26963435deefaca8d4b2e47b3404e11e
+  md5: 4ca7a7a1299534924e1fa8e9f006b16d
   depends:
   - cloudpathlib >=0.7.0,<1.0.0
   - confection >=0.0.4,<0.2.0
   - packaging >=20.0
   - pydantic >=1.7.4,!=1.8,!=1.8.1,<3.0.0
-  - python >=3.9
+  - python >=3.10
   - requests >=2.13.0,<3.0.0
   - smart-open >=5.2.1,<8.0.0
   - srsly >=2.4.3,<3.0.0
   - typer >=0.3.0,<1.0.0
+  - typer-slim >=0.3.0,<1.0.0
   - wasabi >=0.9.1,<1.2.0
   license: MIT
   license_family: MIT
   purls:
   - pkg:pypi/weasel?source=hash-mapping
-  size: 42533
-  timestamp: 1734270255037
+  size: 43431
+  timestamp: 1762392945200
 - conda: https://conda.anaconda.org/conda-forge/noarch/widgetsnbextension-4.0.15-pyhd8ed1ab_0.conda
   sha256: 826af5e2c09e5e45361fa19168f46ff524e7a766022615678c3a670c45895d9a
   md5: dc257b7e7cad9b79c1dfba194e92297b
@@ -2128,9 +2044,9 @@ packages:
   - pkg:pypi/win-inet-pton?source=hash-mapping
   size: 9555
   timestamp: 1733130678956
-- conda: https://conda.anaconda.org/conda-forge/win-64/wrapt-2.0.0-py313h5ea7bf4_0.conda
-  sha256: e8fbeda5dfe72255546295ab12a2d45ff656c604a9ee285d4aca2650bf7d8ec5
-  md5: ff4543f24b6d71daaf86ff2ba6310851
+- conda: https://conda.anaconda.org/conda-forge/win-64/wrapt-2.0.1-py313h5ea7bf4_1.conda
+  sha256: 597e4120e88c0ede79d1cb549462043546f64882b8c752b2abde0e017c667b56
+  md5: 68d28fbd91a39548396b2bc911e1a16c
   depends:
   - python >=3.13,<3.14.0a0
   - python_abi 3.13.* *_cp313
@@ -2138,39 +2054,10 @@ packages:
   - vc >=14.3,<15
   - vc14_runtime >=14.44.35208
   license: BSD-2-Clause
-  license_family: BSD
   purls:
   - pkg:pypi/wrapt?source=hash-mapping
-  size: 84707
-  timestamp: 1760964506185
-- conda: https://conda.anaconda.org/conda-forge/win-64/xz-5.8.1-h208afaa_2.conda
-  sha256: 22289a81da4698bb8d13ac032a88a4a1f49505b2303885e1add3d8bd1a7b56e6
-  md5: fb3fa84ea37de9f12cc8ba730cec0bdc
-  depends:
-  - liblzma 5.8.1 h2466b09_2
-  - liblzma-devel 5.8.1 h2466b09_2
-  - ucrt >=10.0.20348.0
-  - vc >=14.2,<15
-  - vc14_runtime >=14.29.30139
-  - xz-tools 5.8.1 h2466b09_2
-  license: 0BSD AND LGPL-2.1-or-later AND GPL-2.0-or-later
-  purls: []
-  size: 24430
-  timestamp: 1749230691276
-- conda: https://conda.anaconda.org/conda-forge/win-64/xz-tools-5.8.1-h2466b09_2.conda
-  sha256: 38712f0e62f61741ab69d7551fa863099f5be769bdf9fdbc28542134874b4e88
-  md5: e1b62ec0457e6ba10287a49854108fdb
-  depends:
-  - liblzma 5.8.1 h2466b09_2
-  - ucrt >=10.0.20348.0
-  - vc >=14.2,<15
-  - vc14_runtime >=14.29.30139
-  constrains:
-  - xz 5.8.1.*
-  license: 0BSD AND LGPL-2.1-or-later
-  purls: []
-  size: 67419
-  timestamp: 1749230666460
+  size: 84647
+  timestamp: 1762595115510
 - conda: https://conda.anaconda.org/conda-forge/win-64/zeromq-4.3.5-h5bddc39_9.conda
   sha256: 690cf749692c8ea556646d1a47b5824ad41b2f6dfd949e4cdb6c44a352fcb1aa
   md5: a6c8f8ee856f7c3c1576e14b86cd8038
@@ -2199,9 +2086,9 @@ packages:
   - pkg:pypi/zipp?source=hash-mapping
   size: 22963
   timestamp: 1749421737203
-- conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.25.0-py313h5fd188c_0.conda
-  sha256: d20a163a466621e41c3d06bc5dc3040603b8b0bfa09f493e2bfc0dbd5aa6e911
-  md5: edfe43bb6e955d4d9b5e7470ea92dead
+- conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.25.0-py313h5fd188c_1.conda
+  sha256: 5f751687a64cf5a6d69ad79aa437f45d6cc388d9e887dcdecff9d3b08cf7fd87
+  md5: 46f6f9bb324a58a9b081bbc56ade37f2
   depends:
   - python
   - cffi >=1.11
@@ -2215,11 +2102,10 @@ packages:
   - python_abi 3.13.* *_cp313
   - zstd >=1.5.7,<1.6.0a0
   license: BSD-3-Clause
-  license_family: BSD
   purls:
   - pkg:pypi/zstandard?source=hash-mapping
-  size: 380849
-  timestamp: 1757930139118
+  size: 380854
+  timestamp: 1762512720226
 - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-hbeecb71_2.conda
   sha256: bc64864377d809b904e877a98d0584f43836c9f2ef27d3d2a1421fa6eae7ca04
   md5: 21f56217d6125fb30c3c3f10c786d751
