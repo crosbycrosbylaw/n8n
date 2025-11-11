@@ -533,3 +533,13 @@ def extract_links_from_response_html(
             out.append(DownloadInfo(link, name))
 
     return out
+
+
+if __name__ == '__main__':
+    import pytest
+    from rampy import root
+
+    test_directory = root() / 'python' / 'tests' / 'extract'
+    test_directory = test_directory.resolve(strict=True)
+
+    pytest.main(test_directory)
