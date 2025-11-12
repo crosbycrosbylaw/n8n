@@ -1,5 +1,3 @@
-# ruff: noqa: S101, D102
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -75,8 +73,12 @@ def _ensure_valid_upload_info() -> None:
     """Validate UploadInfo extraction."""
     ns = ctx.get()
 
-    assert ns.result.doc_count == ns.expected_count, f'Count mismatch: {ns.result.doc_count} != {ns.expected_count}'
-    assert ns.result.case_name == ns.expected_case, f'Case mismatch: {ns.result.case_name} != {ns.expected_case}'
+    assert ns.result.doc_count == ns.expected_count, (
+        f'Count mismatch: {ns.result.doc_count} != {ns.expected_count}'
+    )
+    assert ns.result.case_name == ns.expected_case, (
+        f'Case mismatch: {ns.result.case_name} != {ns.expected_case}'
+    )
 
 
 reg['valid_case_with_docs'] = test.case(

@@ -164,7 +164,9 @@ class _Extractor[T = str](Protocol):
 
 
 class _LinkExtractor(_Extractor[str], target='a'):
-    regex: Pattern[str] = re.compile(r'(https:\/\/illinois.tylertech.cloud\/ViewDocuments.aspx\?\w+=[\w-]+)')
+    regex: Pattern[str] = re.compile(
+        r'(https:\/\/illinois.tylertech.cloud\/ViewDocuments.aspx\?\w+=[\w-]+)'
+    )
 
     def _select(self, tag: Tag) -> bool:
         return self.regex.match(f'{tag.get("href", "")}'.strip()) is not None
@@ -309,7 +311,9 @@ def extract_upload_info(soup: BeautifulSoup, store: Path) -> UploadInfo:
 
 
 class _ViewStateValueExtractor(_Extractor[tuple[str, str]], target='input'):
-    regex: Pattern[str] = re.compile(r'^(__VIEWSTATE|__VIEWSTATEGENERATOR|__EVENTVALIDATION)$')
+    regex: Pattern[str] = re.compile(
+        r'^(__VIEWSTATE|__VIEWSTATEGENERATOR|__EVENTVALIDATION)$'
+    )
 
     def _process(self, tag: Tag | None) -> tuple[str, str] | None:
         if not tag:
@@ -358,7 +362,7 @@ def extract_aspnet_form_data(content: str, email: str) -> str:
 
     Example:
         >>> html = '<input name="__VIEWSTATE" value="xyz123" />'
-        >>> form_data = extract_aspnet_form_data(html, "user@example.com")
+        >>> form_data = extract_aspnet_form_data(html, 'user@example.com')
         >>> # Returns URL-encoded form data string
 
     """
@@ -461,7 +465,15 @@ def extract_filename_from_disposition(disposition: str) -> str | None:
 
 
 class _ResponseLinkExtractor(_Extractor[tuple[str, str]], target='a'):
-    extensions: tuple[str, ...] = '.pdf', '.tif', '.tiff', '.doc', '.docx', '.jpg', '.png'
+    extensions: tuple[str, ...] = (
+        '.pdf',
+        '.tif',
+        '.tiff',
+        '.doc',
+        '.docx',
+        '.jpg',
+        '.png',
+    )
 
     def _select(self, tag: Tag) -> bool:
         return bool(

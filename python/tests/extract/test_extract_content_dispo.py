@@ -1,5 +1,3 @@
-# ruff: noqa: S101, D102, ANN206
-
 """Test suite for extract.py HTML extraction utilities.
 
 This module tests the extractor classes and functions that parse HTML content
@@ -53,7 +51,9 @@ class Namespace(test.namespace[str, str | None]):
                 case 'double':
                     filename = f'"{filename}"'
 
-        text = 'attachment' if not filename else DISPOSITION_TEMPLATE.format(text=filename)
+        text = (
+            'attachment' if not filename else DISPOSITION_TEMPLATE.format(text=filename)
+        )
 
         return text, original_filename or None
 
@@ -64,11 +64,13 @@ ctx, reg = env = test.context.bind(Namespace)
 # -- Test Cases -- #
 
 
-reg['quoted_filename'] = test.case(Namespace.arguments('document.pdf', quote='double'), hooks=[])
-reg['unquoted_filename'] = test.case(Namespace.arguments('image.jpg', quote=False), hooks=[])
-reg['single_quoted'] = test.case(Namespace.arguments('report.doc', quote='single'), hooks=[])
-reg['no_filename'] = test.case(Namespace.arguments(filename=None, quote=None), hooks=[])
-reg['filename_with_spaces'] = test.case(Namespace.arguments(filename='My Document.pdf', quote='double'), hooks=[])
+reg['quoted_filename'] = test.case(Namespace.arguments('document.pdf', quote='double'))
+reg['unquoted_filename'] = test.case(Namespace.arguments('image.jpg', quote=False))
+reg['single_quoted'] = test.case(Namespace.arguments('report.doc', quote='single'))
+reg['no_filename'] = test.case(Namespace.arguments(filename=None, quote=None))
+reg['filename_with_spaces'] = test.case(
+    Namespace.arguments(filename='My Document.pdf', quote='double')
+)
 
 
 # -- Test Suite -- #

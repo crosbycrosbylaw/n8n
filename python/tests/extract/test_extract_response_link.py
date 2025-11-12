@@ -1,5 +1,3 @@
-# ruff: noqa: S101, D102, ANN206
-
 """Test suite for extract.py HTML extraction utilities.
 
 This module tests the extractor classes and functions that parse HTML content
@@ -49,7 +47,9 @@ class Namespace(test.namespace[str, str, int]):
         initial_url: str = INITIAL_URL,
     ):
         if tags:
-            text = '\n'.join(TAG_TEMPLATE.format(href=href, text=text) for href, text in tags)
+            text = '\n'.join(
+                TAG_TEMPLATE.format(href=href, text=text) for href, text in tags
+            )
         else:
             text = '<p>no tags</p>'
 
@@ -95,7 +95,9 @@ def test_extract_links_from_response_html(
     """
     result = extract_links_from_response_html(html_content, initial_url)
 
-    assert len(result) == expected_count, f'Link count mismatch: {len(result)} != {expected_count}'
+    assert len(result) == expected_count, (
+        f'Link count mismatch: {len(result)} != {expected_count}'
+    )
 
     for info in result:
         assert info.link.startswith('http'), f'Link should be absolute: {info.link}'

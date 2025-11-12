@@ -200,7 +200,9 @@ _FMT_DEFAULT = TemplateFormatMapping(
 )
 
 
-def create_sample_email[T: TemplateFormatMapping | Mapping[str, str] = TemplateFormatMapping](  # noqa: D103
+def create_sample_email[
+    T: TemplateFormatMapping | Mapping[str, str] = TemplateFormatMapping
+](  # noqa: D103
     mapping: T | None = None,
     *,
     include: Sequence[_FormatKey] = (*_FMT_KEYS,),

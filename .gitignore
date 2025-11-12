@@ -79,5 +79,6 @@ service/tmp
 
 **/*cache*
 
+ruff.toml
 **/*.ipynb
 pixi.lock

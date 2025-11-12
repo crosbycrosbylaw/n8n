@@ -1,5 +1,3 @@
-# ruff: noqa: S101, D102
-
 """Test suite for extract.py HTML extraction utilities.
 
 This module tests the extractor classes and functions that parse HTML content
@@ -67,7 +65,9 @@ ctx, reg = env = test.context.bind(Namespace)
 
 
 reg['valid_form'] = test.case(Namespace.arguments(ASPNET_FORM))
-reg['missing_viewstate'] = test.case(Namespace.arguments(ASPNET_MISSING_VIEWSTATE, raises=ValueError))
+reg['missing_viewstate'] = test.case(
+    Namespace.arguments(ASPNET_MISSING_VIEWSTATE, raises=ValueError)
+)
 
 
 # -- Test Suite -- #
