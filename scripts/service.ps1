@@ -12,16 +12,30 @@ $SVC = @{
     root = (join-path $psscriptroot '..' 'service')
 }
 
-function get-n8n() {
+function get-n8nprocs() {
     get-process 'node' -erroraction silentlycontinue |
         where-object commandline -like '*n8n*' | where-object commandline -notlike '*task*'
+}
+
+function get-n8nstatus() {
+    $resources = get-n8nprocs | select-object -exp 'psresources'
+    return $resources
 }
 
 function start-n8n() {
     start-process -filepath $svc.path $svc.args -workingdirectory $svc.root
 }
 
-$procs = get-n8n
+function write-n8n() {
+    if ($resources = get-n8nstatus) {
+        $resources | write-output
+    } else {
+        write-output '[n8n] service is down'
+    }
+}
+
+
+$script:procs = get-n8nprocs
 $running = [bool]$procs
 
 [int]$timeout = 60
@@ -49,7 +63,7 @@ switch ($action) {
         start-n8n
         start-sleep $interval
 
-        $running = [bool]$(get-n8n)
+        $running = [bool]$(get-n8nprocs)
 
         if ($running) {
             return '[n8n] service started successfully'
@@ -60,7 +74,7 @@ switch ($action) {
         $count = 0
 
         while (!$running -and ($count -lt $max_attempts)) {
-            $running = [bool]$(get-n8n)
+            $running = [bool]$(get-n8nprocs)
             $count += 1
 
             if ($running) { return '[n8n] service started successfully' }
@@ -88,32 +102,34 @@ switch ($action) {
     }
 
     'reload'  {
-        & $script stop | out-null ; start-sleep $interval ; & $script start | out-null
+        & $script stop | out-null
+        start-sleep $interval
+        & $script start | out-null
     }
 
     'status'  {
-        if ($procs) { $procs | write-output } else { return '[n8n] service is down' }
+        write-n8n
     }
 
     'poll'  {
         while (&$shouldcontinue) {
-            get-date |
-                select-object -exp timeofday | write-output
-            get-n8n |
-                write-output
-            start-sleep $interval
+            $(get-date).tolongtimestring() | write-output
 
+            write-n8n
+
+            start-sleep $interval
             &$beforecontinue
         }
     }
 
     'monitor'  {
         while (&$shouldcontinue) {
-            $running = [bool]$(get-n8n)
 
-            if (!$running) {
+            if (!$(get-n8nprocs)) {
                 write-output '[n8n] service not detected; attempting reload'
-                & $script reload ; start-sleep $timeout
+                & $script reload
+
+                start-sleep $timeout
             }
 
             start-sleep $interval
