@@ -24,9 +24,10 @@ function write-prefixed(
     [string]$text = $messages -join ' '
 
     if ($inputobject -and !$text) { $text = $inputobject -join ' '; $inputobject = $null }
-
-    "[n8n] $dt | $text" | write-output
-    if ($inputobject) { $inputobject | foreach-object { write-output $psitem } }
+    '[n8n]' | write-host -foregroundcolor gray -nonewline
+    " | $dt | " | write-host -foregroundcolor darkgray -nonewline
+    "$text" | write-host
+    if ($inputobject) { $inputobject | foreach-object { write-host $psitem } }
 }
 
 function get-n8nprocs() {
