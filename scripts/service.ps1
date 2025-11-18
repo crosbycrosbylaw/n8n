@@ -1,17 +1,10 @@
 ﻿[CmdletBinding()]
 param(
-    [parameter()]
-    [validateset('start', 'stop', 'reload', 'status', 'monitor', 'poll')]
-    $action = 'status'
+    [parameter(position=0)][string]$action = 'status',
+    [parameter()][int]$count = 5
 )
 
 $SCRIPT = join-path $psscriptroot 'service.ps1'
-
-
-[int]$timeout = 60
-[int]$interval = 10
-[int]$max_attempts = ($timeout - $interval) / $interval
-
 $SVC = @{
     name = 'n8n.service'
     path = (get-command 'bun').source
@@ -30,6 +23,20 @@ function start-n8n() {
 
 $procs = get-n8n
 $running = [bool]$procs
+
+[int]$timeout = 60
+[int]$interval = 10
+[int]$max_attempts = ($timeout - $interval) / $interval
+
+[int]$script:current = 0
+
+if ($count -gt 0) {
+    [scriptblock]$shouldcontinue = { $script:current -le $count }
+    [scriptblock]$beforecontinue = { $script:current += 1 }
+} else {
+    [scriptblock]$shouldcontinue = { $true }
+    [scriptblock]$beforecontinue = { }
+}
 
 switch ($action) {
 
@@ -89,13 +96,16 @@ switch ($action) {
     }
 
     'poll'  {
-        while ($true) { get-n8n | write-output ; start-sleep $interval }
+        while (&$shouldcontinue) {
+            get-n8n | write-output
+            start-sleep $interval
+
+            &$beforecontinue
+        }
     }
 
     'monitor'  {
-
-        while ($true) {
-
+        while (&$shouldcontinue) {
             $running = [bool]$(get-n8n)
 
             if (!$running) {
@@ -104,7 +114,14 @@ switch ($action) {
             }
 
             start-sleep $interval
+
+            &$beforecontinue
         }
 
+    }
+
+    default {
+        write-host -foregroundcolor red -nonewline 'error: '
+        write-host "could not find a script matching '$action'"
     }
 }
