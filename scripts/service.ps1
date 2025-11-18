@@ -4,7 +4,8 @@
 param(
     [parameter(position=0)][string]$action = 'status',
     [parameter()][int]$count = 5,
-    [switch]$quiet
+    [switch]$quiet,
+    [switch]$hidden
 )
 
 $SCRIPT = join-path $psscriptroot 'service.ps1'
@@ -43,7 +44,19 @@ function get-n8nstatus() {
 }
 
 function start-n8n() {
-    start-process -filepath $svc.path $svc.args -workingdirectory $svc.root
+    if ($hidden) {
+        start-process `
+            -filepath $svc.path `
+            -argumentlist $svc.args `
+            -workingdirectory $svc.root `
+            -windowstyle hidden
+    } else {
+        start-process `
+            -filepath $svc.path `
+            -argumentlist $svc.args `
+            -workingdirectory $svc.root
+    }
+
 }
 
 function write-n8n() {
@@ -74,6 +87,30 @@ if ($count -gt 0) {
 } else {
     [scriptblock]$shouldcontinue = { $true }
     [scriptblock]$beforecontinue = { }
+}
+
+function watch-n8npassive {
+    while (&$shouldcontinue) {
+        write-n8n
+        start-sleep $interval
+        &$beforecontinue
+    }
+}
+
+function watch-n8nactive {
+    while (&$shouldcontinue) {
+
+        if (!$(get-n8nprocs)) {
+            write-prefixed 'service not detected; attempting reload' -color yellow
+            & $script reload
+
+            start-sleep $timeout
+        }
+
+        start-sleep $interval
+
+        &$beforecontinue
+    }
 }
 
 switch ($action) {
@@ -141,27 +178,13 @@ switch ($action) {
     }
 
     'poll'  {
-        while (&$shouldcontinue) {
-            write-n8n
-            start-sleep $interval
-            &$beforecontinue
-        }
+        if ($hidden) { [void](&{ watch-n8npassive }) }
+        else { watch-n8npassive }
     }
 
     'monitor'  {
-        while (&$shouldcontinue) {
-
-            if (!$(get-n8nprocs)) {
-                write-prefixed 'service not detected; attempting reload' -color yellow
-                & $script reload
-
-                start-sleep $timeout
-            }
-
-            start-sleep $interval
-
-            &$beforecontinue
-        }
+        if ($hidden) { [void](&{ watch-n8nactive }) }
+        else { watch-n8nactive }
 
     }
 
