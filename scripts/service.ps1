@@ -97,7 +97,10 @@ switch ($action) {
 
     'poll'  {
         while (&$shouldcontinue) {
-            get-n8n | write-output
+            get-date |
+                select-object -exp timeofday | write-host
+            get-n8n |
+                write-host
             start-sleep $interval
 
             &$beforecontinue
