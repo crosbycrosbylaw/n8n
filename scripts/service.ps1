@@ -50,7 +50,7 @@ function write-n8n() {
     if ($resources = get-n8nstatus) {
         $proc_id = $resources.id | join-string -sep ', '
         "service is running (pids: $proc_id)" | write-prefixed
-        $resources | write-verbose
+        if ($pscmdlet.getvariablevalue('verbose', $false)) { $resources | write-output }
     } else {
         write-prefixed 'service is down'
     }
