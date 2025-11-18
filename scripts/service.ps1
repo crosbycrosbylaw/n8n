@@ -5,7 +5,8 @@ param(
     [parameter(position=0)][string]$action = 'status',
     [parameter()][int]$count = 5,
     [switch]$quiet,
-    [switch]$hidden
+    [switch]$hidden,
+    [switch]$reload
 )
 
 $SCRIPT = join-path $psscriptroot 'service.ps1'
@@ -177,6 +178,15 @@ switch ($action) {
             &$beforecontinue
         }
 
+    }
+
+    'update' {
+        if (get-command 'git' -erroraction silentlycontinue) {
+            git pull
+            if ($reload) { & $script reload }
+        } else {
+            write-error 'could not find git executable'
+        }
     }
 
     default {
