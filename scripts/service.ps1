@@ -89,29 +89,6 @@ if ($count -gt 0) {
     [scriptblock]$beforecontinue = { }
 }
 
-function watch-n8npassive {
-    while (&$shouldcontinue) {
-        write-n8n
-        start-sleep $interval
-        &$beforecontinue
-    }
-}
-
-function watch-n8nactive {
-    while (&$shouldcontinue) {
-
-        if (!$(get-n8nprocs)) {
-            write-prefixed 'service not detected; attempting reload' -color yellow
-            & $script reload
-
-            start-sleep $timeout
-        }
-
-        start-sleep $interval
-
-        &$beforecontinue
-    }
-}
 
 switch ($action) {
 
@@ -178,13 +155,27 @@ switch ($action) {
     }
 
     'poll'  {
-        if ($hidden) { [void](&{ watch-n8npassive }) }
-        else { watch-n8npassive }
+
+        while (&$shouldcontinue) {
+            write-n8n
+            start-sleep $interval
+            &$beforecontinue
+        }
+
     }
 
     'monitor'  {
-        if ($hidden) { [void](&{ watch-n8nactive }) }
-        else { watch-n8nactive }
+
+        while (&$shouldcontinue) {
+            if (!$(get-n8nprocs)) {
+                write-prefixed 'service not detected; attempting reload' -color yellow
+                & $script reload
+                start-sleep $timeout
+            }
+
+            start-sleep $interval
+            &$beforecontinue
+        }
 
     }
 
