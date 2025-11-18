@@ -1,5 +1,4 @@
 ﻿using namespace system.collections.generic
-
 [CmdletBinding()]
 param(
     [parameter(position=0)][string]$action = 'status',
@@ -9,6 +8,12 @@ param(
     [switch]$reload
 )
 
+
+# ----------------------------------------------------------------------------------------------- #
+# Section I: Configuration
+# ----------------------------------------------------------------------------------------------- #
+
+
 $SCRIPT = join-path $psscriptroot 'service.ps1'
 $SVC = @{
     name = 'n8n.service'
@@ -16,6 +21,29 @@ $SVC = @{
     args = 'start'
     root = (join-path $psscriptroot '..' 'service')
 }
+
+$script:procs = get-n8nprocs
+$script:running = [bool]$procs
+
+[int]$timeout = 60
+[int]$interval = 10
+[int]$max_attempts = ($timeout - $interval) / $interval
+
+[int]$script:current = 0
+
+if ($count -gt 0) {
+    [scriptblock]$shouldcontinue = { $script:current -le $count }
+    [scriptblock]$beforecontinue = { $script:current += 1 }
+} else {
+    [scriptblock]$shouldcontinue = { $true }
+    [scriptblock]$beforecontinue = { }
+}
+
+
+# ----------------------------------------------------------------------------------------------- #
+# Section II: Methods
+# ----------------------------------------------------------------------------------------------- #
+
 
 function write-prefixed(
     [system.consolecolor]$color = 'blue',
@@ -73,22 +101,9 @@ function write-n8n() {
 }
 
 
-$script:procs = get-n8nprocs
-$script:running = [bool]$procs
-
-[int]$timeout = 60
-[int]$interval = 10
-[int]$max_attempts = ($timeout - $interval) / $interval
-
-[int]$script:current = 0
-
-if ($count -gt 0) {
-    [scriptblock]$shouldcontinue = { $script:current -le $count }
-    [scriptblock]$beforecontinue = { $script:current += 1 }
-} else {
-    [scriptblock]$shouldcontinue = { $true }
-    [scriptblock]$beforecontinue = { }
-}
+# ----------------------------------------------------------------------------------------------- #
+# Section III: Commands
+# ----------------------------------------------------------------------------------------------- #
 
 
 switch ($action) {
