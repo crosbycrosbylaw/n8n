@@ -15,6 +15,7 @@ $SVC = @{
 }
 
 function write-prefixed(
+    [system.consolecolor]$color = 'blue',
     [parameter(valuefrompipeline)]
     [object[]]$inputobject,
     [parameter(valuefromremainingarguments)]
@@ -26,7 +27,7 @@ function write-prefixed(
     if ($inputobject -and !$text) { $text = $inputobject -join ' '; $inputobject = $null }
     '[n8n]' | write-host -foregroundcolor gray -nonewline
     " | $dt | " | write-host -foregroundcolor darkgray -nonewline
-    "$text" | write-host
+    "$text" | write-host -foregroundcolor $color
     if ($inputobject) { $inputobject | foreach-object { write-host $psitem } }
 }
 
@@ -78,9 +79,9 @@ switch ($action) {
 
     'start'  {
 
-        if ($procs) { write-prefixed 'service is already running'; return }
+        if ($procs) { write-prefixed 'service is already running' -color blue; return }
 
-        write-prefixed 'starting service...'
+        write-prefixed 'starting service...' -color blue
 
         start-n8n
         start-sleep $interval
@@ -90,11 +91,11 @@ switch ($action) {
             $script:running = [bool]$(get-n8nprocs)
 
             if ($script:running) {
-                write-prefixed 'service started successfully'
+                write-prefixed 'service started successfully' -color green
             } elseif ($ct) {
-                write-prefixed "waiting for process (attempt: ${ct}/${$max_attempts})"
+                write-prefixed "waiting for process (attempt: ${ct}/${$max_attempts})" -color blue
             } else {
-                write-prefixed 'service is not yet ready'
+                write-prefixed 'service is not yet ready' -color yellow
             }
         }
 
@@ -110,7 +111,7 @@ switch ($action) {
             start-sleep $interval
         }
 
-        if (!$script:running) { write-prefixed 'service startup was unsuccessful' }
+        if (!$script:running) { write-prefixed 'service startup was unsuccessful' -color red }
 
     }
 
@@ -120,10 +121,10 @@ switch ($action) {
                 $psitem.kill()
                 $psitem.waitforexit() }
 
-            write-prefixed 'service terminated'
+            write-prefixed 'service terminated' -color red
 
         } else {
-            write-prefixed 'service is not running'
+            write-prefixed 'service is not running' -color yellow
         }
 
     }
@@ -140,10 +141,7 @@ switch ($action) {
 
     'poll'  {
         while (&$shouldcontinue) {
-
-
             write-n8n
-
             start-sleep $interval
             &$beforecontinue
         }
@@ -153,7 +151,7 @@ switch ($action) {
         while (&$shouldcontinue) {
 
             if (!$(get-n8nprocs)) {
-                write-prefixed 'service not detected; attempting reload'
+                write-prefixed 'service not detected; attempting reload' -color yellow
                 & $script reload
 
                 start-sleep $timeout
