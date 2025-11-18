@@ -6,7 +6,6 @@ from Tyler Technologies Illinois cloud service emails and web pages.
 
 from __future__ import annotations
 
-import pytest
 from eserv.extract import extract_aspnet_form_data
 from rampy import test
 
@@ -30,44 +29,16 @@ ASPNET_MISSING_VIEWSTATE = """
 
 
 # -- Test Environment -- #
+def _factory(raw_html: str, email: str = EMAIL_ADDR) -> tuple[str, str]:
+    return raw_html, email
 
 
-class Namespace(test.namespace[str, str, type[Exception] | None]):
-    """Namespace for ASP.NET form data test arguments."""
-
-    @property
-    def html_content(self) -> str:
-        return self.args[0]
-
-    @property
-    def email(self) -> str:
-        return self.args[1]
-
-    @property
-    def exception(self) -> type[Exception] | None:
-        return self.args[2]
-
-    @classmethod
-    def arguments(
-        cls,
-        raw_html: str,
-        *,
-        email: str = EMAIL_ADDR,
-        raises: type[Exception] | None = None,
-    ) -> tuple[str, str, type[Exception] | None]:
-        return raw_html, email, raises
-
-
-ctx, reg = env = test.context.bind(Namespace)
-
+env = test.context.bind(factory=_factory)
 
 # -- Test Cases -- #
 
-
-reg['valid_form'] = test.case(Namespace.arguments(ASPNET_FORM))
-reg['missing_viewstate'] = test.case(
-    Namespace.arguments(ASPNET_MISSING_VIEWSTATE, raises=ValueError)
-)
+env.register({'name': 'valid form'}, ASPNET_FORM)
+env.register({'name': 'missing viewstate', 'expect': ValueError}, ASPNET_MISSING_VIEWSTATE)
 
 
 # -- Test Suite -- #
@@ -77,7 +48,6 @@ reg['missing_viewstate'] = test.case(
 def test_extract_form_data(
     html_content: str,
     email: str,
-    exception: type[Exception] | None,
 ) -> None:
     """Test extract_form_data function.
 
@@ -86,13 +56,9 @@ def test_extract_form_data(
     - URL encoding of form data
     - Error handling for missing required fields
     """
-    if exception:
-        with pytest.raises(exception):
-            extract_aspnet_form_data(html_content, email)
-    else:
-        result = extract_aspnet_form_data(html_content, email)
+    result = extract_aspnet_form_data(html_content, email)
 
-        assert 'emailAddress=' in result
-        assert 'username=' in result
-        assert 'test%40example.com' in result  # Email is URL-encoded
-        assert '__VIEWSTATE=' in result
+    assert 'emailAddress=' in result
+    assert 'username=' in result
+    assert 'test%40example.com' in result  # Email is URL-encoded
+    assert '__VIEWSTATE=' in result

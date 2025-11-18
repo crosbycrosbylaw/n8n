@@ -21,58 +21,36 @@ HTML_TEMPLATE = """
 </html>
 """
 
+
 # -- Test Environment -- #
+def _factory(
+    *tags: tuple[str, str],
+    count: int,
+    initial_url: str = INITIAL_URL,
+) -> tuple[str, str, int]:
+    html_content = HTML_TEMPLATE.format(
+        tags='<p>no tags</p>'
+        if not tags
+        else '\n'.join(TAG_TEMPLATE.format(href=href, text=text) for href, text in tags)
+    )
+    return html_content, initial_url, count
 
 
-class Namespace(test.namespace[str, str, int]):
-    """Namespace for response link extraction test arguments."""
-
-    @property
-    def html_content(self) -> str:
-        return self.args[0]
-
-    @property
-    def initial_url(self) -> str:
-        return self.args[1]
-
-    @property
-    def expected_count(self) -> int:
-        return self.args[2]
-
-    @classmethod
-    def arguments(
-        cls,
-        *tags: tuple[str, str],
-        count: int,
-        initial_url: str = INITIAL_URL,
-    ):
-        if tags:
-            text = '\n'.join(
-                TAG_TEMPLATE.format(href=href, text=text) for href, text in tags
-            )
-        else:
-            text = '<p>no tags</p>'
-
-        return HTML_TEMPLATE.format(tags=text), initial_url, count
-
-
-ctx, reg = env = test.context.bind(Namespace)
+env = test.context.bind(factory=_factory)
 
 
 # -- Test Cases -- #
 
-
-reg['multiple_links'] = test.case(
-    Namespace.arguments(
-        ('/doc1?id=123', 'Document One'),
-        ('/doc1?id=456', 'Document Two'),
-        ('file.pdf', 'Should be filtered'),
-        ('/viewstate?token=abc', 'Should be filtered'),
-        count=2,
-    )
+env.register(
+    {'name': 'multiple links'},
+    ('/doc1?id=123', 'Document One'),
+    ('/doc1?id=456', 'Document Two'),
+    ('file.pdf', 'Should be filtered'),
+    ('/viewstate?token=abc', 'Should be filtered'),
+    count=2,
 )
-reg['short_text_link'] = test.case(Namespace.arguments(('/doc', 'Doc'), count=1))
-reg['no_links'] = test.case(Namespace.arguments(count=0))
+env.register({'name': 'short text link'}, ('/doc', 'Doc'), count=1)
+env.register({'name': 'no links'}, count=0)
 
 
 # -- Test Suite -- #
@@ -95,9 +73,7 @@ def test_extract_links_from_response_html(
     """
     result = extract_links_from_response_html(html_content, initial_url)
 
-    assert len(result) == expected_count, (
-        f'Link count mismatch: {len(result)} != {expected_count}'
-    )
+    assert len(result) == expected_count, f'Link count mismatch: {len(result)} != {expected_count}'
 
     for info in result:
         assert info.link.startswith('http'), f'Link should be absolute: {info.link}'

@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import pytest
 from bs4 import BeautifulSoup
-from eserv.extract import DownloadInfo, extract_download_info
+from eserv.extract import extract_download_info
 from rampy import test
 
-from . import create_sample_email
+from tests.extract import create_sample_email
 
 # -- Test Fixtures -- #
 
@@ -23,7 +23,7 @@ DOWNLOAD_URL = 'https://illinois.tylertech.cloud/ViewDocuments.aspx?id=abc-123'
 # -- Test Environment -- #
 
 
-def _argument_factory(
+def _factory(
     filename: str | tuple[str, str] = 'Test Document.pdf',
     download_url: str | tuple[str, str] = DOWNLOAD_URL,
     exception: type[Exception] | None = None,
@@ -43,19 +43,17 @@ def _argument_factory(
     return html_content, expect_url, expect_filename, exception
 
 
-ctx, reg = env = test.context.bind(factory=_argument_factory)
+env = test.context.bind(factory=_factory)
 
 
 # -- Test Cases -- #
 
 
-def _ensure_valid_download_info() -> None:
+def _extracts_download_info() -> None:
     """Validate that result is a DownloadInfo with expected values."""
-    ns = ctx.get()
+    ns = env.ns
 
-    result = ns.result
-
-    assert isinstance(result, DownloadInfo)
+    result = extract_download_info(ns.soup)
 
     expected_link = ns.args[1]
     assert result.link == expected_link, f'Link mismatch: {result.link} != {expected_link}'
@@ -64,23 +62,34 @@ def _ensure_valid_download_info() -> None:
     assert result.name == expected_name, f'Name mismatch: {result.name} != {expected_name}'
 
 
-reg['simple_valid_email'] = test.case(
-    env.factory(filename='Motion to Dismiss.pdf'),
-    hooks=[_ensure_valid_download_info],
+def _raises_value_error_on_missing_url() -> None:
+    """Validate that the extractor raises a ValueError if no URL is found."""
+    with pytest.raises(ValueError, match='could not find download link'):
+        extract_download_info(env.ns.soup)
+
+
+env.register(
+    {'name': 'simple valid email', 'hooks': [_extracts_download_info]},
+    filename='Motion to Dismiss.pdf',
 )
-reg['link_with_extra_whitespace'] = test.case(
-    env.factory(
-        filename='Whitespace Test.pdf',
-        download_url=(DOWNLOAD_URL, f'  {DOWNLOAD_URL}  '),
-    ),
-    hooks=[_ensure_valid_download_info],
+env.register(
+    {'name': 'link with extra whitespace', 'hooks': [_extracts_download_info]},
+    filename='Whitespace Test.pdf',
+    download_url=(DOWNLOAD_URL, f'  {DOWNLOAD_URL}  '),
 )
-reg['page_count_filter'] = test.case(
-    env.factory(filename='Correct Document.pdf'),
-    hooks=[_ensure_valid_download_info],
+env.register(
+    {'name': 'page count filter', 'hooks': [_extracts_download_info]},
+    filename='Correct Document.pdf',
 )
-reg['missing_filename'] = test.case(env.factory(filename=''), hooks=[_ensure_valid_download_info])
-reg['missing_download_url'] = test.case(env.factory(download_url='', exception=ValueError))
+env.register(
+    {'name': 'missing filename', 'hooks': [_extracts_download_info]},
+    filename='',
+)
+env.register(
+    {'name': 'missing download url', 'hooks': [_raises_value_error_on_missing_url]},
+    download_url='',
+    exception=ValueError,
+)
 
 # -- Test Suite -- #
 
@@ -104,10 +113,11 @@ def test_extract_download_info(
     """
     soup = BeautifulSoup(html_content, 'html.parser')
 
-    if exception is not None:
+    if exception:
         with pytest.raises(exception):
-            result = extract_download_info(soup)
-    else:
-        result = extract_download_info(soup)
+            _result = extract_download_info(soup)
 
-    ctx(**locals())
+    else:
+        _result = extract_download_info(soup)
+
+    env.setup(locals())

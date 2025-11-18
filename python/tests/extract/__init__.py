@@ -1,34 +1,33 @@
-# ruff: noqa: E501, D104
+# ruff: noqa: D104
 from __future__ import annotations
 
 __all__ = ['SAMPLE_EMAIL', 'create_sample_email']
 
 import typing
-from typing import TypedDict
+from typing import Any, TypedDict
 
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
     from typing import Literal
 
-type _FormatKey = Literal[
-    'court',
-    'case_name',
-    'case_number',
-    'filing_attorney',
-    'filename',
-    'download_url',
-    'page_count',
-]
+    type _FormatKey = Literal[
+        'court',
+        'case_name',
+        'case_number',
+        'filing_attorney',
+        'filename',
+        'download_url',
+        'page_count',
+    ]
 
-
-class TemplateFormatMapping(TypedDict, total=False):
-    court: str
-    case_number: str
-    case_name: str
-    filing_attorney: str
-    filename: str
-    page_count: int | str
-    download_url: str
+    class TemplateFormatMapping(TypedDict, total=False):
+        court: str
+        case_number: str
+        case_name: str
+        filing_attorney: str
+        filename: str
+        page_count: int | str
+        download_url: str
 
 
 _FMT_TEMPLATE = """<!DOCTYPE html>
@@ -189,27 +188,26 @@ _FMT_KEYS: set[_FormatKey] = {
     'page_count',
 }
 
-_FMT_DEFAULT = TemplateFormatMapping(
-    court='DeKalb County',
-    case_name='DAILEY EMILY vs. DAILEY DERRICK',
-    case_number='2025DC000131',
-    filing_attorney='Mason Crosby',
-    filename='Entry of Appearance 00072025.pdf',
-    download_url='https://illinois.tylertech.cloud/ViewDocuments.aspx?FID=7ff2fb72-7baa-4770-8a7c-70c1dd1cd3d7',
-    page_count=1,
-)
+_FMT_DEFAULT: TemplateFormatMapping = {
+    'court': 'DeKalb County',
+    'case_name': 'DAILEY EMILY vs. DAILEY DERRICK',
+    'case_number': '2025DC000131',
+    'filing_attorney': 'Mason Crosby',
+    'filename': 'Entry of Appearance 00072025.pdf',
+    'download_url': 'https://illinois.tylertech.cloud/ViewDocuments.aspx?FID=7ff2fb72-7baa-4770-8a7c-70c1dd1cd3d7',
+    'page_count': 1,
+}
 
 
-def create_sample_email[
-    T: TemplateFormatMapping | Mapping[str, str] = TemplateFormatMapping
-](  # noqa: D103
+def create_sample_email[T: TemplateFormatMapping | Mapping[str, str] = TemplateFormatMapping](
     mapping: T | None = None,
     *,
     include: Sequence[_FormatKey] = (*_FMT_KEYS,),
     exclude: Sequence[_FormatKey] = (),
     **kwds: str,
 ) -> str:
-    fmt_dict = {}
+    """Return sample html content formatted with the provided arguments."""
+    fmt_dict: dict[str, Any] = {}
 
     for k in set(include).difference(exclude):
         if value := _FMT_DEFAULT.get(k):

@@ -12,30 +12,32 @@ from rampy import test
 # -- Test Environment -- #
 
 
-def _args(
+def _factory(
     action: str = '',
-    *,
     initial: str = 'https://base.com',
     expected: str | None = None,
 ) -> tuple[str, str, str]:
     return f'<form {action} method="post"></form>', initial, expected or initial
 
 
-ctx, reg = env = test.context.bind(test.namespace[str, str, str])
+env = test.context.bind(factory=_factory)
 
 # -- Test Cases -- #
 
-
 env.register(
-    'absolute url',
-    _args(r'action="https://example.com/submit"', expected='https://example.com/submit'),
+    {'name': 'absolute url'},
+    action=r'action="https://example.com/submit"',
+    expected='https://example.com/submit',
 )
 env.register(
-    'relative_url',
-    _args(r'action="https://example.com/submit"', expected='https://example.com/submit'),
+    {'name': 'relative_url'},
+    action=r'action="/api/submit"',
+    expected='https://base.com/api/submit',
 )
-env.register('no action fallback', _args(initial='https://base.com/page'))
-
+env.register(
+    {'name': 'no action fallback'},
+    initial='https://base.com/page',
+)
 
 # -- Test Suite -- #
 

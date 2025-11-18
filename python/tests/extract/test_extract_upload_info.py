@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from bs4 import BeautifulSoup
 from eserv.extract import extract_upload_info
 from rampy import test
 
-from . import create_sample_email
+from tests.extract import create_sample_email
 
 if TYPE_CHECKING:
-    from eserv.extract import UploadInfo
+    from pathlib import Path
 
 
 # -- Test Fixtures -- #
@@ -22,48 +21,23 @@ CASE_NAME = 'DAILEY EMILY vs. DAILEY DERRICK'
 # -- Test Environment -- #
 
 
-class Namespace(test.namespace[str, Path, int, str | None]):
-    """Namespace for upload info test arguments."""
+def _factory(
+    count: int,
+    expect: str | None = CASE_NAME,
+    case_name: str = CASE_NAME,
+    **kwds: str,
+) -> tuple[str, Path, int, str | None]:
+    store = test.path(f'test_store_{count}', mkdir=True)
 
-    result: UploadInfo
+    for i in range(count):
+        (store / f'doc_{i}.pdf').touch()
 
-    @property
-    def html_content(self) -> str:
-        return self.args[0]
+    kwds.update(case_name=case_name)
 
-    @property
-    def store_path(self) -> Path:
-        return self.args[1]
-
-    @property
-    def expected_count(self) -> int:
-        return self.args[2]
-
-    @property
-    def expected_case(self) -> str | None:
-        return self.args[3]
-
-    @classmethod
-    def arguments(
-        cls,
-        count: int,
-        expect: str | None = CASE_NAME,
-        /,
-        *,
-        case_name: str = CASE_NAME,
-        **kwds: str,
-    ) -> tuple[str, Path, int, str | None]:
-        store = test.path(f'test_store_{count}', mkdir=True)
-
-        for i in range(count):
-            (store / f'doc_{i}.pdf').touch()
-
-        kwds.update(case_name=case_name)
-
-        return create_sample_email(kwds), store, count, expect
+    return create_sample_email(kwds), store, count, expect
 
 
-ctx, reg = env = test.context.bind(Namespace)
+env = test.context.bind(factory=_factory)
 
 
 # -- Test Cases -- #
@@ -71,28 +45,24 @@ ctx, reg = env = test.context.bind(Namespace)
 
 def _ensure_valid_upload_info() -> None:
     """Validate UploadInfo extraction."""
-    ns = ctx.get()
+    ns = env.ns
 
-    assert ns.result.doc_count == ns.expected_count, (
-        f'Count mismatch: {ns.result.doc_count} != {ns.expected_count}'
-    )
-    assert ns.result.case_name == ns.expected_case, (
-        f'Case mismatch: {ns.result.case_name} != {ns.expected_case}'
+    expected_count = ns.args[2]
+    assert ns.result.doc_count == expected_count, (
+        f'Count mismatch: {ns.result.doc_count} != {expected_count}'
     )
 
+    expected_case = ns.args[3]
+    assert ns.result.case_name == expected_case, (
+        f'Case mismatch: {ns.result.case_name} != {expected_case}'
+    )
 
-reg['valid_case_with_docs'] = test.case(
-    Namespace.arguments(3),
-    hooks=[_ensure_valid_upload_info],
-)
-reg['empty_store'] = test.case(
-    Namespace.arguments(0),
-    hooks=[_ensure_valid_upload_info],
-)
-reg['confidential_case'] = test.case(
-    Namespace.arguments(1, None, case_name='CONFIDENTIAL'),
-    hooks=[_ensure_valid_upload_info],
-)
+
+hooks = [_ensure_valid_upload_info]
+
+env.register({'name': 'valid case with docs', 'hooks': hooks}, count=3)
+env.register({'name': 'empty store', 'hooks': hooks}, count=0)
+env.register({'name': 'confidential case', 'hooks': hooks}, count=1, case_name='CONFIDENTIAL')
 
 
 # -- Test Suite -- #
@@ -113,6 +83,5 @@ def test_extract_upload_info(
     - Filtering of confidential cases
     """
     soup = BeautifulSoup(html_content, 'html.parser')
-    result = extract_upload_info(soup, store_path)
 
-    ctx(**locals())
+    env.setup(locals(), result=extract_upload_info(soup, store_path))

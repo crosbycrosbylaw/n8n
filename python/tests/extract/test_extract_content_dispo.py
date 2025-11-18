@@ -24,54 +24,36 @@ DISPOSITION_TEMPLATE = 'attachment; filename={text}'
 # -- Test Environment -- #
 
 
-class Namespace(test.namespace[str, str | None]):
-    """Namespace for Content-Disposition test arguments."""
+def _factory(
+    filename: str | None,
+    *,
+    quote: Literal['single', 'double', False] | None,
+) -> tuple[str, str | None]:
+    original_filename = filename
 
-    @property
-    def disposition(self) -> str:
-        return self.args[0]
+    if filename and quote:
+        match quote:
+            case 'single':
+                filename = f"'{filename}'"
+            case 'double':
+                filename = f'"{filename}"'
 
-    @property
-    def expected(self) -> str | None:
-        return self.args[1]
+    text = 'attachment' if not filename else DISPOSITION_TEMPLATE.format(text=filename)
 
-    @classmethod
-    def arguments(
-        cls,
-        filename: str | None,
-        *,
-        quote: Literal['single', 'double', False] | None,
-    ):
-        original_filename = filename
-
-        if filename and quote:
-            match quote:
-                case 'single':
-                    filename = f"'{filename}'"
-                case 'double':
-                    filename = f'"{filename}"'
-
-        text = (
-            'attachment' if not filename else DISPOSITION_TEMPLATE.format(text=filename)
-        )
-
-        return text, original_filename or None
+    return text, original_filename or None
 
 
-ctx, reg = env = test.context.bind(Namespace)
+env = test.context.bind(factory=_factory)
 
 
 # -- Test Cases -- #
 
 
-reg['quoted_filename'] = test.case(Namespace.arguments('document.pdf', quote='double'))
-reg['unquoted_filename'] = test.case(Namespace.arguments('image.jpg', quote=False))
-reg['single_quoted'] = test.case(Namespace.arguments('report.doc', quote='single'))
-reg['no_filename'] = test.case(Namespace.arguments(filename=None, quote=None))
-reg['filename_with_spaces'] = test.case(
-    Namespace.arguments(filename='My Document.pdf', quote='double')
-)
-
+env.register({'name': 'unquoted filename'}, filename='image.jpg', quote=False)
+env.register({'name': 'double quoted filename'}, filename='document.pdf', quote='double')
+env.register({'name': 'single quoted filename'}, filename='report.doc', quote='single')
+env.register({'name': 'no filename'}, filename=None, quote=None)
+env.register({'name': 'filename with spaces'}, filename='Some Document.pdf', quote='double')
 
 # -- Test Suite -- #
 
