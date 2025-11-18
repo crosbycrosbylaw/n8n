@@ -25,9 +25,9 @@ function write-prefixed(
     [string]$text = $messages -join ' '
 
     if ($inputobject -and !$text) { $text = $inputobject -join ' '; $inputobject = $null }
-    '[n8n]' | write-host -foregroundcolor gray -nonewline
-    " | $dt | " | write-host -foregroundcolor darkgray -nonewline
-    "$text" | write-host -foregroundcolor $color
+    '[n8n] ' | write-host -foregroundcolor gray -nonewline
+    "$dt | " | write-host -foregroundcolor darkgray -nonewline
+    "$text " | write-host -foregroundcolor $color
     if ($inputobject) { $inputobject | foreach-object { write-host $psitem } }
 }
 
