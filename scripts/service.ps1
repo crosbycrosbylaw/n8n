@@ -28,8 +28,8 @@ function start-n8n() {
 
 function write-n8n() {
     if ($resources = get-n8nstatus) {
-        $proc_id = $resources.id
-        write-output "[n8n] service is running (pid: $proc_id)"
+        $proc_id = $resources.id | join-string -sep ', '
+        write-output "[n8n] service is running (pids: $proc_id)"
         $resources | write-verbose
     } else {
         write-output '[n8n] service is down'
