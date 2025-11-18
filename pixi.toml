@@ -66,5 +66,8 @@ eserv = { path = "python", editable = true }
 [feature.service]
     [feature.service.tasks]
         [feature.service.tasks.svc]
-        args = [{ arg = "cmd", default = "status" }]
-        cmd  = "pwsh ./scripts/service.ps1 {{ cmd }}"
+        args = [
+            { arg = "cmd", default = "status" },
+            { arg = "options", default = '' },
+        ]
+        cmd = "pwsh ./scripts/service.ps1 {{ cmd }} {{ options }}"
