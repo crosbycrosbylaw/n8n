@@ -7,9 +7,9 @@ preview   = ["pixi-build"]
 version   = "0.0.1"
 
 [environments]
-default = ["dev", "remote"]
+default = ["dev", "remote", "service"]
 next    = { features = ["next"], no-default-feature = true, solve-group = "next" }
-remote  = { features = ["remote", "service"], no-default-feature = true }
+remote  = { features = ["remote"], no-default-feature = true }
 service = { features = ["service"], no-default-feature = true }
 
 [tasks]
@@ -68,6 +68,6 @@ eserv = { path = "python", editable = true }
         [feature.service.tasks.svc]
         args = [
             { arg = "cmd", default = "status" },
-            { arg = "options", default = '' },
+            { arg = "options", default = '-quiet' },
         ]
         cmd = "pwsh ./scripts/service.ps1 {{ cmd }} {{ options }}"
