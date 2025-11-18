@@ -18,7 +18,7 @@ function get-n8nprocs() {
 }
 
 function get-n8nstatus() {
-    $resources = get-n8nprocs | select-object -exp 'psresources'
+    $resources = get-n8nprocs | select-object -p 'psresources'
     return $resources
 }
 
