@@ -1,4 +1,6 @@
-﻿[CmdletBinding()]
+﻿using namespace system.collections.generic
+
+[CmdletBinding()]
 param(
     [parameter(position=0)][string]$action = 'status',
     [parameter()][int]$count = 5
@@ -10,6 +12,21 @@ $SVC = @{
     path = (get-command 'bun').source
     args = 'start'
     root = (join-path $psscriptroot '..' 'service')
+}
+
+function write-prefixed(
+    [parameter(valuefrompipeline)]
+    [object[]]$inputobject,
+    [parameter(valuefromremainingarguments)]
+    [string[]]$messages
+) {
+    [string]$dt = $(get-date).tostring()
+    [string]$text = $messages -join ' '
+
+    if ($inputobject -and !$text) { $text = $inputobject -join ' '; $inputobject = $null }
+
+    "[n8n] $dt | $text" | write-output
+    if ($inputobject) { $inputobject | foreach-object { write-output $psitem } }
 }
 
 function get-n8nprocs() {
@@ -27,18 +44,20 @@ function start-n8n() {
 }
 
 function write-n8n() {
+
     if ($resources = get-n8nstatus) {
         $proc_id = $resources.id | join-string -sep ', '
-        write-output "[n8n] service is running (pids: $proc_id)"
+        "service is running (pids: $proc_id)" | write-prefixed
         $resources | write-verbose
     } else {
-        write-output '[n8n] service is down'
+        write-prefixed 'service is down'
     }
+
 }
 
 
 $script:procs = get-n8nprocs
-$running = [bool]$procs
+$script:running = [bool]$procs
 
 [int]$timeout = 60
 [int]$interval = 10
@@ -58,34 +77,39 @@ switch ($action) {
 
     'start'  {
 
-        if ($procs) { return '[n8n] service is already running' }
+        if ($procs) { write-prefixed 'service is already running'; return }
 
-        write-output '[n8n] starting service...'
+        write-prefixed 'starting service...'
 
         start-n8n
         start-sleep $interval
 
-        $running = [bool]$(get-n8nprocs)
+        [scriptblock]$statusmsg = {
+            param([int]$ct = $null)
+            $script:running = [bool]$(get-n8nprocs)
 
-        if ($running) {
-            return '[n8n] service started successfully'
-        } else {
-            write-output '[n8n] service is not yet ready'
+            if ($script:running) {
+                write-prefixed 'service started successfully'
+            } elseif ($ct) {
+                write-prefixed "waiting for process (attempt: ${ct}/${$max_attempts})"
+            } else {
+                write-prefixed 'service is not yet ready'
+            }
         }
+
+        &$statusmsg
+
+        if ($script:running) { return }
 
         $count = 0
 
-        while (!$running -and ($count -lt $max_attempts)) {
-            $running = [bool]$(get-n8nprocs)
+        while (!$script:running -and ($count -lt $max_attempts)) {
+            &$statusmsg -ct $count
             $count += 1
-
-            if ($running) { return '[n8n] service started successfully' }
-
-            write-output "[n8n] waiting for process (attempt: ${count}/${$max_attempts})"
             start-sleep $interval
         }
 
-        if (!$running) { write-output '[n8n] service startup was unsuccessful' }
+        if (!$script:running) { write-prefixed 'service startup was unsuccessful' }
 
     }
 
@@ -95,10 +119,10 @@ switch ($action) {
                 $psitem.kill()
                 $psitem.waitforexit() }
 
-            write-output 'service terminated'
+            write-prefixed 'service terminated'
 
         } else {
-            write-output 'service is not running'
+            write-prefixed 'service is not running'
         }
 
     }
@@ -115,7 +139,7 @@ switch ($action) {
 
     'poll'  {
         while (&$shouldcontinue) {
-            $(get-date).tostring() | write-output
+
 
             write-n8n
 
@@ -128,7 +152,7 @@ switch ($action) {
         while (&$shouldcontinue) {
 
             if (!$(get-n8nprocs)) {
-                write-output '[n8n] service not detected; attempting reload'
+                write-prefixed 'service not detected; attempting reload'
                 & $script reload
 
                 start-sleep $timeout
