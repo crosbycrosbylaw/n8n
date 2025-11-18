@@ -3,7 +3,8 @@
 [CmdletBinding()]
 param(
     [parameter(position=0)][string]$action = 'status',
-    [parameter()][int]$count = 5
+    [parameter()][int]$count = 5,
+    [switch]$quiet
 )
 
 $SCRIPT = join-path $psscriptroot 'service.ps1'
@@ -50,7 +51,7 @@ function write-n8n() {
     if ($resources = get-n8nstatus) {
         $proc_id = $resources.id | join-string -sep ', '
         "service is running (pids: $proc_id)" | write-prefixed
-        if ($pscmdlet.getvariablevalue('verbose', $false)) { $resources | write-output }
+        if (!$quiet) { $resources | write-output }
     } else {
         write-prefixed 'service is down'
     }
