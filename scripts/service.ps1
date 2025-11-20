@@ -22,8 +22,7 @@ $SVC = @{
     root = (join-path $psscriptroot '..' 'service')
 }
 
-$script:procs = get-n8nprocs
-$script:running = [bool]$procs
+
 
 [int]$timeout = 60
 [int]$interval = 10
@@ -105,6 +104,8 @@ function write-n8n() {
 # Section III: Commands
 # ----------------------------------------------------------------------------------------------- #
 
+$script:procs = get-n8nprocs
+$script:running = [bool]$procs
 
 switch ($action) {
 
