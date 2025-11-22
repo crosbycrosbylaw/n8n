@@ -9,6 +9,30 @@ from __future__ import annotations
 from eserv.extract import extract_aspnet_form_data
 from rampy import test
 
+
+@test.parameterized(test.parameter(('raw_html', str), ('exception', type[Exception] | None)))
+class x: ...
+
+
+@test.scenarios(
+    (
+        'valid form data',
+        {
+            'raw_html': """
+<form action="/submit" method="post">
+    <input type="hidden" name="__VIEWSTATE" value="dGVzdHZpZXdzdGF0ZQ==" />
+    <input type="hidden" name="__VIEWSTATEGENERATOR" value="ABC123" />
+    <input type="hidden" name="__EVENTVALIDATION" value="XYZ789" />
+</form>
+""",
+            'exception': None,
+        },
+    ),
+)
+class TestClass:
+    def test_aspnet_form(self, raw_html, exception): ...
+
+
 # -- Test Fixtures -- #
 
 
