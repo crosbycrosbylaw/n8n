@@ -30,7 +30,7 @@ def scenario(
     expect_name: str | None = None,
     expect_link: str | None = None,
     exception: type[Exception] | None = None,
-):
+) -> dict[str, Any]:
     sample_email = create_sample_email(filename=filename, download_link=download_link)
     return {
         'params': [BeautifulSoup(sample_email, features='html.parser')],

@@ -1,4 +1,3 @@
-# ruff: noqa: PLR6301
 """HTML content extraction utilities for Tyler Technologies Illinois cloud service.
 
 This module provides extractor classes and functions to parse and extract information from
@@ -49,7 +48,7 @@ from bs4 import BeautifulSoup, Tag
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
     from re import Pattern
-    from typing import Any, Literal
+    from typing import Any, Final, Literal
 
     from bs4 import Tag
 
@@ -102,7 +101,8 @@ class _Extractor[T = str](Protocol):
         """
         return tag.name == self.target
 
-    def _process(self, tag: Tag | None, /) -> T | None:
+    @staticmethod
+    def _process(tag: Tag | None, /) -> T | None:
         """Process the given tag and extract the desired information.
 
         Default implementation extracts and returns the text content of the tag.
@@ -172,7 +172,8 @@ class _LinkExtractor(_Extractor[str], target='a'):
     def _select(self, tag: Tag) -> bool:
         return self.regex.match(f'{tag.get("href", "")}'.strip()) is not None
 
-    def _process(self, tag: Tag | None) -> str | None:
+    @staticmethod
+    def _process(tag: Tag | None) -> str | None:
         if not tag:
             return None
 
@@ -262,7 +263,8 @@ def extract_download_info(soup: BeautifulSoup) -> DownloadInfo:
 
 
 class _CaseNameExtractor(_Extractor[str], target='td'):
-    def _process(self, tag: Tag | None) -> str | None:
+    @staticmethod
+    def _process(tag: Tag | None) -> str | None:
         if not tag or 'CONFIDENTIAL' in tag.text:
             return None
         return tag.get_text(strip=True)
@@ -314,7 +316,8 @@ def extract_upload_info(soup: BeautifulSoup, store: Path) -> UploadInfo:
 class _ViewStateValueExtractor(_Extractor[tuple[str, str]], target='input'):
     regex: Pattern[str] = re.compile(r'^(__VIEWSTATE|__VIEWSTATEGENERATOR|__EVENTVALIDATION)$')
 
-    def _process(self, tag: Tag | None) -> tuple[str, str] | None:
+    @staticmethod
+    def _process(tag: Tag | None) -> tuple[str, str] | None:
         if not tag:
             return None
 
@@ -390,7 +393,8 @@ def extract_aspnet_form_data(content: str, email: str) -> str:
 
 
 class _TargetUrlExtractor(_Extractor[str], target='form'):
-    def _process(self, tag: Tag | None) -> str | None:
+    @staticmethod
+    def _process(tag: Tag | None) -> str | None:
         if not tag:
             return None
 
@@ -464,15 +468,7 @@ def extract_filename_from_disposition(disposition: str) -> str | None:
 
 
 class _ResponseLinkExtractor(_Extractor[tuple[str, str]], target='a'):
-    extensions: tuple[str, ...] = (
-        '.pdf',
-        '.tif',
-        '.tiff',
-        '.doc',
-        '.docx',
-        '.jpg',
-        '.png',
-    )
+    extensions: Final[set[str]] = {'.pdf', '.tif', '.tiff', '.doc', '.docx', '.jpg', '.png'}
 
     def _select(self, tag: Tag) -> bool:
         return bool(
@@ -482,7 +478,8 @@ class _ResponseLinkExtractor(_Extractor[tuple[str, str]], target='a'):
             and isinstance(href, str),
         )  # fmt: skip
 
-    def _process(self, tag: Tag | None) -> tuple[str, str] | None:
+    @staticmethod
+    def _process(tag: Tag | None) -> tuple[str, str] | None:
         if not tag:
             return None
 
@@ -491,7 +488,9 @@ class _ResponseLinkExtractor(_Extractor[tuple[str, str]], target='a'):
         if not isinstance(href, str):
             return None
 
-        if any(href.lower().endswith(ext) for ext in self.extensions):
+        extensions = _ResponseLinkExtractor.extensions
+
+        if any(href.lower().endswith(ext) for ext in extensions):
             return None
 
         return href.lower(), tag.get_text(strip=True)
@@ -544,13 +543,3 @@ def extract_links_from_response_html(
             out.append(DownloadInfo(link, name))
 
     return out
-
-
-if __name__ == '__main__':
-    import pytest
-    from rampy import root
-
-    test_directory = root() / 'python' / 'tests' / 'extract'
-    test_directory = test_directory.resolve(strict=True)
-
-    pytest.main(test_directory)
