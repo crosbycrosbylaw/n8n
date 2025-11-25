@@ -65,19 +65,21 @@ def serialize_output[**P, T](func: Callable[P, T]) -> Callable[P, NoReturn]:
     @wraps(func)
     def wrapper(*args: P.args, **kwds: P.kwargs) -> NoReturn:
         try:
-            output_dict: OutputDict = {"text": None, "items": [], "data": {}}
+            output_dict: OutputDict = {'text': None, 'items': [], 'data': {}}
             result = func(*args, **kwds)
 
             if isinstance(result, str):
-                output_dict["text"] = result
+                output_dict['text'] = result
             elif isinstance(result, dict):
-                output_dict["data"] = result
+                output_dict['data'] = result
             elif isinstance(result, list):
-                output_dict["items"] = result
+                output_dict['items'] = result
             else:
-                output_dict["items"] = [f"{result!s}"]
+                output_dict['items'] = [f'{result!s}']
 
-            serialized = json.dumps(output_dict, separators=(",", ":"), skipkeys=True, sort_keys=True)
+            serialized = json.dumps(
+                output_dict, separators=(',', ':'), skipkeys=True, sort_keys=True
+            )
 
             print(serialized, file=sys.stdout, flush=True)
 
@@ -85,7 +87,7 @@ def serialize_output[**P, T](func: Callable[P, T]) -> Callable[P, NoReturn]:
 
         except Exception as exc:
             formatted = traceback.format_exception(exc)
-            serialized = json.dumps({"exception": formatted})
+            serialized = json.dumps({'exception': formatted})
 
             print(serialized, file=sys.stderr, flush=True)
 

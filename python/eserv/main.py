@@ -15,15 +15,14 @@ if typing.TYPE_CHECKING:
 
 @serialize_output
 def main(path: Path) -> None:  # noqa: D103
-    path = path.resolve(strict=True)
 
-    with path.open() as io:
-        soup = BeautifulSoup(io, "html.parser")
+    with path.resolve(strict=True).open() as io:
+        soup = BeautifulSoup(io, 'html.parser')
 
     store_path = download_documents(soup)
 
-    count, case_name = extract_upload_info(soup, store_path)
+    upload_info = extract_upload_info(soup, store_path)
 
-    resolve_document_desination(case_name)
+    resolve_document_desination(upload_info.case_name)
 
     # todo: name extraction, dropbox index lookup, file upload workflow

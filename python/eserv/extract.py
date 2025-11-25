@@ -39,9 +39,9 @@ from __future__ import annotations
 
 import re
 import typing
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
-from dataclasses import dataclass, astuple
 from urllib.parse import urlencode, urljoin
 
 from bs4 import BeautifulSoup, Tag
@@ -126,7 +126,7 @@ class _Extractor[T = str](Protocol):
         This overload returns None if no matching tag is found.
         """
 
-    def _find_one(self, *, required=False):
+    def _find_one(self, *, required: bool = False):
         tag = self.soup.find(self._select, **self.attrs)
 
         if required and not tag:
@@ -206,21 +206,19 @@ class _DocumentNameExtractor(_Extractor[str], target='td'):
         """
         return super().get_one()
 
+
 @dataclass(slots=True, frozen=True)
 class DownloadInfo:
     """Information about a file to be downloaded.
 
     Attributes:
-        link (str): The URL or path from which to download the file.
-        name (str): The name to use when saving the downloaded file.
+        source (str): The URL or path from which to download the file.
+        filename (str): The name to use when saving the downloaded file.
 
     """
 
-    link: str
-    name: str | None
-
-    def __iter__(self) -> tuple[str, str | None]:
-        return astuple(self)
+    source: str
+    doc_name: str | None
 
 
 def extract_download_info(soup: BeautifulSoup) -> DownloadInfo:
@@ -249,15 +247,15 @@ def extract_download_info(soup: BeautifulSoup) -> DownloadInfo:
     'https://illinois.tylertech.cloud/ViewDocuments.aspx?id=abc-123'
 
     """
-    link = _LinkExtractor(soup).get_one()
+    source = _LinkExtractor(soup).get_one()
 
-    if not link:
+    if not source:
         message = 'could not find download link in email content.'
         raise ValueError(message)
 
     doc_name = _DocumentNameExtractor(soup).get_one()
 
-    return DownloadInfo(link, doc_name)
+    return DownloadInfo(source, doc_name)
 
 
 # -- Upload Info -- #
@@ -276,6 +274,7 @@ class _CaseNameExtractor(_Extractor[str], target='td'):
             and ("Case Name" in prev.text),
         )  # fmt: skip
 
+
 @dataclass(slots=True, frozen=True)
 class UploadInfo:
     """Information about an upload operation.
@@ -286,13 +285,8 @@ class UploadInfo:
 
     """
 
-    """"""
-
     doc_count: int
     case_name: str | None
-
-    def __iter__(self) -> tuple[int, str | None]:
-        return astuple(self)
 
 
 def extract_upload_info(soup: BeautifulSoup, store: Path) -> UploadInfo:
@@ -318,9 +312,7 @@ def extract_upload_info(soup: BeautifulSoup, store: Path) -> UploadInfo:
 
 
 class _ViewStateValueExtractor(_Extractor[tuple[str, str]], target='input'):
-    regex: Pattern[str] = re.compile(
-        r'^(__VIEWSTATE|__VIEWSTATEGENERATOR|__EVENTVALIDATION)$'
-    )
+    regex: Pattern[str] = re.compile(r'^(__VIEWSTATE|__VIEWSTATEGENERATOR|__EVENTVALIDATION)$')
 
     def _process(self, tag: Tag | None) -> tuple[str, str] | None:
         if not tag:
@@ -376,7 +368,7 @@ def extract_aspnet_form_data(content: str, email: str) -> str:
     soup = BeautifulSoup(content, 'html.parser')
     generator = _ViewStateValueExtractor(soup).get_iterator()
 
-    out = {}
+    out: dict[str, str] = {}
     out.update(item for _ in range(3) if (item := next(generator, None)))
 
     for key in '__VIEWSTATE', '__VIEWSTATEGENERATOR', '__EVENTVALIDATION':
@@ -450,7 +442,7 @@ def extract_filename_from_disposition(disposition: str) -> str | None:
         disposition (str): The Content-Disposition header value, typically in the format
             'attachment; filename="example.txt"' or 'inline; filename=example.txt'
     Returns:
-        str | None: The extracted filename if found, None otherwise.
+        The extracted filename as a string, if found, None otherwise.
             The filename is stripped of surrounding quotes and whitespace.
 
     Examples:

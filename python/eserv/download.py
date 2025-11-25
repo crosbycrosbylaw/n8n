@@ -16,14 +16,15 @@ from .store import get_document_store
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
+    from typing import Any, Final
 
     from bs4 import BeautifulSoup
     from requests import Response
     from requests.sessions import Session
 
 
-ACCEPT = ['application/pdf', 'application/octet-stream']
-OPTIONS = {'allow_redirects': True, 'timeout': 30}
+ACCEPT: Final[list[str]] = ['application/pdf', 'application/octet-stream']
+OPTIONS: Final[dict[str, Any]] = {'allow_redirects': True, 'timeout': 30}
 
 
 def _process_accepted_response(
@@ -115,7 +116,7 @@ def _process_response(
     rerun_depth = depth + 1
 
     for i, info in enumerate(extracted):
-        new_response = session.get(info.link, **OPTIONS)
+        new_response = session.get(info.source, **OPTIONS)
         new_response.raise_for_status()
 
         out.extend(_process_response(session, new_response, rerun_depth, i))
@@ -146,17 +147,17 @@ def download_documents(soup: BeautifulSoup) -> Path:
 
     """
     info = extract_download_info(soup)
-    store = get_document_store(info.name)
+    store = get_document_store(info.doc_name)
 
     with requests.sessions.Session() as session:
-        response = session.get(info.link, **OPTIONS)
+        response = session.get(info.source, **OPTIONS)
         response.raise_for_status()
 
         docs = _process_response(session, response)
 
         for i, val in enumerate(docs):
             if isinstance(val, bytes):
-                name = f'{info.name}_{i}.pdf'
+                name = f'{info.doc_name}_{i}.pdf'
                 content = val
             else:
                 name, content = val

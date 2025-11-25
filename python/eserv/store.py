@@ -5,27 +5,28 @@ import typing
 if typing.TYPE_CHECKING:
     from pathlib import Path
 
-from rampy import root
+from rampy import rootpath
 
 # -- Temporary Files -- #
 
-TMP = root() / 'service' / 'tmp'
+TMP = rootpath('service', 'tmp', mkdir=True)
 
-if not TMP.is_dir():
-    TMP.mkdir(parents=True, exist_ok=True)
+
+def _clean_document_name(raw: str | None) -> str:
+    if not raw:
+        count = len((*TMP.iterdir(),))
+        name = f'store_{count + 1}'
+    else:
+        name = f'store_{raw}'
+
+    return ''.join(c for c in name if c.isalnum() or c in {'.', '_', '-'})
 
 
 def get_document_store(name: str | None = None) -> Path:
     """Get a temporary directory to store downloaded documents."""
-    if not name:
-        count = len((*TMP.iterdir(),))
-        name = f'store_{count + 1}'
-    else:
-        name = f'store_{name}'
+    cleaned = _clean_document_name(name)
 
-    name = ''.join(c for c in name if c.isalnum() or c in {'.', '_', '-'})
+    path = TMP / cleaned
+    path.mkdir(parents=True)
 
-    path = TMP / name
-    path.mkdir()
-
-    return path
+    return path.resolve(strict=True)

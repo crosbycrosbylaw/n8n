@@ -65,10 +65,10 @@ class TestExtractDownloadInfo:
             result = extract_download_info(*params)
 
             expect_name = expect['name']
-            assert result.name == expect_name, f'{result.name} != {expect_name}'
+            assert result.doc_name == expect_name, f'{result.doc_name} != {expect_name}'
 
             expect_link = expect['link']
-            assert result.link == expect_link, f'{result.link} != {expect_link}'
+            assert result.source == expect_link, f'{result.source} != {expect_link}'
 
         if exception is not None:
             with pytest.raises(exception):

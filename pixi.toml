@@ -1,73 +1,67 @@
+dependencies.python           = ">=3.14"
+environments.default.features = ["core", "dev", "host"]
+
 [workspace]
+
+name    = "crosbydev.n8n"
+version = "0.0.1"
+
 authors   = ["zaynram <ramdasszayn@gmail.com>"]
 channels  = ["conda-forge"]
-name      = "crosbydev.n8n"
 platforms = ["win-64"]
 preview   = ["pixi-build"]
-version   = "0.0.1"
-
-[environments]
-default = ["dev", "remote", "service"]
-next    = { features = ["next"], no-default-feature = true, solve-group = "next" }
-remote  = { features = ["remote"], no-default-feature = true }
-service = { features = ["service"], no-default-feature = true }
-
-[tasks]
-    [tasks.pwsh]
-    args = [{ arg = "cmd" }]
-    cmd  = "pwsh -nop -noni -c '\"$({{ cmd }})\"'"
-
-[dependencies]
-bs4            = ">=4.13.5,<5"
-fire           = "*"
-nameparser     = ">=1.0.5,<2"
-python         = ">=3.14"
-rampy          = { git = "https://github.com/zaynram/ramda-py", branch = "master" }
-rapidfuzz      = ">=3.14.1,<4"
-requests       = ">=2.32.5,<3"
-typing_inspect = ">=0.9.0,<0.10"
 
 [pypi-dependencies]
-eserv = { path = "python", editable = true }
 
-[feature.next]
-    [feature.next.dependencies]
-    python = ">=3.14"
+eserv = { path = "./python", editable = true }
+rampy = { git = "https://github.com/zaynram/ramda-py.git", branch = "master" }
 
-[feature.dev]
-    [feature.dev.dependencies]
-    ipykernel  = "*"
-    ipywidgets = "*"
-    pytest     = ">=8.4.2,<9"
-    pytest-cov = ">=7.0.0,<8"
+[feature]
 
-    [feature.dev.tasks]
-        [feature.dev.tasks.test]
-        cmd = "python -m pytest ."
-        cwd = "python/tests"
+    [feature.core]
 
-        [feature.dev.tasks.push]
-        args = [{ arg = "msg", default = "$(pwsh -noni -c '(get-date)')" }]
-        cmd  = "git commit -a -m \"{{ msg }}\" && git push "
+        [feature.core.dependencies]
+
+        bs4            = ">=4.13.5,<5"
+        fire           = "*"
+        nameparser     = ">=1.0.5,<2"
+        orjson         = ">=3.11.4"
+        python         = ">=3.14"
+        rapidfuzz      = ">=3.14.1,<4"
+        requests       = ">=2.32.5,<3"
+        typing_inspect = ">=0.9.0,<0.10"
+
+        [feature.core.tasks]
+
+        remote.cmd = "python ./scripts/server-cmd.py"
 
 
-[feature.remote]
-    [feature.remote.tasks]
-    remote = "python scripts/server-cmd.py"
+    [feature.dev]
 
-        [feature.remote.tasks.update]
-        cmd        = "python scripts/server-cmd.py 'git pull origin main'"
-        depends-on = [{ task = "push" }]
+        [feature.dev.dependencies]
 
-        [feature.remote.tasks.maintenance]
-        cmd        = "python scripts/server-cmd.py './scripts/service.ps1 reload'"
-        depends-on = [{ task = "update" }]
+        ipykernel  = "*"
+        ipywidgets = "*"
+        pytest     = ">=8.4.2,<9"
+        pytest-cov = ">=7.0.0,<8"
 
-[feature.service]
-    [feature.service.tasks]
-        [feature.service.tasks.svc]
-        args = [
+        [feature.dev.tasks]
+
+        push.cmd = "git commit -a -m \"$(pwsh -noni -c 'get-date')\" && git push"
+        test.cmd = "python -m pytest ./python/tests"
+
+    [feature.host]
+
+        [feature.host.tasks]
+
+        update.cmd        = "python scripts/server-cmd.py 'git pull origin main'"
+        update.depends-on = ["push"]
+
+        maintenance.cmd        = "python scripts/server-cmd.py './scripts/service.ps1 reload'"
+        maintenance.depends-on = ["update"]
+
+        svc.args = [
             { arg = "cmd", default = "status" },
             { arg = "options", default = '-quiet' },
         ]
-        cmd = "pwsh ./scripts/service.ps1 {{ cmd }} {{ options }}"
+        svc.cmd = "pwsh ./scripts/service.ps1 {{ cmd }} {{ options }}"

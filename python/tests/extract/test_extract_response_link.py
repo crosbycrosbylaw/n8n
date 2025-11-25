@@ -66,7 +66,7 @@ class TestExtractResponseLink:
         assert length == expect, f'Count mismatch: {length} != {expect}'
 
         for info in result:
-            link = info.link.lower()
+            link = info.source.lower()
 
             assert link.startswith('http'), f'Link should be absolute: {link}'
             assert all(x not in link for x in ('viewstate', 'validation'))
