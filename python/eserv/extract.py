@@ -40,7 +40,8 @@ from __future__ import annotations
 import re
 import typing
 from pathlib import Path
-from typing import NamedTuple, Protocol
+from typing import Protocol
+from dataclasses import dataclass, astuple
 from urllib.parse import urlencode, urljoin
 
 from bs4 import BeautifulSoup, Tag
@@ -205,8 +206,8 @@ class _DocumentNameExtractor(_Extractor[str], target='td'):
         """
         return super().get_one()
 
-
-class DownloadInfo(NamedTuple):
+@dataclass(slots=True, frozen=True)
+class DownloadInfo:
     """Information about a file to be downloaded.
 
     Attributes:
@@ -217,6 +218,9 @@ class DownloadInfo(NamedTuple):
 
     link: str
     name: str | None
+
+    def __iter__(self) -> tuple[str, str | None]:
+        return astuple(self)
 
 
 def extract_download_info(soup: BeautifulSoup) -> DownloadInfo:
@@ -272,8 +276,8 @@ class _CaseNameExtractor(_Extractor[str], target='td'):
             and ("Case Name" in prev.text),
         )  # fmt: skip
 
-
-class UploadInfo(NamedTuple):
+@dataclass(slots=True, frozen=True)
+class UploadInfo:
     """Information about an upload operation.
 
     Attributes:
@@ -286,6 +290,9 @@ class UploadInfo(NamedTuple):
 
     doc_count: int
     case_name: str | None
+
+    def __iter__(self) -> tuple[int, str | None]:
+        return astuple(self)
 
 
 def extract_upload_info(soup: BeautifulSoup, store: Path) -> UploadInfo:
