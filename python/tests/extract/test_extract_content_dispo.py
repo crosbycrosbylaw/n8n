@@ -6,7 +6,7 @@ from Tyler Technologies Illinois cloud service emails and web pages.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from eserv.extract import extract_filename_from_disposition
 from rampy import test
@@ -15,22 +15,12 @@ if TYPE_CHECKING:
     from typing import Literal
 
 
-# -- Test Fixtures -- #
-
-
-DISPOSITION_TEMPLATE = 'attachment; filename={text}'
-
-
-# -- Test Environment -- #
-
-
-def _factory(
+def scenario(
     filename: str | None,
     *,
     quote: Literal['single', 'double', False] | None,
-) -> tuple[str, str | None]:
+) -> dict[str, Any]:
     original_filename = filename
-
     if filename and quote:
         match quote:
             case 'single':
@@ -38,39 +28,20 @@ def _factory(
             case 'double':
                 filename = f'"{filename}"'
 
-    text = 'attachment' if not filename else DISPOSITION_TEMPLATE.format(text=filename)
-
-    return text, original_filename or None
-
-
-env = test.context.bind(factory=_factory)
+    return {
+        'params': ['attachment' if not filename else f'attachment; filename={filename}'],
+        'expect': original_filename or None,
+    }
 
 
-# -- Test Cases -- #
-
-
-env.register({'name': 'unquoted filename'}, filename='image.jpg', quote=False)
-env.register({'name': 'double quoted filename'}, filename='document.pdf', quote='double')
-env.register({'name': 'single quoted filename'}, filename='report.doc', quote='single')
-env.register({'name': 'no filename'}, filename=None, quote=None)
-env.register({'name': 'filename with spaces'}, filename='Some Document.pdf', quote='double')
-
-# -- Test Suite -- #
-
-
-@test.suite(env)
-def test_extract_filename_from_disposition(
-    disposition: str,
-    expected: str | None,
-) -> None:
-    """Test extract_filename_from_disposition function.
-
-    Validates:
-    - Extraction from quoted filenames
-    - Extraction from unquoted filenames
-    - Handling of missing filename parameter
-    - Proper handling of special characters
-    """
-    result = extract_filename_from_disposition(disposition)
-
-    assert result == expected, f'Filename mismatch: {result} != {expected}'
+@test.scenarios(**{
+    'unquoted filename': scenario('image.jpg', quote=False),
+    'double quoted filename': scenario('document.pdf', quote='double'),
+    'single quoted filename': scenario('report.doc', quote='single'),
+    'missing filename': scenario(None, quote=None),
+    'filename with spaces': scenario('Some Document.pdf', quote='double'),
+})
+class TestExtractContentDisposition:
+    def test(self, /, params: list[str], expect: str | None) -> None:
+        result = extract_filename_from_disposition(*params)
+        assert result == expect, f'Filename mismatch: {result} != {expect}'

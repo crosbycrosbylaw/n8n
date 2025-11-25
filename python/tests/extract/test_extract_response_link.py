@@ -6,62 +6,49 @@ from Tyler Technologies Illinois cloud service emails and web pages.
 
 from __future__ import annotations
 
+import typing
+
 from eserv.extract import extract_links_from_response_html
 from rampy import test
 
-# -- Test Fixtures -- #
+if typing.TYPE_CHECKING:
+    from typing import Any
 
-INITIAL_URL = 'http://example.com'
-TAG_TEMPLATE = '<a href="{href}">{text}</a>'
-HTML_TEMPLATE = """
+
+def scenario(
+    *tags: tuple[str, str],
+    count: int,
+    initial_url: str = 'http://example.com',
+) -> dict[str, Any]:
+    formatted = f"""
 <html>
   <body>
-    {tags}
+    {
+        '<p>no tags</p>'
+        if not tags
+        else '\n'.join(f'<a href="{href}">{text}</a>' for href, text in tags)
+    }
   </body>
 </html>
 """
+    return {
+        'params': [formatted, initial_url],
+        'expect': count,
+    }
 
 
-# -- Test Environment -- #
-def _factory(
-    *tags: tuple[str, str],
-    count: int,
-    initial_url: str = INITIAL_URL,
-) -> tuple[str, str, int]:
-    html_content = HTML_TEMPLATE.format(
-        tags='<p>no tags</p>'
-        if not tags
-        else '\n'.join(TAG_TEMPLATE.format(href=href, text=text) for href, text in tags)
-    )
-    return html_content, initial_url, count
-
-
-env = test.context.bind(factory=_factory)
-
-
-# -- Test Cases -- #
-
-env.register(
-    {'name': 'multiple links'},
-    ('/doc1?id=123', 'Document One'),
-    ('/doc1?id=456', 'Document Two'),
-    ('file.pdf', 'Should be filtered'),
-    ('/viewstate?token=abc', 'Should be filtered'),
-    count=2,
-)
-env.register({'name': 'short text link'}, ('/doc', 'Doc'), count=1)
-env.register({'name': 'no links'}, count=0)
-
-
-# -- Test Suite -- #
-
-
-@test.suite(env)
-def test_extract_links_from_response_html(
-    html_content: str,
-    initial_url: str,
-    expected_count: int,
-) -> None:
+@test.scenarios(**{
+    'zero links': scenario(count=0),
+    'short text link': scenario(('/doc', 'Doc'), count=1),
+    'multiple links': scenario(
+        ('/doc1?id=123', 'Document One'),
+        ('/doc1?id=456', 'Document Two'),
+        ('file.pdf', 'Should be filtered'),
+        ('/viewstate?token=abc', 'Should be filtered'),
+        count=2,
+    ),
+})
+class TestExtractResponseLink:
     """Test extract_links_from_response_html function.
 
     Validates:
@@ -71,11 +58,15 @@ def test_extract_links_from_response_html(
     - Name derivation from link text
     - URL resolution (relative to absolute)
     """
-    result = extract_links_from_response_html(html_content, initial_url)
 
-    assert len(result) == expected_count, f'Link count mismatch: {len(result)} != {expected_count}'
+    def test(self, params: list[str], expect: int) -> None:
+        result = extract_links_from_response_html(*params)
+        length = len(result)
 
-    for info in result:
-        assert info.link.startswith('http'), f'Link should be absolute: {info.link}'
-        assert 'viewstate' not in info.link.lower()
-        assert 'validation' not in info.link.lower()
+        assert length == expect, f'Count mismatch: {length} != {expect}'
+
+        for info in result:
+            link = info.link.lower()
+
+            assert link.startswith('http'), f'Link should be absolute: {link}'
+            assert all(x not in link for x in ('viewstate', 'validation'))

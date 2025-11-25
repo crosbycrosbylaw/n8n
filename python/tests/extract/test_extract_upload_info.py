@@ -6,75 +6,44 @@ from bs4 import BeautifulSoup
 from eserv.extract import extract_upload_info
 from rampy import test
 
-from tests.extract import create_sample_email
+from tests.utils import create_sample_email
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
-
-# -- Test Fixtures -- #
+    from typing import Any
 
 
 CASE_NAME = 'DAILEY EMILY vs. DAILEY DERRICK'
+TEMP = test.directory('rampy_pytest')
 
 
-# -- Test Environment -- #
-
-
-def _factory(
+def scenario(
     count: int,
-    expect: str | None = CASE_NAME,
-    case_name: str = CASE_NAME,
-    **kwds: str,
-) -> tuple[str, Path, int, str | None]:
-    store = test.path(f'test_store_{count}', mkdir=True)
+    cname: str = CASE_NAME,
+    /,
+    **expect: object,
+) -> dict[str, Any]:
+    expect.setdefault('case_name', CASE_NAME)
+    expect.setdefault('doc_count', count)
+
+    content = create_sample_email(case_name=cname)
+    soup = BeautifulSoup(content, features='html.parser')
+
+    store_path = TEMP / f'test_store_{count}'
+    store_path.mkdir(parents=True, exist_ok=True)
 
     for i in range(count):
-        (store / f'doc_{i}.pdf').touch()
+        doc_path = store_path / f'doc_{i}.pdf'
+        doc_path.touch(exist_ok=True)
 
-    kwds.update(case_name=case_name)
-
-    return create_sample_email(kwds), store, count, expect
-
-
-env = test.context.bind(factory=_factory)
+    return {'params': [soup, store_path], 'expect': expect}
 
 
-# -- Test Cases -- #
-
-
-def _ensure_valid_upload_info() -> None:
-    """Validate UploadInfo extraction."""
-    ns = env.ns
-
-    expected_count = ns.args[2]
-    assert ns.result.doc_count == expected_count, (
-        f'Count mismatch: {ns.result.doc_count} != {expected_count}'
-    )
-
-    expected_case = ns.args[3]
-    assert ns.result.case_name == expected_case, (
-        f'Case mismatch: {ns.result.case_name} != {expected_case}'
-    )
-
-
-hooks = [_ensure_valid_upload_info]
-
-env.register({'name': 'valid case with docs', 'hooks': hooks}, count=3)
-env.register({'name': 'empty store', 'hooks': hooks}, count=0)
-env.register({'name': 'confidential case', 'hooks': hooks}, count=1, case_name='CONFIDENTIAL')
-
-
-# -- Test Suite -- #
-
-
-@test.suite(env)
-def test_extract_upload_info(
-    html_content: str,
-    store_path: Path,
-    expected_count: int,
-    expected_case: str | None,
-) -> None:
+@test.scenarios(**{
+    'valid case with docs': scenario(3),
+    'empty document store': scenario(0),
+    'confidential case': scenario(1, 'CONFIDENTIAL', case_name=None),
+})
+class TestExtractUploadInfo:
     """Test extract_upload_info function.
 
     Validates:
@@ -82,6 +51,14 @@ def test_extract_upload_info(
     - Case name extraction from HTML
     - Filtering of confidential cases
     """
-    soup = BeautifulSoup(html_content, 'html.parser')
 
-    env.setup(locals(), result=extract_upload_info(soup, store_path))
+    def test(self, /, params: list[Any], expect: dict[str, Any]) -> None:
+        result = extract_upload_info(*params)
+
+        expect_doc_count = expect['doc_count']
+        assert result.doc_count == expect_doc_count, \
+            f'Count mismatch: {result.doc_count} != {expect_doc_count}'  # fmt: skip
+
+        expect_case_name = expect['case_name']
+        assert result.case_name == expect_case_name, \
+            f"Case name mismatch: {result.case_name} != {expect_case_name}"  # fmt: skip

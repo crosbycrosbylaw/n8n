@@ -6,55 +6,40 @@ from Tyler Technologies Illinois cloud service emails and web pages.
 
 from __future__ import annotations
 
+from typing import Any
+
 from eserv.extract import extract_post_request_url
 from rampy import test
 
-# -- Test Environment -- #
+INITIAL_URL = 'https://base.com'
 
 
-def _factory(
+def scenario(
     action: str = '',
-    initial: str = 'https://base.com',
-    expected: str | None = None,
-) -> tuple[str, str, str]:
-    return f'<form {action} method="post"></form>', initial, expected or initial
+    initial_url: str = INITIAL_URL,
+    expect: str | None = None,
+) -> dict[str, Any]:
+    return {
+        'params': [f'<form {action} method="post"></form>', initial_url],
+        'expect': expect or initial_url,
+    }
 
 
-env = test.context.bind(factory=_factory)
-
-# -- Test Cases -- #
-
-env.register(
-    {'name': 'absolute url'},
-    action=r'action="https://example.com/submit"',
-    expected='https://example.com/submit',
-)
-env.register(
-    {'name': 'relative_url'},
-    action=r'action="/api/submit"',
-    expected='https://base.com/api/submit',
-)
-env.register(
-    {'name': 'no action fallback'},
-    initial='https://base.com/page',
-)
-
-# -- Test Suite -- #
-
-
-@test.suite(env)
-def test_extract_post_request_url(
-    html_content: str,
-    initial_url: str,
-    expected_url: str,
-) -> None:
-    """Test extract_post_request_url function.
-
-    Validates:
-    - Extraction of form action URLs
-    - Handling of absolute vs relative URLs
-    - Fallback to initial URL when no action found
-    """
-    result = extract_post_request_url(html_content, initial_url)
-
-    assert result == expected_url, f'URL mismatch: {result} != {expected_url}'
+@test.scenarios(**{
+    'absolute url': scenario(
+        action=rf'action="{INITIAL_URL}/submit"',
+        expect=f'{INITIAL_URL}/submit',
+    ),
+    'relative_url': scenario(
+        action=r'action="/api/submit"',
+        expect=f'{INITIAL_URL}/api/submit',
+    ),
+    'no action fallback': scenario(
+        action='',
+        initial_url=f'{INITIAL_URL}/page',
+    ),
+})
+class TestExtractPostRequestUrl:
+    def test(self, /, params: list[Any], expect: str) -> None:
+        result = extract_post_request_url(*params)
+        assert result == expect, f'URL mismatch: {result} != {expect}'
