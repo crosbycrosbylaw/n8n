@@ -1,0 +1,17 @@
+build-system.build-backend = "hatchling.build"
+build-system.requires      = ["hatchling"]
+
+[project]
+
+description = "python utilities for n8n workflow automation"
+name        = "eserv"
+version     = "0.0.1"
+
+authors = [{ name = "zaynram", email = "ramdasszayn@gmail.com" }]
+dynamic = ["dependencies", "requires-python"]
+
+[tool]
+
+setuptools.include-package-data = true
+setuptools.package-dir          = { "*" = "src" }
+setuptools.packages             = ["eserv"]

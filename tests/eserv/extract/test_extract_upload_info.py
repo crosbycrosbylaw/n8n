@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from bs4 import BeautifulSoup
-from eserv.extract import extract_upload_info
 from rampy import test
 
-from tests.utils import create_sample_email
+from eserv.extract import extract_upload_info
+from tests.eserv.utils import create_sample_email
 
 if TYPE_CHECKING:
     from typing import Any

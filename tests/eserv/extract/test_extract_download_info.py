@@ -10,10 +10,10 @@ import typing
 
 import pytest
 from bs4 import BeautifulSoup
-from eserv.extract import extract_download_info
 from rampy import test
 
-from tests.utils import create_sample_email
+from eserv.extract import extract_download_info
+from tests.eserv.utils import create_sample_email
 
 if typing.TYPE_CHECKING:
     from typing import Any

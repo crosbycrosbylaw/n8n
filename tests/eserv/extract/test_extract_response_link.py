@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import typing
 
-from eserv.extract import extract_links_from_response_html
 from rampy import test
+
+from eserv.extract import extract_links_from_response_html
 
 if typing.TYPE_CHECKING:
     from typing import Any

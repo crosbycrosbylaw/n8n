@@ -8,8 +8,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from eserv.extract import extract_filename_from_disposition
 from rampy import test
+
+from eserv.extract import extract_filename_from_disposition
 
 if TYPE_CHECKING:
     from typing import Literal

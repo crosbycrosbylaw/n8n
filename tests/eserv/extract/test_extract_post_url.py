@@ -8,8 +8,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from eserv.extract import extract_post_request_url
 from rampy import test
+
+from eserv.extract import extract_post_request_url
 
 INITIAL_URL = 'https://base.com'
 

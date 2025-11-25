@@ -9,8 +9,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from eserv.extract import extract_aspnet_form_data
 from rampy import test
+
+from eserv.extract import extract_aspnet_form_data
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
