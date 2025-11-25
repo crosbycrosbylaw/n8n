@@ -3,7 +3,7 @@ environments.default.features = ["core", "dev", "host"]
 
 [workspace]
 
-name    = "crosbydev.workflows"
+name    = "crosbydev.automate"
 version = "0.0.1"
 
 authors   = ["zaynram <ramdasszayn@gmail.com>"]
