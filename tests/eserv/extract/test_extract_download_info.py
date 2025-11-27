@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 from rampy import test
 
 from eserv.extract import extract_download_info
-from tests.eserv.utils import create_sample_email
+from tests.eserv.lib import create_sample_email
 
 if typing.TYPE_CHECKING:
     from typing import Any

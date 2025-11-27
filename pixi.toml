@@ -1,5 +1,5 @@
 dependencies.python           = ">=3.14"
-environments.default.features = ["core", "dev"]
+environments.default.features = ["eserv", "dev"]
 
 [workspace]
 
@@ -18,9 +18,13 @@ rampy = { git = "https://github.com/zaynram/ramda-py.git", branch = "master" }
 
 [feature]
 
-    [feature.core]
+    [feature.eserv]
 
-        [feature.core.dependencies]
+        [feature.eserv.tasks]
+
+        check-eserv.cmd = "python -m tests.eserv"
+
+        [feature.eserv.dependencies]
 
         bs4            = ">=4.13.5,<5"
         dropbox        = ">=12.0.2"
@@ -32,7 +36,7 @@ rampy = { git = "https://github.com/zaynram/ramda-py.git", branch = "master" }
         requests       = ">=2.32.5,<3"
         typing_inspect = ">=0.9.0,<0.10"
 
-        [feature.core.pypi-dependencies]
+        [feature.eserv.pypi-dependencies]
 
         pymupdf       = ">=1.26.6"
         python-dotenv = ">=1.0.0,<2"

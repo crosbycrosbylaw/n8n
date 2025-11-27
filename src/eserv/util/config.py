@@ -124,10 +124,16 @@ class DropboxConfig:
 
     Attributes:
         token: Dropbox API access token.
+        app_key: Dropbox app key (for refresh token flow).
+        app_secret: Dropbox app secret (for refresh token flow).
+        refresh_token: Dropbox refresh token (for auto-refresh).
 
     """
 
     token: str
+    app_key: str | None = None
+    app_secret: str | None = None
+    refresh_token: str | None = None
 
     @classmethod
     def from_env(cls) -> DropboxConfig:
@@ -140,7 +146,12 @@ class DropboxConfig:
         if not (token := os.getenv('DROPBOX_TOKEN')):
             raise MissingVariableError(name='DROPBOX_TOKEN')
 
-        return cls(token=token)
+        # OAuth credentials for auto-refresh (optional)
+        app_key = os.getenv('DROPBOX_APP_KEY')
+        app_secret = os.getenv('DROPBOX_APP_SECRET')
+        refresh_token = os.getenv('DROPBOX_REFRESH_TOKEN')
+
+        return cls(token=token, app_key=app_key, app_secret=app_secret, refresh_token=refresh_token)
 
 
 @dataclass(slots=True, frozen=True)
