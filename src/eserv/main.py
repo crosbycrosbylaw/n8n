@@ -73,14 +73,14 @@ def main(path: Path) -> None:
 
         return
     else:
-        cons.info('Downloaded documents', doc_name=f'{doc_name}', store_path=store_path)
+        cons.info('Downloaded documents', doc_name=doc_name, store_path=store_path.as_posix())
 
     # Extract metadata
     try:
         upload_info = extract_upload_info(soup, store_path)
 
         doc_count = upload_info.doc_count
-        case_name = upload_info.case_name
+        case_name = upload_info.case_name or 'unknown'
 
     except Exception as e:
         cons.exception('Failed to extract upload info')
@@ -94,8 +94,8 @@ def main(path: Path) -> None:
         return
 
     else:
-        cons = console.bind(case_name=f'{case_name}')
-        cons.info('Extracted upload info', doc_name=f'{doc_name}', doc_count=doc_count)
+        cons = console.bind(case_name=case_name)
+        cons.info('Extracted upload info', doc_name=doc_name, doc_count=doc_count)
 
     # Check if already processed
     if case_name and email_state.is_processed(case_name):
@@ -108,7 +108,7 @@ def main(path: Path) -> None:
         cons.warning('No PDF files found in store', store_path=store_path.as_posix())
 
         error_tracker.log_error(
-            email_hash=hash_email_subject(case_name or 'unknown'),
+            email_hash=hash_email_subject(case_name),
             stage=PipelineStage.DOCUMENT_DOWNLOAD,
             error_message='No PDF files found after download',
         )
@@ -125,8 +125,6 @@ def main(path: Path) -> None:
         notifier=notifier,
         manual_review_folder=config.paths.manual_review_folder,
     )
-
-    case_name = case_name or 'unknown'
 
     result = uploader.process_document(case_name, pdf_files, doc_name)
     email_hash = hash_email_subject(case_name)
@@ -155,4 +153,4 @@ def main(path: Path) -> None:
             error_message=result.error_msg,
         )
 
-        cons.error('Upload failed', reason=result.error)
+        cons.error('Upload failed', reason=result.error_msg)

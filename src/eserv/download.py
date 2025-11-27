@@ -136,7 +136,7 @@ def download_documents(soup: BeautifulSoup) -> tuple[str | None, Path]:
             with document download information.
 
     Returns:
-        out (tuple[str, Path]):
+        out (tuple[str | None, Path]):
             A tuple containing the extracted document name (if it exists, otherwise `None`) and \
                 a `Path` object pointing to the directory where the downloaded documents were stored.
 

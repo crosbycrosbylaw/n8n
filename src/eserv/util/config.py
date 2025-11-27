@@ -28,13 +28,19 @@ from dotenv import load_dotenv
 from rampy import console
 
 
-class _MissingVariableError(ValueError):
+class MissingVariableError(ValueError):
+    """Exception raised when a required environment variable is missing."""
+
     def __init__(self, name: str) -> None:
+        """Initialize the exception with the missing variable name."""
         super().__init__(f'{name} environment variable is required')
 
 
-class _InvalidFormatError(ValueError):
+class InvalidFormatError(ValueError):
+    """Exception raised when an environment variable has an invalid format."""
+
     def __init__(self, name: str, value: str) -> None:
+        """Initialize the exception with the variable name and invalid value."""
         super().__init__(f'Invalid {name} format: {value}')
 
 
@@ -67,8 +73,8 @@ class SMTPConfig:
 
         Raises:
             TypeError: If the value recieved for the `port` is not an integer.
-            _MissingVariableError: If required fields are missing.
-            _InvalidFormatError: If any variable values are of an invalid format.
+            MissingVariableError: If required fields are missing.
+            InvalidFormatError: If any variable values are of an invalid format.
 
         """
         server = os.getenv('SMTP_SERVER')
@@ -80,11 +86,11 @@ class SMTPConfig:
         use_tls = os.getenv('SMTP_USE_TLS', 'true').lower() in {'true', '1', 'yes'}
 
         if not server:
-            raise _MissingVariableError(name='SMTP_SERVER')
+            raise MissingVariableError(name='SMTP_SERVER')
         if not from_addr:
-            raise _MissingVariableError(name='SMTP_FROM_ADDR')
+            raise MissingVariableError(name='SMTP_FROM_ADDR')
         if not to_addr:
-            raise _MissingVariableError(name='SMTP_TO_ADDR')
+            raise MissingVariableError(name='SMTP_TO_ADDR')
 
         try:
             port = int(port_str)
@@ -97,9 +103,9 @@ class SMTPConfig:
         email_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 
         if not email_pattern.match(from_addr):
-            raise _InvalidFormatError(name='SMTP_FROM_ADDR', value=from_addr)
+            raise InvalidFormatError(name='SMTP_FROM_ADDR', value=from_addr)
         if not email_pattern.match(to_addr):
-            raise _InvalidFormatError(name='SMTP_TO_ADDR', value=to_addr)
+            raise InvalidFormatError(name='SMTP_TO_ADDR', value=to_addr)
 
         return cls(
             server=server,
@@ -128,11 +134,11 @@ class DropboxConfig:
         """Load Dropbox configuration from environment variables.
 
         Raises:
-            _MissingVariableError: If token is missing.
+            MissingVariableError: If token is missing.
 
         """
         if not (token := os.getenv('DROPBOX_TOKEN')):
-            raise _MissingVariableError(name='DROPBOX_TOKEN')
+            raise MissingVariableError(name='DROPBOX_TOKEN')
 
         return cls(token=token)
 
@@ -155,11 +161,11 @@ class PathsConfig:
         """Load paths configuration from environment variables.
 
         Raises:
-            _MissingVariableError: If required paths are missing.
+            MissingVariableError: If required paths are missing.
 
         """
         if not (manual_review := os.getenv('MANUAL_REVIEW_FOLDER')):
-            raise _MissingVariableError(name='MANUAL_REVIEW_FOLDER')
+            raise MissingVariableError(name='MANUAL_REVIEW_FOLDER')
 
         if path_string := os.getenv('SERVICE_DIR'):
             service_dir = Path(path_string).resolve()
@@ -256,15 +262,11 @@ class Config:
         Args:
             env_file: Optional path to .env file. If None, uses default .env in cwd.
 
-        Raises:
-            ValueError: If any required configuration is missing or invalid.
-
         """
-        if not load_dotenv(env_file):
-            message = f"Failed to load environment variables from '{env_file or '.env'}'"
-            raise ValueError(message)
+        dotenv_path = None if not env_file else env_file.resolve(strict=True)
 
-        # Load nested configs
+        load_dotenv(dotenv_path)
+
         config_dict: dict[str, Any] = {
             'dropbox': DropboxConfig.from_env(),
             'smtp': (smtp := SMTPConfig.from_env()),
