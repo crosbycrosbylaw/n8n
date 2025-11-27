@@ -2,6 +2,9 @@ node_modules
 package-lock.json
 bun.lock
 
+# claude files
+.claude/
+
 # pyright configuration
 pyrightconfig.json
 
