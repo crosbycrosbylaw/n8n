@@ -23,7 +23,8 @@ rampy = { git = "https://github.com/zaynram/ramda-py.git", branch = "master" }
         [feature.core.dependencies]
 
         bs4            = ">=4.13.5,<5"
-        fire           = "*"
+        dropbox        = ">=12.0.2"
+        fire           = ">=0.7.1"
         nameparser     = ">=1.0.5,<2"
         orjson         = ">=3.11.4"
         python         = ">=3.14"
@@ -31,6 +32,11 @@ rampy = { git = "https://github.com/zaynram/ramda-py.git", branch = "master" }
         requests       = ">=2.32.5,<3"
         typing_inspect = ">=0.9.0,<0.10"
 
+        [feature.core.pypi-dependencies]
+
+        pymupdf       = ">=1.26.6"
+        python-dotenv = ">=1.0.0,<2"
+        structlog     = ">=25.5.0"
 
     [feature.dev]
 
@@ -40,6 +46,9 @@ rampy = { git = "https://github.com/zaynram/ramda-py.git", branch = "master" }
         ipywidgets = "*"
         pytest     = ">=8.4.2,<9"
         pytest-cov = ">=7.0.0,<8"
+
+        [feature.dev.pypi-dependencies]
+        pymupdf-stubs = ">=1.26.1.post1, <2"
 
         [feature.dev.tasks]
 
@@ -64,10 +73,14 @@ version.workspace = true
     [package.run-dependencies]
 
     bs4            = ">=4.13.5,<5"
+    dropbox        = ">=11.36.0,<12"
     fire           = "*"
+    fitz           = ">=0.0.20,<1"
     nameparser     = ">=1.0.5,<2"
     orjson         = ">=3.11.4"
     python         = ">=3.14"
+    python-dotenv  = ">=1.0.0,<2"
     rapidfuzz      = ">=3.14.1,<4"
     requests       = ">=2.32.5,<3"
+    structlog      = ">=24.4.0,<25"
     typing_inspect = ">=0.9.0,<0.10"

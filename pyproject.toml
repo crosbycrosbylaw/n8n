@@ -15,3 +15,6 @@ dynamic = ["dependencies", "requires-python"]
 setuptools.include-package-data = true
 setuptools.package-dir          = { "*" = "src" }
 setuptools.packages             = ["eserv"]
+
+pyright.extends = "../pyrightconfig.json"
+ruff.extend     = "../ruff.toml"

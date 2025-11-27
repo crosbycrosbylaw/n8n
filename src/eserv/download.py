@@ -12,7 +12,7 @@ from .extract import (
     extract_links_from_response_html,
     extract_post_request_url,
 )
-from .store import get_document_store
+from .util.doc_store import get_document_store
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
@@ -124,7 +124,7 @@ def _process_response(
     return out
 
 
-def download_documents(soup: BeautifulSoup) -> Path:
+def download_documents(soup: BeautifulSoup) -> tuple[str | None, Path]:
     """Download documents from a webpage and save them to a local store.
 
     This function extracts download information from a BeautifulSoup object, creates a
@@ -136,8 +136,9 @@ def download_documents(soup: BeautifulSoup) -> Path:
             with document download information.
 
     Returns:
-        Path: A Path object pointing to the directory where the downloaded documents
-            were stored.
+        out (tuple[str, Path]):
+            A tuple containing the extracted document name (if it exists, otherwise `None`) and \
+                a `Path` object pointing to the directory where the downloaded documents were stored.
 
     Note:
         - The function expects extract_download_info() to return an object with 'name' and 'link' attributes.
@@ -169,4 +170,4 @@ def download_documents(soup: BeautifulSoup) -> Path:
 
             path.write_bytes(content)
 
-    return store
+    return info.doc_name, store

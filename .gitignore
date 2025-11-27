@@ -75,9 +75,10 @@ temp/
 service/.cache
 service/.n8n
 service/tmp
-/service/backup/credentials
 
-**/*cache*
+credentials.json
+
+**/.*cache*
 
 ruff.toml
 **/*.ipynb
