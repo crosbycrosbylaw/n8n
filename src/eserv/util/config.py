@@ -20,28 +20,19 @@ from __future__ import annotations
 
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from dotenv import load_dotenv
 from rampy import console
 
+from eserv.errors import InvalidFormatError, MissingVariableError
+from eserv.util import CredentialManager
 
-class MissingVariableError(ValueError):
-    """Exception raised when a required environment variable is missing."""
-
-    def __init__(self, name: str) -> None:
-        """Initialize the exception with the missing variable name."""
-        super().__init__(f'{name} environment variable is required')
-
-
-class InvalidFormatError(ValueError):
-    """Exception raised when an environment variable has an invalid format."""
-
-    def __init__(self, name: str, value: str) -> None:
-        """Initialize the exception with the variable name and invalid value."""
-        super().__init__(f'Invalid {name} format: {value}')
+if TYPE_CHECKING:
+    from eserv.util import OAuthCredential
+    from eserv.util.oauth_manager import CredentialType
 
 
 @dataclass(slots=True, frozen=True)
@@ -118,40 +109,37 @@ class SMTPConfig:
         )
 
 
+def _credential_path_factory() -> Path:
+    if not (cred_path := os.getenv('CREDENTIALS_PATH')):
+        raise MissingVariableError(name='CREDENTIALS_PATH')
+
+    return Path(cred_path).resolve(strict=True)
+
+
 @dataclass(slots=True, frozen=True)
-class DropboxConfig:
-    """Dropbox API configuration.
+class CredentialConfig:
+    """API authorization configuration (OAuth2).
 
     Attributes:
-        token: Dropbox API access token.
-        app_key: Dropbox app key (for refresh token flow).
-        app_secret: Dropbox app secret (for refresh token flow).
-        refresh_token: Dropbox refresh token (for auto-refresh).
+        credential (OAuthCredential):
+            The credential used for authorization for this API.
 
     """
 
-    token: str
-    app_key: str | None = None
-    app_secret: str | None = None
-    refresh_token: str | None = None
+    path: Path = field(init=True, default_factory=_credential_path_factory)
 
-    @classmethod
-    def from_env(cls) -> DropboxConfig:
-        """Load Dropbox configuration from environment variables.
+    @property
+    def manager(self) -> CredentialManager:  # noqa: D102
+        return CredentialManager(self.path)
 
-        Raises:
-            MissingVariableError: If token is missing.
+    _cache: dict[CredentialType, OAuthCredential] = field(
+        init=False,
+        default_factory=dict[Any, Any],
+    )
 
-        """
-        if not (token := os.getenv('DROPBOX_TOKEN')):
-            raise MissingVariableError(name='DROPBOX_TOKEN')
-
-        # OAuth credentials for auto-refresh (optional)
-        app_key = os.getenv('DROPBOX_APP_KEY')
-        app_secret = os.getenv('DROPBOX_APP_SECRET')
-        refresh_token = os.getenv('DROPBOX_REFRESH_TOKEN')
-
-        return cls(token=token, app_key=app_key, app_secret=app_secret, refresh_token=refresh_token)
+    def __getitem__(self, name: CredentialType) -> OAuthCredential:
+        """Retrieve the named authorization credential, storing the value if not found in cache."""
+        return self._cache.setdefault(name, self.manager.get_credential(name))
 
 
 @dataclass(slots=True, frozen=True)
@@ -208,7 +196,7 @@ class EmailStateConfig:
             service_dir: Service directory from PathsConfig.
 
         """
-        return cls(state_file=service_dir / 'email_state.json')
+        return cls(state_file=service_dir / 'state.json')
 
 
 @dataclass(slots=True, frozen=True)
@@ -247,6 +235,31 @@ class CacheConfig:
         return cls(index_file=service_dir / 'dbx_index.json', ttl_hours=ttl_hours)
 
 
+@dataclass(frozen=True, slots=True)
+class MonitoringConfig:
+    """Monitoring configuration."""
+
+    num_days: int
+    folder_path: str
+    graph_api_base_url: str = 'https://graph.microsoft.com/v1.0'
+
+    @classmethod
+    def from_env(cls) -> MonitoringConfig:
+        """Load monitoring configuration from environment variables.
+
+        Returns:
+            MonitoringConfig: Monitoring configuration with lookback days and folder path.
+
+        """
+        return cls(
+            num_days=int(os.getenv('MONITORING_LOOKBACK_DAYS', '1')),
+            folder_path=os.getenv(
+                'MONITORING_FOLDER_PATH',
+                'Inbox/File Handling - All/Filing Accepted / Notification of Service / Courtesy Copy',
+            ),
+        )
+
+
 @dataclass(slots=True, frozen=True)
 class Config:
     """Root configuration with all nested scopes.
@@ -255,16 +268,18 @@ class Config:
         smtp: SMTP configuration for email notifications.
         dropbox: Dropbox API configuration.
         paths: File storage paths.
-        email_state: Email state tracking configuration.
+        state: Email state tracking configuration.
         cache: Cache configuration.
 
     """
 
+    credentials: CredentialConfig
+
     smtp: SMTPConfig
-    dropbox: DropboxConfig
     paths: PathsConfig
-    email_state: EmailStateConfig
+    state: EmailStateConfig
     cache: CacheConfig
+    monitoring: MonitoringConfig
 
     @classmethod
     def from_env(cls, env_file: Path | None = None) -> Config:
@@ -274,16 +289,15 @@ class Config:
             env_file: Optional path to .env file. If None, uses default .env in cwd.
 
         """
-        dotenv_path = None if not env_file else env_file.resolve(strict=True)
-
-        load_dotenv(dotenv_path)
+        load_dotenv(None if not env_file else env_file.resolve(strict=True))
 
         config_dict: dict[str, Any] = {
-            'dropbox': DropboxConfig.from_env(),
+            'credentials': CredentialConfig(),
             'smtp': (smtp := SMTPConfig.from_env()),
             'paths': (paths := PathsConfig.from_env()),
             'cache': (cache := CacheConfig.from_env(paths.service_dir)),
-            'email_state': EmailStateConfig.from_env(paths.service_dir),
+            'state': EmailStateConfig.from_env(paths.service_dir),
+            'monitoring': MonitoringConfig.from_env(),
         }
 
         console.bind(

@@ -16,7 +16,6 @@ Classes:
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Any, NoReturn, cast
@@ -30,7 +29,7 @@ from rampy import console
 from .util import FolderMatcher, IndexCache, PipelineStage
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Sequence
     from pathlib import Path
 
     from dropbox.files import Metadata
@@ -45,6 +44,7 @@ class UploadStatus(Enum):
     """Upload result status."""
 
     SUCCESS = 'success'
+    NO_WORK = 'no_work'
     MANUAL_REVIEW = 'manual_review'
     ERROR = 'error'
 
@@ -226,7 +226,7 @@ class DocumentUploader:
 
         cons.info('Uploaded file to Dropbox')
 
-    def process_document(
+    def process_documents(
         self,
         case_name: str | None,
         documents: Sequence[Path],
@@ -243,7 +243,8 @@ class DocumentUploader:
             Upload result with status and details.
 
         """
-        cons = console.bind(case_name=f'{case_name}')
+        if not documents:
+            return UploadResult(status=UploadStatus.NO_WORK, folder_path='', uploaded_files=[])
 
         # Refresh index if needed
         try:
@@ -272,8 +273,6 @@ class DocumentUploader:
         else:
             target_folder = self.manual_review_folder
             status = UploadStatus.MANUAL_REVIEW
-
-            cons.warning('No folder match found, uploading to manual review')
 
         # Upload files
         uploaded: list[str] = []
@@ -317,8 +316,6 @@ class DocumentUploader:
             )
 
         except Exception as e:
-            cons.exception('Upload failed')
-
             self.notifier.notify_error(
                 case_name=case_name or 'Unknown',
                 stage=PipelineStage.DROPBOX_UPLOAD.value,

@@ -10,22 +10,26 @@ Classes:
 
 from __future__ import annotations
 
+from collections.abc import Generator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self, Unpack
 
 import orjson
 from rampy import console
+
+from eserv.errors._core import PipelineError
 
 if TYPE_CHECKING:
     from pathlib import Path
     from typing import TypedDict
 
     class _ErrorEntry(TypedDict):
-        timestamp: str
-        email_hash: str
+        uid: str
         error: str
+        timestamp: str
         stage: str
         context: dict[str, str]
 
@@ -33,11 +37,11 @@ if TYPE_CHECKING:
 class PipelineStage(Enum):
     """Pipeline stages for error categorization."""
 
-    EMAIL_PARSING = 'email_parsing'
-    DOCUMENT_DOWNLOAD = 'document_download'
-    PDF_EXTRACTION = 'pdf_extraction'
-    FOLDER_MATCHING = 'folder_matching'
-    DROPBOX_UPLOAD = 'dropbox_upload'
+    EMAIL_PARSING = 'parsing'
+    DOCUMENT_DOWNLOAD = 'download'
+    PDF_EXTRACTION = 'extraction'
+    FOLDER_MATCHING = 'matching'
+    DROPBOX_UPLOAD = 'upload'
 
 
 @dataclass
@@ -47,12 +51,32 @@ class ErrorTracker:
     Maintains a JSON log of errors with timestamps, stages, and context.
 
     Attributes:
-        log_file: Path to error log JSON file.
+        file: Path to error log JSON file.
         _errors: In-memory error log.
 
     """
 
-    log_file: Path
+    file: Path
+    uid: str = field(default='unknown')
+
+    @contextmanager
+    def track(self, uid: str) -> Generator[Self]:
+        """Context manager to temporarily track errors for a specific email.
+
+        Args:
+            uid: Identifier for the email record to track.
+
+        Yields:
+            Self: The ErrorTracker instance with updated uid.
+
+        """
+        prev_uid = self.uid
+        try:
+            self.uid = uid
+            yield self
+        finally:
+            self.uid = prev_uid
+
     _errors: list[_ErrorEntry] = field(default_factory=list[Any], init=False)
 
     def __post_init__(self) -> None:
@@ -61,9 +85,9 @@ class ErrorTracker:
 
     def _load_errors(self) -> None:
         """Load error log from JSON file, creating if missing."""
-        cons = console.bind(path=self.log_file.as_posix())
+        cons = console.bind(path=self.file.as_posix())
 
-        if not self.log_file.exists():
+        if not self.file.exists():
             self._errors = []
             self._save_errors()
 
@@ -71,7 +95,7 @@ class ErrorTracker:
             return
 
         try:
-            with self.log_file.open('rb') as f:
+            with self.file.open('rb') as f:
                 self._errors = orjson.loads(f.read())
 
             cons.info('Loaded error log', error_count=len(self._errors))
@@ -84,50 +108,101 @@ class ErrorTracker:
 
     def _save_errors(self) -> None:
         """Save current error log to JSON file."""
-        with self.log_file.open('wb') as f:
+        with self.file.open('wb') as f:
             f.write(orjson.dumps(self._errors, option=orjson.OPT_INDENT_2))
 
-    def log_error(
+    def _save_entry(self, **entry: Unpack[_ErrorEntry]) -> None:
+        self._errors.append(entry)
+        self._save_errors()
+
+    def error(
         self,
-        email_hash: str,
+        message: str,
         stage: PipelineStage,
-        error_message: str,
+        context: dict[str, str] | None = None,
+    ) -> PipelineError:
+        """Log a pipeline error.
+
+        Args:
+            stage: Pipeline stage where error occurred.
+            message: Human-readable error description.
+            context: Optional additional context (e.g., file paths, API responses).
+
+        """
+        self._save_entry(
+            uid=self.uid,
+            error=message,
+            timestamp=datetime.now(UTC).isoformat(),
+            stage=stage.value,
+            context=context or {},
+        )
+
+        error = PipelineError(message=message, stage=stage)
+        console.bind(uid=self.uid, stage=stage.value, exc_info=error).exception()
+
+        return error
+
+    def exception(
+        self,
+        message: str,
+        stage: PipelineStage,
         context: dict[str, str] | None = None,
     ) -> None:
         """Log a pipeline error.
 
         Args:
-            email_hash: Hash of email subject for correlation.
             stage: Pipeline stage where error occurred.
-            error_message: Human-readable error description.
+            message: Human-readable error description.
             context: Optional additional context (e.g., file paths, API responses).
 
         """
-        error_entry: _ErrorEntry = {
-            'timestamp': datetime.now(UTC).isoformat(),
-            'email_hash': email_hash,
-            'stage': stage.value,
-            'error': error_message,
-            'context': context or {},
-        }
+        self._save_entry(
+            uid=self.uid,
+            error=message,
+            timestamp=datetime.now(UTC).isoformat(),
+            stage=stage.value,
+            context=context or {},
+        )
 
-        self._errors.append(error_entry)
-        self._save_errors()
+        cons = console.bind(uid=self.uid, stage=stage.value)
+        cons.exception(f'Pipeline error: {message}')
 
-        cons = console.bind(email_hash=email_hash, stage=stage.value, message=error_message)
-        cons.error('Pipeline error logged')
+    def warning(
+        self,
+        message: str,
+        stage: PipelineStage,
+        context: dict[str, str] | None = None,
+    ) -> None:
+        """Log a pipeline error.
 
-    def get_errors_for_email(self, email_hash: str) -> list[_ErrorEntry]:
+        Args:
+            stage: Pipeline stage where error occurred.
+            message: Human-readable error description.
+            context: Optional additional context (e.g., file paths, API responses).
+
+        """
+        self._save_entry(
+            uid=self.uid,
+            error=message,
+            timestamp=datetime.now(UTC).isoformat(),
+            stage=stage.value,
+            context=context or {},
+        )
+
+        cons = console.bind(uid=self.uid, stage=stage.value)
+        cons.warning(f'Pipeline warning: {message}')
+
+    def get_errors_for_email(self, uid: str) -> list[_ErrorEntry]:
         """Get all errors for a specific email.
 
         Args:
-            email_hash: Hash of email subject.
+            uid: Identifier for this email record.
 
         Returns:
             List of error entries for this email.
 
         """
-        return [e for e in self._errors if e['email_hash'] == email_hash]
+        return [e for e in self._errors if e['uid'] == uid]
 
     def get_errors_by_stage(self, stage: PipelineStage) -> list[_ErrorEntry]:
         """Get all errors for a specific pipeline stage.
