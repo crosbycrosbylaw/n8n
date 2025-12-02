@@ -87,45 +87,67 @@ class GraphClient:
         # Calculate date range
         start_date = (datetime.now(UTC) - timedelta(days=num_days)).isoformat()
 
-        # Graph API filter: receivedDateTime >= start_date AND NOT flagged
-        filter_expr = f'receivedDateTime ge {start_date}Z and NOT hasAttachments:false'
-
-        result = self._request(
-            'GET',
-            path=f'/me/mailFolders/{folder_id}/messages',
-            params={
-                '$filter': filter_expr,
-                '$select': 'id,from,subject,receivedDateTime,bodyPreview',
-                '$top': 50,  # Adjust as needed
-            },
-        )
+        # Graph API filter: receivedDateTime >= start_date AND has attachments
+        filter_expr = f'receivedDateTime ge {start_date}Z and hasAttachments eq true'
 
         records: list[EmailRecord] = []
-        for msg in result.get('value', []):
-            uid = msg['id']
+        next_link: str | None = None
 
-            # Skip if already processed
-            if uid in processed_uids:
-                continue
-
-            # Fetch full body (HTML)
-            body_result = self._request(
-                'GET',
-                path=f'/me/messages/{uid}',
-                params={'$select': 'id,bodyPreview,body'},
-            )
-
-            html_body = body_result.get('body', {}).get('content', '')
-
-            records.append(
-                EmailRecord(
-                    uid=uid,
-                    sender=msg.get('from', {}).get('emailAddress', {}).get('address', ''),
-                    subject=msg.get('subject', ''),
-                    received_at=datetime.fromisoformat(msg.get('receivedDateTime', '')),
-                    html_body=html_body,
+        # Pagination loop to fetch all matching emails
+        while True:
+            if next_link:
+                # Use next link for subsequent pages
+                # Graph API returns full URL in @odata.nextLink
+                response = requests.get(next_link, headers=self._get_headers(), timeout=30)
+                response.raise_for_status()
+                result = response.json() if response.text else {}
+            else:
+                # Initial request with filter
+                result = self._request(
+                    'GET',
+                    path=f'/me/mailFolders/{folder_id}/messages',
+                    params={
+                        '$filter': filter_expr,
+                        '$select': 'id,from,subject,receivedDateTime,bodyPreview',
+                        '$top': 50,
+                    },
                 )
-            )
+
+            # Process messages from current page
+            for msg in result.get('value', []):
+                uid = msg['id']
+
+                # Skip if already processed
+                if uid in processed_uids:
+                    continue
+
+                # Fetch full body (HTML)
+                body_result = self._request(
+                    'GET',
+                    path=f'/me/messages/{uid}',
+                    params={'$select': 'id,bodyPreview,body'},
+                )
+
+                html_body = body_result.get('body', {}).get('content', '')
+
+                # Validate HTML body is not empty
+                if not html_body:
+                    raise ValueError(f'Email {uid} has no HTML body')
+
+                records.append(
+                    EmailRecord(
+                        uid=uid,
+                        sender=msg.get('from', {}).get('emailAddress', {}).get('address', ''),
+                        subject=msg.get('subject', ''),
+                        received_at=datetime.fromisoformat(msg.get('receivedDateTime', '')),
+                        html_body=html_body,
+                    )
+                )
+
+            # Check for next page
+            next_link = result.get('@odata.nextLink')
+            if not next_link:
+                break
 
         return records
 

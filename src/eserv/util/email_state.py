@@ -10,7 +10,10 @@ from eserv.monitor.result import processed_result
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from eserv.monitor.types import EmailRecord, ErrorDict, ProcessedResult, ProcessedResultDict
+    from eserv.monitor.types import EmailRecord, ErrorDict, ProcessedResultDict
+
+# Import ProcessedResult at runtime for isinstance check
+from eserv.monitor.types import ProcessedResult
 
 
 @dataclass
@@ -46,14 +49,14 @@ class EmailState:
     @overload
     def record(self, result: ProcessedResult, /) -> None: ...
     @overload
-    def record(self, record: EmailRecord, error: ErrorDict | None, /) -> None: ...
+    def record(self, record: EmailRecord, error: ErrorDict | None = None, /) -> None: ...
     def record(
         self,
         arg: EmailRecord | ProcessedResult,
         error: ErrorDict | None = None,
     ) -> None:
         """Record processed email."""
-        if isinstance(arg, 'ProcessedResult'):
+        if isinstance(arg, ProcessedResult):
             self._entries[arg.record.uid] = arg
         else:
             self._entries[arg.uid] = processed_result(arg, error=error)

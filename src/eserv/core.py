@@ -103,16 +103,23 @@ class Pipeline:
                     doc_count=upload_info.doc_count,
                 )
 
-            if case_name and state.is_processed(case_name):
-                return cons.info('Email already processed, skipping')
+            if record.uid and state.is_processed(record.uid):
+                cons.info('Email already processed, skipping')
+                return UploadResult(status=UploadStatus.NO_WORK, folder_path='', uploaded_files=[])
 
             pdfs = [*store_path.glob('*.pdf')]
 
+            # Get Dropbox credentials for token refresh
+            dbx_cred = config.credentials['dropboxOAuth2Api']
+
             result = DocumentUploader(
                 cache_path=config.cache.index_file,
-                dbx_token=config.credentials['dropboxOAuth2Api'].access_token,
+                dbx_token=dbx_cred.access_token,
                 notifier=Notifier(config.smtp),
                 manual_review_folder=config.paths.manual_review_folder,
+                dbx_app_key=dbx_cred.client_id,
+                dbx_app_secret=dbx_cred.client_secret,
+                dbx_refresh_token=dbx_cred.refresh_token,
             ).process_documents(case_name, pdfs, doc_name)
 
             match result.status:
