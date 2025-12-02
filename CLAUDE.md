@@ -330,3 +330,7 @@ python -m pytest --cov=eserv ./tests
 ```
 
 All 17 issues have been resolved (12 from initial pass + 5 from second pass) and the system is ready for production deployment.
+- python version is equal to or greater than 3.14
+- prefer abstraction to reusable functions over repetitive implementations
+- prefer concise variable names to overly verbose
+- always update claude.md after committing changes
