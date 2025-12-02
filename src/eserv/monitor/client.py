@@ -1,8 +1,10 @@
 import threading
+import time
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 import requests
+from requests.exceptions import HTTPError
 
 if TYPE_CHECKING:
     from eserv.monitor.flags import StatusFlag
@@ -29,15 +31,67 @@ class GraphClient:
             'Content-Type': 'application/json',
         }
 
+    @staticmethod
+    def _is_retryable_error(status_code: int) -> bool:
+        """Check if HTTP error is retryable.
+
+        Args:
+            status_code: HTTP status code.
+
+        Returns:
+            True if error should be retried (429, 5xx), False for fatal errors (4xx).
+
+        """
+        # Retry on rate limiting (429) and server errors (5xx)
+        return status_code == 429 or status_code >= 500
+
     def _request(self, method: str, path: str, **kwds: Any) -> dict[str, Any]:
-        """Make Graph API request."""
+        """Make Graph API request with retry logic for transient failures.
+
+        Args:
+            method: HTTP method (GET, POST, PATCH, etc.).
+            path: API path (e.g., '/me/messages').
+            **kwds: Additional arguments passed to requests.request().
+
+        Returns:
+            JSON response as dictionary.
+
+        Raises:
+            HTTPError: For fatal errors (4xx) or after max retries exhausted.
+
+        """
         url = f'{self.config.graph_api_base_url}{path}'
         headers = self._get_headers()
 
-        response = requests.request(method, url, headers=headers, timeout=30, **kwds)
-        response.raise_for_status()
+        max_retries = 3
+        base_delay = 1.0  # seconds
 
-        return response.json() if response.text else {}
+        for attempt in range(max_retries):
+            try:
+                response = requests.request(method, url, headers=headers, timeout=30, **kwds)
+                response.raise_for_status()
+                return response.json() if response.text else {}
+
+            except HTTPError as e:
+                status_code = e.response.status_code if e.response else 0
+
+                # Check if error is retryable
+                if not self._is_retryable_error(status_code):
+                    # Fatal error (4xx) - don't retry
+                    raise
+
+                # Last attempt - don't retry
+                if attempt == max_retries - 1:
+                    raise
+
+                # Calculate exponential backoff delay
+                delay = base_delay * (2**attempt)
+                time.sleep(delay)
+
+                # Continue to next retry
+
+        # Should never reach here, but satisfy type checker
+        return {}
 
     def resolve_monitoring_folder_id(self) -> str:
         """Resolve monitoring folder path to folder ID.

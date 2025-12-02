@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import traceback
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -67,6 +68,11 @@ class Pipeline:
                 raise tracker.error(
                     message=f'Failed to initialize soup from html: {e!s}',
                     stage=PipelineStage.EMAIL_PARSING,
+                    context={
+                        'exception_type': type(e).__name__,
+                        'traceback': traceback.format_exc(),
+                        'html_body_length': len(record.html_body),
+                    },
                 ) from e
             else:
                 cons.info(event='Parsed email HTML')
@@ -78,6 +84,10 @@ class Pipeline:
                 raise tracker.error(
                     message=f'Failed to download documents: {e!s}',
                     stage=PipelineStage.DOCUMENT_DOWNLOAD,
+                    context={
+                        'exception_type': type(e).__name__,
+                        'traceback': traceback.format_exc(),
+                    },
                 ) from e
             else:
                 cons.info(
@@ -94,6 +104,11 @@ class Pipeline:
                 raise tracker.error(
                     message=f'Failed to parse upload information: {e!s}',
                     stage=PipelineStage.EMAIL_PARSING,
+                    context={
+                        'exception_type': type(e).__name__,
+                        'traceback': traceback.format_exc(),
+                        'store_path': store_path.as_posix(),
+                    },
                 ) from e
             else:
                 cons = console.bind(case_name=case_name)
@@ -139,11 +154,17 @@ class Pipeline:
                     tracker.warning(
                         message='No PDF files found after download',
                         stage=PipelineStage.DOCUMENT_DOWNLOAD,
+                        context={'store_path': store_path.as_posix()},
                     )
                 case UploadStatus.ERROR:
                     raise tracker.error(
                         message=result.error_msg,
                         stage=PipelineStage.DROPBOX_UPLOAD,
+                        context={
+                            'folder_path': result.folder_path,
+                            'uploaded_files': result.uploaded_files,
+                            'case_name': case_name,
+                        },
                     )
 
             return result
@@ -158,6 +179,9 @@ class Pipeline:
             BatchResult with summary and per-email results.
 
         """
+        # Clean up old error logs (keep last 30 days)
+        self.tracker.clear_old_errors(days=30)
+
         return EmailProcessor(self).process_batch(num_days)
 
     def execute(self, rec: EmailRecord) -> ProcessedResult:
