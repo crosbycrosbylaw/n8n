@@ -77,7 +77,7 @@ class ErrorTracker:
         finally:
             self.uid = prev_uid
 
-    _errors: list[_ErrorEntry] = field(default_factory=list[Any], init=False)
+    _errors: list[_ErrorEntry] = field(default_factory=list, init=False)
 
     def __post_init__(self) -> None:
         """Load existing error log from disk."""

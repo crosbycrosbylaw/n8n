@@ -204,7 +204,7 @@ class DocumentUploader:
                     try:
                         self._refresh_access_token()
                         return self._refresh_index_if_needed()
-                    except:
+                    except Exception:
                         cons.exception('Token refresh failed, cannot continue')
                         raise
 

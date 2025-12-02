@@ -21,7 +21,7 @@ class EmailState:
     """Audit log for processed emails (UID-based)."""
 
     state_file: Path
-    _entries: dict[str, ProcessedResult] = field(default_factory=dict[str, Any], init=False)
+    _entries: dict[str, ProcessedResult] = field(default_factory=dict, init=False)
 
     @property
     def processed(self) -> set[str]:

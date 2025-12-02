@@ -134,7 +134,7 @@ class CredentialConfig:
 
     _cache: dict[CredentialType, OAuthCredential] = field(
         init=False,
-        default_factory=dict[Any, Any],
+        default_factory=dict,
     )
 
     def __getitem__(self, name: CredentialType) -> OAuthCredential:

@@ -111,7 +111,7 @@ def _process_response(
     if not extracted:
         message = 'HTML parsed, but no valid document links were found.'
 
-        raise Warning(message)
+        raise ValueError(message)
 
     rerun_depth = depth + 1
 
