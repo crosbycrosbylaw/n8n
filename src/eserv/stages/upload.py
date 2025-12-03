@@ -58,27 +58,11 @@ class DropboxManager:
 
     credential: OAuthCredential
     uploaded: list[str] = field(init=False, default_factory=list)
-
-    def verify(self) -> OAuthCredential:
-        """Verify Dropbox credential configuration and return access token.
-
-        Raises:
-            ValueError: If credential is missing any required information.
-
-        """
-        if not all([
-            self.credential.access_token,
-            self.credential.client_secret,
-            self.credential.refresh_token,
-        ]):
-            message = 'Dropbox credential is not properly configured'
-            raise ValueError(message)
-
-        return self.credential
+    _client: Dropbox | None = field(init=False, default=None, repr=False)
 
     def index(self) -> dict[str, Any]:
         """Return the Dropbox folder index as a dictionary."""
-        dropbox = self.client()
+        dropbox = self.client
 
         out: dict[str, Any] = {}
 
@@ -105,21 +89,30 @@ class DropboxManager:
         cons = console.bind(path=path.as_posix(), dropbox_path=dropbox_path)
 
         with path.open('rb') as f:
-            self.client().files_upload(f.read(), dropbox_path, mode=WriteMode.overwrite)
+            self.client.files_upload(f.read(), dropbox_path, mode=WriteMode.overwrite)
 
         cons.info('Uploaded file to Dropbox')
 
         self.uploaded.append(dropbox_path)
 
+    @property
     def client(self) -> Dropbox:
-        """Create a Dropbox client wrapper from the OAuth credential.
+        """Lazily create Dropbox client from credential.
 
         Returns:
             Dropbox client instance.
 
         """
-        self.credential = self.credential.refresh()
-        return self.verify().get_client()
+        if self._client is None:
+            from dropbox import Dropbox
+
+            self._client = Dropbox(
+                oauth2_access_token=self.credential.access_token,
+                oauth2_refresh_token=self.credential.refresh_token,
+                app_key=self.credential.client_id,
+                app_secret=self.credential.client_secret,
+            )
+        return self._client
 
 
 def upload_documents(

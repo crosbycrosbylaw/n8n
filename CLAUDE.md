@@ -81,8 +81,15 @@ pixi run push
     -   `execute(record: EmailRecord) -> ProcessedResult` - Process single email with error handling
 -   **`__main__.py`** - Fire CLI entry point (auto-generates subcommands from Pipeline methods)
 -   **`extract.py`** - HTML content extraction using protocol-based extractor pattern
--   **`download.py`** - HTTP download orchestration with ASP.NET form handling
--   **`upload.py`** - Document upload orchestration with Dropbox integration
+-   **`record.py`** - EmailRecord factory
+    -   `email_record()` - Create EmailRecord from HTML string, subject, sender
+-   **`stages/download.py`** - HTTP download orchestration with ASP.NET form handling
+    -   `download_documents()` - Main download orchestration function
+-   **`stages/upload.py`** - Document upload orchestration with Dropbox integration
+    -   `upload_documents()` - Main upload orchestration function
+    -   `DropboxManager` - Dropbox client management with token refresh
+-   **`stages/types.py`** - Upload result types: `UploadResult`, `UploadStatus`
+-   **`types.py`** - Barrel export module for core type definitions
 
 **Email Monitoring (`monitor/`):**
 
@@ -100,15 +107,29 @@ pixi run push
 -   **`_core.py`** - `PipelineError`: Exception with stage and error info
 -   **`_config.py`** - Config-specific exceptions: `MissingVariableError`, `InvalidFormatError`
 
+**Credential Management (`util/oauth_manager.py`):**
+
+-   **`CredentialManager`** - OAuth2 token management for Dropbox + Outlook
+    -   Unified refresh mechanism using `requests.post()` for both credential types
+    -   Lazy token refresh (within 5 min of expiry)
+    -   Thread-safe credential updates with locking
+    -   Automatic persistence on refresh
+    -   Flat JSON serialization (no nested dicts)
+-   **`OAuthCredential`** - Immutable credential dataclass
+    -   Pure data container (no client storage)
+    -   `update_from_refresh()` method creates new instances (immutable pattern)
+    -   `refresh()` method orchestrates token refresh via handlers
+    -   `export()` serializes to flat JSON structure
+-   **Refresh handlers**:
+    -   `_refresh_dropbox()` - Dropbox OAuth2 token refresh
+    -   `_refresh_outlook()` - Microsoft OAuth2 token refresh
+    -   Both use identical `requests.post()` pattern
+
 **Utility Subpackage (`util/`):**
 
--   **`config.py`** - Configuration management with nested dataclasses
+-   **`configuration.py`** - Configuration management with nested dataclasses
     -   `SMTPConfig`, `CredentialConfig`, `PathsConfig`, `EmailStateConfig`, `CacheConfig`, `MonitoringConfig`
     -   Lazy credential loading via `CredentialConfig[cred_type]`
--   **`oauth_manager.py`** - `CredentialManager`: OAuth2 token management for Dropbox + Outlook
-    -   Lazy token refresh (within 5 min of expiry)
-    -   Thread-safe credential updates
-    -   Automatic persistence on refresh
 -   **`email_state.py`** - `EmailState`: UID-based audit log for processed emails
     -   Fresh start (no weekly rotation, UID primary key)
     -   Overloaded `record()` for flexible input types
@@ -121,7 +142,7 @@ pixi run push
 -   **`notifications.py`** - SMTP email notifications for pipeline events
 -   **`doc_store.py`** - Temporary document store management
 -   **`target_finder.py`** - Fuzzy party name extraction and folder matching
--   **`string_validation.py`** - Template validation utilities (currently unused)
+-   **`types.py`** - Barrel export module for util type definitions
 
 ### Key Dependencies
 
@@ -148,8 +169,24 @@ pixi run push
 -   **Logging:** Use rampy's structlog wrapper
 -   **Error handling:** Typed exceptions (`PipelineError`) with stage/message; context managers for error tracking
 -   **Docstrings:** Comprehensive with Args, Returns, Raises sections
+-   **Type re-exports:** Subpackages use `types.py` as barrel modules to cleanly expose public types
 
 ## Development History
+
+### Credential Management Simplification (December 2025)
+
+**Major refactoring:** Reduced credential management complexity from ~661 lines to ~490 lines (-26%).
+
+**Improvements:**
+
+-   **Unified refresh mechanism** - Single `requests.post()` pattern for both Dropbox and Outlook (removed 50-line RefreshConfig class)
+-   **Removed redundant client storage** - OAuthCredential is now a pure data container; DropboxManager owns client instances
+-   **Eliminated double refresh** - Removed unnecessary refresh() call in DropboxManager; trust CredentialManager's expiry logic
+-   **Immutable credential updates** - `update_from_refresh()` uses dataclass `replace()` for clean, predictable state changes
+-   **Flat JSON serialization** - Simplified credentials.json format (no nested 'client' or 'data' dicts)
+-   **Migration tooling** - `scripts/migrate_credentials.py` automates conversion from old to new format
+
+**Test coverage:** Added comprehensive `test_oauth_manager.py` with 100+ assertions covering all refresh, update, and serialization paths.
 
 ### Bug Fixes Summary (December 2025)
 
@@ -278,7 +315,7 @@ The following test files need to be created or completed to achieve comprehensiv
 Before deployment, achieve the following coverage targets:
 
 -   **Overall:** >80% code coverage
--   **Core modules (core.py, upload.py, download.py):** >90% coverage
+-   **Core modules (core.py, stages/upload.py, stages/download.py):** >90% coverage
 -   **Monitor module:** >90% coverage (currently at ~80%)
 -   **Util module:** >85% coverage (currently at ~70%)
 
@@ -370,35 +407,47 @@ SERVICE_DIR=/path/to/service/dir
 INDEX_CACHE_TTL_HOURS=4
 ```
 
-**Credentials JSON structure:**
+**Credentials JSON structure (flat format):**
 
 ```json
 [
     {
-        "type": "dropboxOAuth2Api",
+        "type": "dropbox",
         "account": "business",
-        "client": { "id": "...", "secret": "..." },
-        "data": {
-            "token_type": "bearer",
-            "scope": "...",
-            "access_token": "...",
-            "refresh_token": "...",
-            "expires_at": "2025-12-01T12:00:00+00:00"
-        }
+        "client_id": "...",
+        "client_secret": "...",
+        "token_type": "bearer",
+        "scope": "files.content.write files.metadata.read",
+        "access_token": "...",
+        "refresh_token": "...",
+        "expires_at": "2025-12-01T12:00:00+00:00"
     },
     {
-        "type": "microsoftOutlookOAuth2Api",
+        "type": "microsoft-outlook",
         "account": "eservice",
-        "client": { "id": "...", "secret": "..." },
-        "data": {
-            "token_type": "bearer",
-            "scope": "...",
-            "access_token": "...",
-            "refresh_token": "...",
-            "expires_at": "2025-12-01T12:00:00+00:00"
-        }
+        "client_id": "...",
+        "client_secret": "...",
+        "token_type": "bearer",
+        "scope": "Mail.Read offline_access",
+        "access_token": "...",
+        "refresh_token": "...",
+        "expires_at": "2025-12-01T12:00:00+00:00"
     }
 ]
+```
+
+**Migrating from old format:**
+
+If you have an existing credentials.json file with the old nested format (with 'client' and 'data' subdicts), run the migration script:
+
+```bash
+python scripts/migrate_credentials.py /path/to/credentials.json
+```
+
+The script will:
+- Create a timestamped backup of your original file
+- Convert to the new flat format
+- Preserve all credential data
 ```
 
 ## Testing

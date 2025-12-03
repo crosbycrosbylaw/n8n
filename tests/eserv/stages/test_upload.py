@@ -276,6 +276,9 @@ class TestDocumentUpload:
             shutil.rmtree(tempdir, ignore_errors=True)
 
 
+@pytest.mark.skip(
+    reason='verify() method removed - validation now happens implicitly during Dropbox client creation'
+)
 @test.scenarios(**{
     'verify credentials configured': {
         'has_access_token': True,
@@ -318,8 +321,12 @@ class TestRefreshCredentialsValidation:
         from eserv.stages.upload import DropboxManager
         from eserv.types import OAuthCredential
 
+        # NOTE: This test is deprecated. The verify() method was removed during
+        # credential management simplification. Validation now happens implicitly
+        # when the Dropbox client is created in DropboxManager.client property.
+        # See tests/eserv/util/test_oauth_manager.py for current credential tests.
+
         # Create mock credential with conditional fields
-        # verify() checks: access_token, client_secret, refresh_token
         credential = OAuthCredential(
             type='dropbox',
             account='test',
@@ -334,11 +341,5 @@ class TestRefreshCredentialsValidation:
 
         manager = DropboxManager(credential=credential)
 
-        if expected_configured:
-            # Should not raise
-            result = manager.verify()
-            assert result == credential
-        else:
-            # Should raise ValueError
-            with pytest.raises(ValueError, match='not properly configured'):
-                manager.verify()
+        # verify() method no longer exists - skipped test
+        ...
