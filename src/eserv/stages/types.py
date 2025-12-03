@@ -1,18 +1,13 @@
 from __future__ import annotations
 
+__all__ = ['UploadResult', 'UploadStatus']
+
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
-    from dropbox.files import Metadata
-
     from eserv.types import CaseMatch
-
-    type ResultEntries = Iterable[Metadata]
-    type ResultCursor = str
 
 
 class UploadStatus(Enum):

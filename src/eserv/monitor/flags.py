@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, overload
-
-from eserv.monitor.types import StatusFlag
+from typing import TYPE_CHECKING, Literal, cast, overload
 
 if TYPE_CHECKING:
     from eserv.monitor.result import ErrorDict
+    from eserv.monitor.types import StatusFlag
 
 
 @overload
@@ -29,7 +28,7 @@ def status_flag(
         A `StatusFlag` dictionary with id and value.
 
     """
-    out = StatusFlag({'id': 'String {00020329-0000-0000-C000-000000000046} Name eserv_flag'})
+    out = {'id': 'String {00020329-0000-0000-C000-000000000046} Name eserv_flag'}
 
     if error is None or success is True:
         out['value'] = '$eserv_success'
@@ -38,4 +37,4 @@ def status_flag(
     else:
         out['value'] = f'$eserv_error:{category}'
 
-    return out
+    return cast('StatusFlag', out)

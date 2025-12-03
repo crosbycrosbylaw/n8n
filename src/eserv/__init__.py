@@ -2,5 +2,6 @@
 
 from .extract import *
 from .monitor import *
+from .record import *
 from .stages import *
 from .util import *

@@ -51,7 +51,7 @@ def extract_text_from_pdf(pdf_path: Path) -> str:
         full_text = '\n'.join(text_parts)
         cons.info('Extracted text from PDF', pages=len(text_parts), chars=len(full_text))
 
-    except:
+    except Exception:
         cons.exception('Failed to extract PDF text')
         raise
 

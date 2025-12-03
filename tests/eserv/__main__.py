@@ -62,7 +62,7 @@ def check_dropbox() -> bool:
     cons.info('Checking Dropbox connection...')
 
     try:
-        import dropbox  # type: ignore [nostubs]
+        import dropbox
 
         from eserv.util import Config
 

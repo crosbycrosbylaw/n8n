@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from bs4 import BeautifulSoup
 from rampy import console
+from rampy.util import create_field_factory
 
 from eserv import (
     config,
@@ -18,21 +19,21 @@ from eserv import (
     upload_documents,
 )
 from eserv.errors import PipelineError
-from eserv.monitor.processor import EmailProcessor
-from eserv.types import UploadResult
+from eserv.types import EmailProcessor, UploadResult
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from eserv.monitor.types import BatchResult, EmailRecord, ProcessedResult
+    from eserv.monitor.types import BatchResult, ProcessedResult
+    from eserv.types import EmailRecord
 
 
 class Pipeline:
     """Unified document processing pipeline."""
 
-    def __init__(self, env_path: Path | None = None) -> None:
+    def __init__(self, dotenv_path: Path | None = None) -> None:
         """Initialize pipeline with configuration."""
-        self.config = config(env_path)
+        self.config = config(dotenv_path)
         self.state = state_tracker(self.config.state.state_file)
         self.tracker = error_tracker(self.config.paths.service_dir / 'error_log.json')
 
@@ -116,7 +117,7 @@ class Pipeline:
 
             pdfs = [*store_path.glob('*.pdf')]
 
-            result = upload_documents(case_name, pdfs, doc_name, config=self.config)
+            result = upload_documents(pdfs, case_name, doc_name, config=self.config)
 
             match result.status:
                 case status.SUCCESS:
@@ -185,3 +186,13 @@ class Pipeline:
             return processed_result(rec, error={'category': 'unknown', 'message': str(e)})
         else:
             return processed_result(rec, error=None)
+
+
+if TYPE_CHECKING:
+
+    def record_processor(dotenv_path: Path | None = None) -> Pipeline:
+        """Initialize a document processing pipeline."""
+        ...
+
+
+record_processor = create_field_factory(Pipeline)

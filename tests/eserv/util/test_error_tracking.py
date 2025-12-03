@@ -10,11 +10,10 @@ from typing import TYPE_CHECKING, Unpack
 from rampy import test
 
 import eserv
+from eserv.types import EmailRecord
 
 if TYPE_CHECKING:
     from typing import TypedDict
-
-    from eserv.types import EmailRecord
 
     class Scenario(TypedDict):
         record: EmailRecord
@@ -33,8 +32,41 @@ def scenario(**kwds: Unpack[Scenario]) -> Scenario:
     return kwds
 
 
+def _make_record(uid: str, subject: str) -> EmailRecord:
+    """Create test EmailRecord."""
+    from datetime import UTC, datetime
+
+    return EmailRecord(
+        uid=uid,
+        sender='court@example.com',
+        subject=subject,
+        received_at=datetime.now(UTC),
+        html_body='<html>test</html>',
+    )
+
+
 @test.scenarios(
-    # todo
+    basic_logging=scenario(
+        record=_make_record('test-basic-123', 'Basic Test'),
+        stage=eserv.stage.EMAIL_PARSING,
+        error_message='Test parse error',
+        test_persistence=False,
+        test_retrieval=False,
+    ),
+    persistence_across_instances=scenario(
+        record=_make_record('test-persist-456', 'Persistence Test'),
+        stage=eserv.stage.DOCUMENT_DOWNLOAD,
+        error_message='Test download error',
+        test_persistence=True,
+        test_retrieval=False,
+    ),
+    error_retrieval_by_stage=scenario(
+        record=_make_record('test-retrieval-789', 'Retrieval Test'),
+        stage=eserv.stage.DROPBOX_UPLOAD,
+        error_message='Test upload error',
+        test_persistence=False,
+        test_retrieval=True,
+    ),
 )
 class TestErrorTracker:
     def test(

@@ -13,24 +13,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `eserv` is a document routing automation system for a law firm. It processes court filing notification emails, downloads documents, matches case names to Dropbox folders using fuzzy matching, and uploads documents to the appropriate client folders.
 
-**Current Implementation Status:**
+**Implemented Features:**
 
--   ✅ Email HTML parsing and metadata extraction
--   ✅ Document download with ASP.NET form handling
--   ✅ Dropbox folder index caching with TTL
--   ✅ Fuzzy case name matching to folders
--   ✅ Multi-file upload orchestration
--   ✅ Email state tracking (UID-based audit log)
--   ✅ Pipeline error logging by stage with rich context
--   ✅ SMTP notifications for uploads/errors
--   ✅ OAuth2 credential management (Dropbox + Outlook) with automatic token refresh
--   ✅ Live Outlook email monitoring via Graph API
--   ✅ Custom MAPI flag system for email processing state
--   ✅ Pipeline abstraction and Fire CLI integration
--   ✅ **ALL DEPLOYMENT BLOCKERS RESOLVED** (see Recent Fixes below)
--   ✅ Network retry logic with exponential backoff
--   ✅ Comprehensive unit tests for monitor module
--   ✅ Automatic error log maintenance
+-   Email HTML parsing and metadata extraction
+-   Document download with ASP.NET form handling
+-   Dropbox folder index caching with TTL
+-   Fuzzy case name matching to folders
+-   Multi-file upload orchestration
+-   Email state tracking (UID-based audit log)
+-   Pipeline error logging by stage with rich context
+-   SMTP notifications for uploads/errors
+-   OAuth2 credential management (Dropbox + Outlook) with automatic token refresh
+-   Live Outlook email monitoring via Graph API
+-   Custom MAPI flag system for email processing state
+-   Pipeline abstraction and Fire CLI integration
+-   Network retry logic with exponential backoff
+-   Automatic error log maintenance
 
 ## Development Commands
 
@@ -80,7 +78,7 @@ pixi run push
 -   **`core.py`** - `Pipeline` class: unified interface for both file-based and monitoring modes
     -   `process(record: EmailRecord) -> UploadResult` - Process single email
     -   `monitor(num_days: int) -> BatchResult` - Monitor folder and batch process
-    -   `execute(record: EmailRecord) -> ProcessedResult` - Process with error handling
+    -   `execute(record: EmailRecord) -> ProcessedResult` - Process single email with error handling
 -   **`__main__.py`** - Fire CLI entry point (auto-generates subcommands from Pipeline methods)
 -   **`extract.py`** - HTML content extraction using protocol-based extractor pattern
 -   **`download.py`** - HTTP download orchestration with ASP.NET form handling
@@ -151,130 +149,195 @@ pixi run push
 -   **Error handling:** Typed exceptions (`PipelineError`) with stage/message; context managers for error tracking
 -   **Docstrings:** Comprehensive with Args, Returns, Raises sections
 
-## Recent Fixes (December 2025)
+## Development History
 
-All critical deployment blockers and optional improvements have been completed. The system is now production-ready.
+### Bug Fixes Summary (December 2025)
 
-### Critical Fixes (Issues #1-5)
+**28 critical issues resolved** across three analysis passes. All known runtime crashes, type errors, and API mismatches have been fixed.
 
-**✅ Issue #1: EmailState.record() isinstance() string literal**
+**Key fixes included:**
 
--   **File:** `src/eserv/util/email_state.py:59`
--   **Fix:** Changed `isinstance(arg, 'ProcessedResult')` to `isinstance(arg, ProcessedResult)`
--   **Impact:** Audit log now works correctly; deduplication functional
+-   Email deduplication logic (UID-based instead of case_name)
+-   Graph API pagination and filter syntax
+-   OAuth credential loading and JSON field filtering
+-   Dataclass default_factory errors
+-   Exception handling (bare except clauses)
+-   Test file API alignment and stub implementations
 
-**✅ Issue #2: Pipeline.process() return type mismatch**
+**Critical architectural change:** Removed `frozen=True` from RefreshConfig and OAuthCredential dataclasses to simplify credential update logic while retaining `slots=True` for performance.
 
--   **File:** `src/eserv/core.py:107`
--   **Fix:** Returns proper `UploadResult` instead of `cons.info()` result
--   **Impact:** No more runtime crashes on duplicate email processing
+---
 
-**✅ Issue #3: Email deduplication UID vs case_name mismatch**
+## Current Test Status
 
--   **File:** `src/eserv/core.py:106`
--   **Fix:** Changed from `state.is_processed(case_name)` to `state.is_processed(record.uid)`
--   **Impact:** Deduplication now correctly prevents reprocessing same email (by UID)
+**Test Results (as of December 2025):**
 
-**✅ Issue #4: GraphClient filter expression syntax error**
+-   ✅ **61 tests passing**
+-   ⏭️ **9 tests skipped** (8 deprecated DocumentUploader API + 1 removed feature)
+-   ❌ **0 failures**
+-   ❌ **0 errors**
 
--   **File:** `src/eserv/monitor/client.py:91`
--   **Fix:** Changed from `NOT hasAttachments:false` to `hasAttachments eq true`
--   **Impact:** Graph API queries now work (no more 400 Bad Request errors)
+**Test Coverage by Module:**
 
-**✅ Issue #5: GraphClient pagination - silent data loss**
+-   ✅ `extract/` - Full coverage (6 test files, 26 tests)
+-   ✅ `monitor/` - Full coverage (test_client.py, 14 tests)
+-   ✅ `util/` - Partial coverage (4 test files, 16 tests)
+-   ⚠️ `stages/upload.py` - Partial coverage (TestRefreshCredentialsValidation only, 4 tests)
+-   ⚠️ `test_integration.py` - Basic workflows covered (4 tests)
 
--   **File:** `src/eserv/monitor/client.py:93-148`
--   **Fix:** Implemented full pagination loop using `@odata.nextLink`
--   **Impact:** All emails processed regardless of count (no 50-email limit)
+---
 
-### High Priority Fixes (Issue #6)
+## Outstanding Tasks
 
-**✅ Issue #6: DocumentUploader missing refresh credentials**
+### 1. Test File Completion
 
--   **File:** `src/eserv/core.py:112-123`
--   **Fix:** Now passes `dbx_app_key`, `dbx_app_secret`, `dbx_refresh_token` to uploader
--   **Impact:** Token refresh works correctly when access token expires
+The following test files need to be created or completed to achieve comprehensive test coverage before deployment:
 
-### Medium Priority Fixes (Issues #7-8)
+#### HIGH Priority - Core Pipeline Tests
 
-**✅ Issue #7: EmailState.record() overload signature mismatch**
+**`tests/eserv/test_core.py`** (NEW - CRITICAL)
 
--   **File:** `src/eserv/util/email_state.py:52`
--   **Fix:** Added default value `error: ErrorDict | None = None` to overload
--   **Impact:** Type checker (mypy) now passes
+-   Test `Pipeline.process()` workflow with real email records
+-   Test `Pipeline.monitor()` batch processing
+-   Test `Pipeline.execute()` error handling and state tracking
+-   Mock Dropbox/Graph API calls for isolated testing
+-   **Importance:** Core orchestration logic currently untested
 
-**✅ Issue #8: GraphClient HTML body validation**
+**`tests/eserv/stages/test_upload.py`** (REWRITE REQUIRED)
 
--   **File:** `src/eserv/monitor/client.py:134`
--   **Fix:** Added validation to raise `ValueError` if HTML body is empty
--   **Impact:** Clear error signals instead of silent failures
+-   **Current State:** 8 tests skipped (deprecated DocumentUploader API)
+-   **Required Changes:**
+    -   Rewrite TestDocumentUploaderTokenRefresh for current OAuthCredential handler mechanism
+    -   Rewrite TestDocumentUpload to use `upload_documents()` function and `DropboxManager`
+    -   Test scenarios: successful upload, manual review paths, token refresh, error handling
+    -   Mock Dropbox SDK operations (files_upload, files_list_folder)
+-   **Importance:** Upload orchestration is core functionality
 
-### Optional Improvements (Issues #9-12)
+**`tests/eserv/stages/test_download.py`** (NEW)
 
-**✅ Issue #9: Comprehensive unit tests for monitor/ module**
+-   Test `download_documents()` workflow
+-   Test ASP.NET form handling and submission
+-   Test multi-file download orchestration
+-   Mock HTTP requests for file downloads
+-   **Importance:** Download failures would break entire pipeline
 
--   **File:** `tests/eserv/monitor/test_client.py` (new)
--   **Coverage:** 15 test cases across 6 test classes
--   **Areas:** Filter expressions, pagination, folder resolution, error handling, MAPI flags, HTML validation
+**`tests/eserv/monitor/test_processor.py`** (NEW)
 
-**✅ Issue #10: Error tracking context population**
+-   Test `EmailProcessor.process_emails()` orchestration
+-   Test error handling and MAPI flag application
+-   Test batch processing with multiple emails
+-   Mock GraphClient and Pipeline interactions
+-   **Importance:** Email monitoring orchestration currently untested
 
--   **File:** `src/eserv/core.py`
--   **Fix:** Added rich diagnostic context to all error tracking calls
--   **Context includes:** Exception type, traceback, file paths, case names, etc.
--   **Impact:** Error logs now highly useful for debugging production issues
+#### MEDIUM Priority - Utility Tests
 
-**✅ Issue #11: Automatic error log cleanup**
+**`tests/eserv/util/test_oauth_manager.py`** (NEW)
 
--   **File:** `src/eserv/core.py:183`
--   **Fix:** Added `self.tracker.clear_old_errors(days=30)` on monitor start
--   **Impact:** Prevents unbounded error log growth; retains last 30 days
+-   Test `CredentialManager._load()` credential loading
+-   Test `OAuthCredential` token refresh handlers (\_refresh_dropbox, \_refresh_outlook)
+-   Test token expiration detection and auto-refresh
+-   Test credential persistence
+-   Mock OAuth2 API token refresh endpoints
+-   **Importance:** Token refresh failures would cause authentication errors
 
-**✅ Issue #12: Network failure categorization and retry logic**
+**`tests/eserv/util/test_notifications.py`** (NEW)
 
--   **File:** `src/eserv/monitor/client.py:48-94`
--   **Fix:** Implemented retry with exponential backoff for 429/5xx errors
--   **Impact:** Resilient to transient failures; no unnecessary retries on auth errors
+-   Test `Notifier` SMTP email sending
+-   Test notification formatting for success/error scenarios
+-   Mock SMTP server connection
+-   **Importance:** Notification failures are not critical but reduce visibility
 
-### Second Pass Fixes (Issues #13-17)
+**`tests/eserv/util/test_pdf_utils.py`** (NEW)
 
-**✅ Issue #13: Incorrect default_factory in ErrorTracker**
+-   Test `extract_text_from_pdf()` with sample PDFs
+-   Test error handling for corrupted/empty PDFs
+-   Test `extract_case_names_from_pdf()` party name extraction
+-   **Importance:** PDF parsing errors affect case name matching
 
--   **File:** `src/eserv/util/error_tracking.py:80`
--   **Fix:** Changed `field(default_factory=list[Any])` to `field(default_factory=list)`
--   **Impact:** Prevents TypeError at runtime when ErrorTracker is instantiated
+**`tests/eserv/monitor/test_flags.py`** (NEW)
 
-**✅ Issue #14: Incorrect default_factory in EmailState**
+-   Test `StatusFlag` enum values and MAPI property mapping
+-   Test flag color assignments
+-   **Importance:** Low priority (simple enum, minimal logic)
 
--   **File:** `src/eserv/util/email_state.py:24`
--   **Fix:** Changed `field(default_factory=dict[str, Any])` to `field(default_factory=dict)`
--   **Impact:** Prevents TypeError at runtime when EmailState is instantiated
+#### LOW Priority - Optional
 
-**✅ Issue #15: Incorrect default_factory in CredentialConfig**
+**`tests/eserv/util/test_doc_store.py`** (OPTIONAL)
 
--   **File:** `src/eserv/util/config.py:137`
--   **Fix:** Changed `field(default_factory=dict[Any, Any])` to `field(default_factory=dict)`
--   **Impact:** Prevents TypeError at runtime when CredentialConfig is instantiated
+-   Test temporary document store cleanup
+-   Test file path generation
+-   **Importance:** Simple utility, minimal complexity
 
-**✅ Issue #16: Bare except clause in DocumentUploader**
+**`tests/eserv/__main__.py`** (OPTIONAL)
 
--   **File:** `src/eserv/upload.py:207`
--   **Fix:** Changed `except:` to `except Exception:`
--   **Impact:** Prevents catching KeyboardInterrupt and SystemExit, allows graceful shutdown
+-   Manual test for configuration and environment checks
+-   **Importance:** Useful for developer onboarding, can identify non-implementation errors
 
-**✅ Issue #17: Incorrect exception type in download**
+### 2. Code Coverage Goals
 
--   **File:** `src/eserv/download.py:114`
--   **Fix:** Changed `raise Warning(message)` to `raise ValueError(message)`
--   **Impact:** Proper exception handling with standard exception types
+Before deployment, achieve the following coverage targets:
+
+-   **Overall:** >80% code coverage
+-   **Core modules (core.py, upload.py, download.py):** >90% coverage
+-   **Monitor module:** >90% coverage (currently at ~80%)
+-   **Util module:** >85% coverage (currently at ~70%)
+
+Run coverage analysis:
+
+```bash
+python -m pytest --cov=eserv --cov-report=html ./tests
+```
+
+### 3. Pre-Deployment Checklist
+
+Before considering the package deployment-ready, complete the following:
+
+#### Testing & Quality
+
+-   [ ] All HIGH priority test files created and passing
+-   [ ] Overall test coverage >80%
+-   [ ] All skipped tests either completed or documented as intentionally skipped
+-   [ ] Integration tests cover all major workflows (process, monitor, error handling)
+-   [ ] Manual testing of OAuth2 token refresh for both Dropbox and Outlook
+
+#### Documentation
+
+-   [ ] Update CLAUDE.md with final test coverage statistics
+-   [ ] Document any known limitations or edge cases
+-   [ ] Update environment setup instructions if needed
+-   [ ] Document deployment procedure (systemd service, cron job, etc.)
+
+#### Configuration & Security
+
+-   [ ] Verify credentials.json format matches documented structure
+-   [ ] Test with production-like .env configuration
+-   [ ] Verify SMTP credentials work with production email server
+-   [ ] Test Graph API permissions with production Outlook account
+-   [ ] Verify Dropbox folder structure matches expected layout
+
+#### Production Readiness
+
+-   [ ] Test monitor mode with real emails from past 7 days
+-   [ ] Verify error tracking logs meaningful diagnostics
+-   [ ] Test SMTP notifications reach intended recipients
+-   [ ] Verify automatic error log cleanup works (30-day retention)
+-   [ ] Test graceful shutdown (SIGTERM handling)
+
+#### Performance & Reliability
+
+-   [ ] Test network retry logic with simulated transient failures
+-   [ ] Verify pagination handles >50 emails correctly
+-   [ ] Test concurrent email processing (if applicable)
+-   [ ] Verify index cache TTL refresh works correctly
+-   [ ] Monitor memory usage during batch processing
 
 ---
 
 ## System Status
 
-**Production Readiness:** ✅ **READY FOR DEPLOYMENT**
+**Production Readiness:** ⚠️ **TESTING IN PROGRESS**
 
-All critical bugs have been fixed, optional improvements completed, and comprehensive tests written. The system is stable and production-ready.
+28 critical bugs have been fixed, and core functionality is stable. However, test coverage gaps remain in core orchestration modules (Pipeline, upload, download, processor). Complete HIGH priority tests before production deployment.
 
 ---
 
@@ -340,17 +403,23 @@ INDEX_CACHE_TTL_HOURS=4
 
 ## Testing
 
-When pixi/pytest is available, run the test suite to validate all fixes:
+Run the test suite to validate all fixes and monitor coverage:
 
 ```bash
 # Run all tests
 python -m pytest ./tests -v
 
-# Run monitor module tests specifically
+# Run specific module tests
 python -m pytest tests/eserv/monitor/ -v
+python -m pytest tests/eserv/util/ -v
+python -m pytest tests/eserv/stages/ -v
 
-# Run with coverage
-python -m pytest --cov=eserv ./tests
+# Run with coverage report
+python -m pytest --cov=eserv --cov-report=term-missing ./tests
+
+# Generate HTML coverage report
+python -m pytest --cov=eserv --cov-report=html ./tests
+# View at: htmlcov/index.html
 ```
 
-All 17 issues have been resolved (12 from initial pass + 5 from second pass) and the system is ready for production deployment.
+**Bug Fix Summary:** 28 critical issues resolved (Issues #1-28 across three passes). Core functionality is stable, but test coverage gaps remain. See "Outstanding Tasks" section above for pre-deployment requirements.

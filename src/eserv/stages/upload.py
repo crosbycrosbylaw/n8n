@@ -28,8 +28,11 @@ from dropbox.files import FolderMetadata, WriteMode
 from rampy import console
 
 from eserv.stages import status
-from eserv.types import FolderMatcher, IndexCache, Notifier, UploadResult
+from eserv.stages.types import UploadResult
 from eserv.util import stage
+from eserv.util.index_cache import IndexCache
+from eserv.util.notifications import Notifier
+from eserv.util.target_finder import FolderMatcher
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -120,18 +123,20 @@ class DropboxManager:
 
 
 def upload_documents(
-    *args: *tuple[str | None, Sequence[Path], str | None],
+    documents: Sequence[Path],
+    case_name: str | None = None,
+    lead_name: str | None = None,
+    *,
     config: Config,
     min_score: int = 70,
 ) -> UploadResult:
     """Process and upload document(s) to Dropbox.
 
     Args:
+        documents (Sequence[Path]): A sequence of local PDF file paths to upload.
+        case_name (str | None): The case name extracted from the email, if it exists.
+        lead_name (str | None):  The filename for the lead document in the set, if it exists.
         config (Config): The pipeline configuration. Used to initialize the uploader.
-        *args (tuple[str | None, Sequence[Path], str | None]):
-            1. The case name extracted from the email, if it exists.
-            2. A list of local PDF file paths to upload.
-            3. The filename for the lead document in the set, if it exists.
         min_score (int): The minimum score of a match for it to be used as the target.
 
     Returns:
@@ -139,8 +144,6 @@ def upload_documents(
 
     """
     cons = console.bind()
-
-    raw_case_name, documents, lead_doc_name = args
 
     if not documents:
         cons.warning('There are no documents to upload.')
@@ -159,7 +162,7 @@ def upload_documents(
     notifier = Notifier(config.smtp)
 
     if (
-        match := (case_name := raw_case_name or 'Unknown') != 'Unknown'
+        match := (case_name := case_name or 'Unknown') != 'Unknown'
         and (matcher := FolderMatcher(cache.get_all_paths(), min_score))
         and matcher.find_best_match(case_name)
     ):
@@ -179,12 +182,11 @@ def upload_documents(
     try:
         for i, path in enumerate(documents):
             # Determine filename
-            if lead_doc_name is None:
+            if lead_name is None:
                 filename = path.name or f'document_{i + 1}.pdf'
-            elif len(documents) > 1:
-                filename = f'{lead_doc_name}_{i + 1}.pdf'
             else:
-                filename = f'{lead_doc_name}.pdf'
+                suffix = '.pdf' if not len(documents) <= 1 else f'_{i + 1}.pdf'
+                filename = f'{lead_name.removesuffix(".pdf")}{suffix}'
 
             dbx.upload(path, f'{target_folder}/{filename}')
 

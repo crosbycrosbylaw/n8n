@@ -1,1 +1,1 @@
-# test namespace package
+"""Tests for the `eserv` package."""

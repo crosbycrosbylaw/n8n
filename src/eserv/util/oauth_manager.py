@@ -4,7 +4,7 @@ import threading
 from collections.abc import Mapping
 from dataclasses import InitVar, asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 import orjson
 import requests
@@ -44,22 +44,16 @@ def _refresh_dropbox(cred: OAuthCredential[Dropbox]) -> OAuthCredential[Dropbox]
 
 
 def _refresh_outlook(cred: OAuthCredential[GraphClient]) -> OAuthCredential[GraphClient]:
-    if not cred.has_client():
-        message = 'There is no GraphClient associated with this credential.'
-        raise ValueError(message)
 
-    client = cred.get_client()
     config = RefreshConfig(
         endpoint='https://login.microsoftonline.com/common/oauth2/v2.0/token',
         extend_keys=['scope'],
     )
 
-    client.cred = config.post(asdict(cred)).json(object_hook=cred.object_hook)
-
-    return client.cred
+    return config.post(asdict(cred)).json(object_hook=cred.object_hook)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class RefreshConfig:
     """Configuration for token refresh requests."""
 
@@ -111,7 +105,7 @@ class RefreshConfig:
         return response
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class OAuthCredential[T = Any]:
     """OAuth credential with token and expiry.
 
@@ -128,7 +122,7 @@ class OAuthCredential[T = Any]:
     refresh_token: str
     expires_at: datetime | None = None
 
-    _client: set[T] = field(init=False, default_factory=set)
+    client: T | None = field(init=False, default=None, repr=False)
 
     def has_client(self) -> bool:
         """Check if a client is set for this credential.
@@ -137,7 +131,7 @@ class OAuthCredential[T = Any]:
             True if exactly one client is set, False otherwise.
 
         """
-        return len(self._client) == 1
+        return self.client is not None
 
     def get_client(self) -> T:
         """Get the client for this credential.
@@ -145,8 +139,16 @@ class OAuthCredential[T = Any]:
         Returns:
             The client instance associated with this credential.
 
+        Raises:
+            ValueError:
+                If there is no client configured when this method is called.
+
         """
-        return next(iter(self._client))
+        if client := self.client:
+            return client
+
+        message = 'There is no client configured for this credential.'
+        raise ValueError(message)
 
     def set_client(self, client: T) -> None:
         """Set the client for this credential.
@@ -155,11 +157,9 @@ class OAuthCredential[T = Any]:
             client: The client instance to associate with this credential.
 
         """
-        self._client.clear()
-        self._client.add(client)
+        self.client = client
 
-    handler: Callable[[OAuthCredential], OAuthCredential] | None = None
-    persist: Callable[[], None] = lambda: None
+    handler: Callable[[OAuthCredential], OAuthCredential] | None = field(default=None, repr=False)
 
     def __str__(self) -> str:
         """Return the access token as string representation."""
@@ -207,20 +207,21 @@ class OAuthCredential[T = Any]:
 
         return self.handler(self)
 
-    def object_hook(self, obj: dict[Any, Any]) -> OAuthCredential:
-        """Return a new credential with information updated with the given dictionary."""
-        keywords = asdict(self)
-
-        expiration = obj.get(next(obj[key] for key in obj if key.startswith('expires_')), 3600)
+    def object_hook(self, obj: dict[str, Any]) -> Self:
+        """Return this credential with information updated from the given dictionary."""
+        expiration_key = next((key for key in obj if key.startswith('expires_')), None)
+        expiration = obj.pop(expiration_key, 3600) if expiration_key else 3600
 
         if isinstance(expiration, datetime):
-            keywords['expires_at'] = expiration
+            self.expires_at = expiration
         elif isinstance(expiration, int | float):
-            keywords['expires_at'] = datetime.now(UTC) + timedelta(seconds=expiration)
+            self.expires_at = datetime.now(UTC) + timedelta(seconds=expiration)
 
-        keywords.update(x for x in obj if x[0] in {'token_type', 'access_token', 'refresh_token'})
+        for key, value in obj.items():
+            if key in {'token_type', 'scope', 'access_token', 'refresh_token'} and value:
+                setattr(self, key, value)
 
-        return OAuthCredential(**keywords)
+        return self
 
 
 class CredentialManager:
@@ -247,12 +248,15 @@ class CredentialManager:
             cred_type = item['type']
 
             self._credentials[cred_type] = OAuthCredential(
-                **{k: v for k, v in item if not isinstance(v, Mapping)},
-                **{f'client_{k}': v for k, v in item['client'].values()},
-                **{k: v for k, v in item['data'].items() if k != 'expires_at'},
+                **{k: v for k, v in item.items() if k in {'type', 'account'}},
+                **{f'client_{k}': v for k, v in item['client'].items()},
+                **{
+                    k: v
+                    for k, v in item['data'].items()
+                    if k in {'token_type', 'scope', 'access_token', 'refresh_token'}
+                },
                 expires_at=self._parse_expiry(item['data']),
                 handler=self._resolve_refresh_handler(cred_type),
-                persist=self.persist,
             )
 
     @staticmethod

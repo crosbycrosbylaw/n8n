@@ -58,45 +58,71 @@ class TestEmailState:
 
                 if test_persistence:
                     # Test persistence across instances
-                    state1 = eserv.state_tracker(state_file)
-                    ...  # noqa: PIE790
+                    from eserv.monitor.types import EmailRecord
+                    from datetime import UTC, datetime
 
+                    state1 = eserv.state_tracker(state_file)
+                    record = EmailRecord(
+                        uid='test-uid-123',
+                        sender='court@example.com',
+                        subject=subject,
+                        received_at=datetime.now(UTC),
+                        html_body='<html>test</html>',
+                    )
+                    state1.record(record)
+
+                    # Create new instance and verify persistence
                     state2 = eserv.state_tracker(state_file)
-                    assert state2.is_processed(subject)
-                    ...  # noqa: PIE790
+                    assert state2.is_processed('test-uid-123')
+                    assert 'test-uid-123' in state2.processed
 
                 elif test_rotation:
-                    # Test weekly rotation
-                    state = eserv.state_tracker(state_file)
-                    ...  # noqa: PIE790
-
-                    # Simulate old data
-                    ...  # noqa: PIE790
-
-                    # Trigger rotation
-                    ...  # noqa: PIE790
-
-                    # Verify archive created and old email removed
-                    archives = [*temp_dir.glob('email_state_archive_*.json')]
-
-                    assert len(archives) > 0
-                    assert not state.is_processed(subject)
-                    assert state.is_processed('New Email')
+                    # NOTE: Weekly rotation feature was removed (see CLAUDE.md)
+                    # This test is skipped as the functionality no longer exists
+                    # The current implementation uses a fresh start approach with UID primary keys
+                    pytest.skip('Rotation feature removed - using fresh start approach')
 
                 elif test_duplicate:
                     # Test duplicate detection
+                    from eserv.monitor.types import EmailRecord
+                    from datetime import UTC, datetime
+
                     state = eserv.state_tracker(state_file)
-                    ...  # noqa: PIE790
-                    assert state.is_processed(subject)
+                    record = EmailRecord(
+                        uid='duplicate-test-456',
+                        sender='court@example.com',
+                        subject=subject,
+                        received_at=datetime.now(UTC),
+                        html_body='<html>test</html>',
+                    )
+
+                    # Record twice
+                    state.record(record)
+                    state.record(record)
+
+                    # Should still only be processed once
+                    assert state.is_processed('duplicate-test-456')
+                    assert len(state.processed) == 1
 
                 else:
                     # Test basic mark/check
-                    state = eserv.state_tracker(state_file)
-                    assert not state.is_processed(subject)
+                    from eserv.monitor.types import EmailRecord
+                    from datetime import UTC, datetime
 
-                    ...  # noqa: PIE790
-                    assert state.is_processed(subject)
-                    ...  # noqa: PIE790
+                    state = eserv.state_tracker(state_file)
+                    assert not state.is_processed('basic-test-789')
+
+                    record = EmailRecord(
+                        uid='basic-test-789',
+                        sender='court@example.com',
+                        subject=subject,
+                        received_at=datetime.now(UTC),
+                        html_body='<html>test</html>',
+                    )
+                    state.record(record)
+
+                    assert state.is_processed('basic-test-789')
+                    assert 'basic-test-789' in state.processed
 
             finally:
                 shutil.rmtree(temp_dir, ignore_errors=True)

@@ -27,8 +27,9 @@ if TYPE_CHECKING:
 @pytest.fixture
 def mock_credential() -> Mock:
     """Create mock OAuth credential."""
-    cred = Mock(spec=['access_token'])
+    cred = Mock(spec=['access_token', 'set_client'])
     cred.access_token = 'test_token_12345'
+    cred.set_client = Mock()
     return cred
 
 

@@ -28,7 +28,7 @@ from dotenv import load_dotenv
 from rampy import console
 
 from eserv.errors import InvalidFormatError, MissingVariableError
-from eserv.util.types import CredentialManager
+from eserv.util.oauth_manager import CredentialManager
 
 if TYPE_CHECKING:
     from eserv.util.oauth_manager import CredentialType

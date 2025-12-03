@@ -5,24 +5,24 @@ __all__ = [
     'EmailInfo',
     'EmailProcessor',
     'EmailRecord',
-    'ErrorDict',
     'GraphClient',
-    'ProcessStatus',
     'ProcessedResult',
-    'ProcessedResultDict',
 ]
-
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Literal, NewType, type_check_only
+from typing import TYPE_CHECKING, Literal, NewType, NotRequired, ReadOnly, Required, TypedDict
 
 from eserv.monitor.client import GraphClient
 from eserv.monitor.processor import EmailProcessor
 
+StatusFlag = NewType('StatusFlag', dict[Literal['id', 'value'], str])
+
 if TYPE_CHECKING:
-    from typing import NotRequired, ReadOnly, Required, TypedDict
+    __all__ += ['ErrorDict', 'ProcessStatus', 'ProcessedResultDict']
 
     type ProcessStatus = Literal['success', 'error']
+
+    from typing import type_check_only
 
     @type_check_only
     class ErrorDict(TypedDict):
@@ -49,9 +49,6 @@ if TYPE_CHECKING:
         subject: ReadOnly[str]
 
         processed_at: ReadOnly[str]
-
-
-StatusFlag = NewType('StatusFlag', dict[Literal['id', 'value'], str])
 
 
 @dataclass(frozen=True, slots=True)

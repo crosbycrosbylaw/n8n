@@ -170,7 +170,7 @@ class ErrorTracker:
         )
 
         error = PipelineError(message=message, stage=stage)
-        console.bind(uid=self.uid, stage=stage.value, exc_info=error).exception()
+        console.bind(uid=self.uid, stage=stage.value).exception(f'Pipeline error: {message}')
 
         if raises is True:
             raise error

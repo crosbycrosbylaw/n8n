@@ -11,10 +11,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import orjson
 from rampy import console
+from rampy.util import create_field_factory
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -43,7 +44,7 @@ class IndexCache:
     cache_file: Path
     ttl_hours: int
 
-    _index: dict[str, dict[str, str]] = field(default_factory=dict[str, Any], init=False)
+    _index: dict[str, dict[str, str]] = field(default_factory=dict, init=False)
     _prev_refresh: datetime = field(default_factory=datetime_min_utc, init=False)
 
     def __post_init__(self) -> None:
@@ -141,3 +142,13 @@ class IndexCache:
 
         """
         return [*self._index.keys()]
+
+
+if TYPE_CHECKING:
+
+    def dbx_index_cache(cache_file: Path, ttl_hours: int) -> IndexCache:
+        """Initialize a Dropbox file index cache manager."""
+        ...
+
+
+dbx_index_cache = create_field_factory(IndexCache)

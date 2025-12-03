@@ -1,37 +1,26 @@
 # pyright: reportMissingTypeStubs = false, reportUnknownMemberType = false
 
+from __future__ import annotations
 
-import uuid
-from datetime import UTC, datetime
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import fire
 
-from eserv.core import Pipeline
-from eserv.monitor.types import EmailRecord
+from eserv.core import record_processor
+from eserv.record import record_factory
 
-
-class _CLI:
-    @staticmethod
-    def process(
-        body: str,
-        *,
-        subject: str = '',
-        sender: str = 'commandline',
-        environ: str | None = None,
-    ) -> None:
-
-        env_path = None if not environ else Path(environ)
-        record = EmailRecord(
-            uid=f'{uuid.uuid4()}',
-            received_at=datetime.now(UTC),
-            sender=sender,
-            subject=subject,
-            html_body=body,
-        )
-
-        Pipeline(env_path).process(record)
+if TYPE_CHECKING:
+    from eserv.types import ProcessedResult
 
 
 if __name__ == '__main__':
-    fire.Fire(_CLI, ['process'])
+    processor = record_processor()
+
+    class _component:  # noqa: N801
+        @staticmethod
+        def process(string: str) -> ProcessedResult:
+            return processor.execute(record_factory(f'{string}'))
+
+        monitor = staticmethod(processor.monitor)
+
+    fire.Fire(_component)
