@@ -1,345 +1,490 @@
-"""Test suite for upload.py document upload orchestration."""
+"""Unit tests for upload module.
+
+Tests cover:
+- DropboxManager lazy client initialization
+- Folder index fetching with pagination
+- File upload orchestration
+- upload_documents workflow
+- Folder matching vs manual review routing
+- Multi-file naming logic
+- Notification dispatch
+"""
 
 from __future__ import annotations
 
-import shutil
-import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
 import pytest
-from rampy import test
 
-import eserv
-from eserv.types import Notifier
+from eserv.stages import status
+from eserv.stages.upload import DropboxManager, upload_documents
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-    from typing import Any
-
-    from eserv.monitor.types import EmailRecord
+    pass
 
 
-def scenario(
-    *,
-    has_refresh_credentials: bool = True,
-    refresh_succeeds: bool = True,
-    test_token_refresh: bool = False,
-    test_expired_token: bool = False,
-) -> dict[str, Any]:
-    """Create test scenario for DocumentUploader token refresh."""
-    return {
-        'params': [has_refresh_credentials, refresh_succeeds],
-        'test_token_refresh': test_token_refresh,
-        'test_expired_token': test_expired_token,
+@pytest.fixture
+def mock_credential() -> Mock:
+    """Create mock OAuthCredential."""
+    cred = Mock()
+    cred.access_token = 'test_access_token'
+    cred.refresh_token = 'test_refresh_token'
+    cred.client_id = 'test_client_id'
+    cred.client_secret = 'test_client_secret'
+    return cred
+
+
+@pytest.fixture
+def mock_config() -> Mock:
+    """Create mock Config object."""
+    config = Mock()
+    config.credentials = {
+        'dropbox': Mock(
+            access_token='test_token',
+            refresh_token='test_refresh',
+            client_id='test_id',
+            client_secret='test_secret',
+        ),
     }
+    config.paths = Mock(manual_review_folder='/Clio/Manual Review/')
+    config.cache = Mock(index_file=Path('/tmp/index_cache.json'), ttl_hours=4)
+    config.smtp = Mock(
+        server='smtp.test.com',
+        port=587,
+        from_addr='test@example.com',
+        to_addr='recipient@example.com',
+    )
+    return config
 
 
-@pytest.mark.skip(
-    reason='Tests deprecated DocumentUploader API - needs rewrite for current upload_documents()'
-)
-@test.scenarios(**{
-    'successful token refresh': scenario(
-        has_refresh_credentials=True,
-        refresh_succeeds=True,
-        test_token_refresh=True,
-    ),
-    'token refresh without credentials': scenario(
-        has_refresh_credentials=False,
-        test_token_refresh=True,
-    ),
-    'token refresh API failure': scenario(
-        has_refresh_credentials=True,
-        refresh_succeeds=False,
-        test_token_refresh=True,
-    ),
-    'expired token triggers auto-refresh': scenario(
-        has_refresh_credentials=True,
-        refresh_succeeds=True,
-        test_expired_token=True,
-    ),
-    'expired token without refresh creds': scenario(
-        has_refresh_credentials=False,
-        test_expired_token=True,
-    ),
-})
-class TestDocumentUploaderTokenRefresh:
-    def test(
+@pytest.fixture
+def mock_pdf_file(tempdir) -> Path:
+    """Create mock PDF file."""
+    tmp = tempdir('pdfs')
+    pdf_path = tmp / 'test_document.pdf'
+    pdf_path.write_bytes(b'%PDF-1.4\nMock PDF content')
+    return pdf_path
+
+
+class TestDropboxManagerClient:
+    """Test DropboxManager lazy client initialization."""
+
+    def test_lazy_client_initialization_on_first_access(self, mock_credential: Mock) -> None:
+        """Test client is created lazily on first access."""
+        manager = DropboxManager(credential=mock_credential)
+
+        # Verify client not created yet
+        assert manager._client is None
+
+        with patch('eserv.stages.upload.Dropbox') as mock_dropbox_class:
+            mock_client = Mock()
+            mock_dropbox_class.return_value = mock_client
+
+            # Access client property
+            client = manager.client
+
+            # Verify Dropbox SDK constructor called with credentials
+            mock_dropbox_class.assert_called_once_with(
+                oauth2_access_token='test_access_token',
+                oauth2_refresh_token='test_refresh_token',
+                app_key='test_client_id',
+                app_secret='test_client_secret',
+            )
+
+            # Verify client returned
+            assert client is mock_client
+
+    def test_client_caching(self, mock_credential: Mock) -> None:
+        """Test client is cached after first creation."""
+        manager = DropboxManager(credential=mock_credential)
+
+        with patch('eserv.stages.upload.Dropbox') as mock_dropbox_class:
+            mock_client = Mock()
+            mock_dropbox_class.return_value = mock_client
+
+            # Access client twice
+            client1 = manager.client
+            client2 = manager.client
+
+            # Verify Dropbox SDK constructor called only once
+            assert mock_dropbox_class.call_count == 1
+
+            # Verify same client returned
+            assert client1 is client2
+
+
+class TestDropboxManagerIndex:
+    """Test folder index fetching."""
+
+    def test_successful_folder_index_fetch(self, mock_credential: Mock) -> None:
+        """Test successful folder index fetch without pagination."""
+        manager = DropboxManager(credential=mock_credential)
+
+        # Mock Dropbox client and files_list_folder response
+        mock_client = Mock()
+        mock_result = Mock()
+        mock_result.has_more = False
+        mock_result.entries = [
+            Mock(
+                path_display='/Clio/Smith v. Jones',
+                name='Smith v. Jones',
+                id='folder_id_1',
+            ),
+            Mock(path_display='/Clio/Doe v. Roe', name='Doe v. Roe', id='folder_id_2'),
+        ]
+
+        # Mock FolderMetadata type check
+        from dropbox.files import FolderMetadata
+
+        for entry in mock_result.entries:
+            entry.__class__ = FolderMetadata
+
+        mock_client.files_list_folder.return_value = mock_result
+
+        with patch.object(manager, 'client', mock_client):
+            # Fetch index
+            index = manager.index()
+
+            # Verify files_list_folder called
+            mock_client.files_list_folder.assert_called_once_with('/Clio/', recursive=True)
+
+            # Verify index structure
+            assert '/Clio/Smith v. Jones' in index
+            assert index['/Clio/Smith v. Jones']['name'] == 'Smith v. Jones'
+            assert index['/Clio/Smith v. Jones']['id'] == 'folder_id_1'
+            assert '/Clio/Doe v. Roe' in index
+
+    def test_pagination_handling(self, mock_credential: Mock) -> None:
+        """Test pagination with has_more=True."""
+        manager = DropboxManager(credential=mock_credential)
+
+        # Mock first page
+        mock_result_page1 = Mock()
+        mock_result_page1.has_more = True
+        mock_result_page1.cursor = 'cursor_123'
+        mock_result_page1.entries = [
+            Mock(path_display='/Clio/Case1', name='Case1', id='id1'),
+        ]
+
+        # Mock second page
+        mock_result_page2 = Mock()
+        mock_result_page2.has_more = False
+        mock_result_page2.entries = [
+            Mock(path_display='/Clio/Case2', name='Case2', id='id2'),
+        ]
+
+        from dropbox.files import FolderMetadata
+
+        for entry in mock_result_page1.entries + mock_result_page2.entries:
+            entry.__class__ = FolderMetadata
+
+        mock_client = Mock()
+        mock_client.files_list_folder.return_value = mock_result_page1
+        mock_client.files_list_folder_continue.return_value = mock_result_page2
+
+        with patch.object(manager, 'client', mock_client):
+            # Fetch index
+            index = manager.index()
+
+            # Verify pagination calls
+            mock_client.files_list_folder.assert_called_once()
+            mock_client.files_list_folder_continue.assert_called_once_with('cursor_123')
+
+            # Verify both pages in index
+            assert '/Clio/Case1' in index
+            assert '/Clio/Case2' in index
+
+
+class TestDropboxManagerUpload:
+    """Test file upload functionality."""
+
+    def test_successful_file_upload(
         self,
-        /,
-        params: list[bool],
-        test_token_refresh: bool,
-        test_expired_token: bool,
-        tempdir: Callable[[str], Path],
-        record: EmailRecord,  # use the fixture from conftest for creating basic sample records or call eserv.record_factory directly for more granular control
-    ):
-        has_refresh_credentials, refresh_succeeds = params
-        cache_path = tempdir('test-uploader-token-refresh') / 'index_cache.json'
-        notifier = Mock(spec=Notifier)
+        mock_credential: Mock,
+        mock_pdf_file: Path,
+    ) -> None:
+        """Test successful file upload to Dropbox."""
+        manager = DropboxManager(credential=mock_credential)
 
-        # Setup uploader with or without refresh credentials
+        # Mock Dropbox client
+        mock_client = Mock()
+        mock_metadata = Mock(path_display='/Clio/Smith v. Jones/Motion.pdf')
+        mock_client.files_upload.return_value = mock_metadata
 
-        # DocumentUploader is deprecated.
-        # Instead the following are exposed:
-        # - eserv.config
-        # - eserv.stages.upload.DropboxManager
-        # - eserv.upload_documents
+        with patch.object(manager, 'client', mock_client):
+            # Upload file
+            manager.upload(mock_pdf_file, '/Clio/Smith v. Jones/Motion.pdf')
 
-        if has_refresh_credentials:
-            ...
-        else:  # noqa: RUF047, RUF100
-            ...
+            # Verify files_upload called
+            mock_client.files_upload.assert_called_once()
+            call_args = mock_client.files_upload.call_args
+            assert call_args[0][1] == '/Clio/Smith v. Jones/Motion.pdf'
 
-        if test_token_refresh:
-            # Test direct token refresh call
-            if not has_refresh_credentials:
-                with pytest.raises(ValueError, match='not configured'):
-                    ...
-                return
+            # Verify file added to uploaded list
+            assert len(manager.uploaded) == 1
+            assert manager.uploaded[0] == '/Clio/Smith v. Jones/Motion.pdf'
 
-            # Mock successful refresh
-            with patch('requests.post') as mock_post:
-                if refresh_succeeds:
-                    mock_response = Mock()
-                    mock_response.json.return_value = {
-                        'access_token': 'new_mock_token',
-                    }
-                    mock_response.raise_for_status = Mock()
-                    mock_post.return_value = mock_response
-
-                    ...  # noqa: PIE790
-
-                    mock_post.assert_called_once()
-                else:
-                    # Mock failed refresh
-                    mock_post.side_effect = Exception('API Error')
-
-                    with pytest.raises(Exception, match='API Error'):
-                        ...
-
-        elif test_expired_token:
-            # Test auto-refresh on expired token error
-            from dropbox.exceptions import ApiError
-
-            # Create mock error that str() will return the expired token message
-            mock_error = Mock()
-            mock_error.__str__ = Mock(return_value='Error: expired_access_token')
-
-            if has_refresh_credentials:
-                with (
-                    patch('requests.post') as mock_post,
-                    patch('eserv.upload.Dropbox') as mock_dropbox_class,
-                ):
-                    # Mock refresh token response
-                    mock_response = Mock()
-                    mock_response.json.return_value = {
-                        'access_token': 'refreshed_token',
-                    }
-                    mock_response.raise_for_status = Mock()
-                    mock_post.return_value = mock_response
-
-                    # Create mock Dropbox instances
-                    mock_dbx_expired = Mock()
-                    mock_dbx_refreshed = Mock()
-
-                    # First Dropbox instance (expired token) - raises error
-                    mock_dbx_expired.files_list_folder.side_effect = ApiError(
-                        request_id='test',
-                        error=mock_error,
-                        user_message_text='expired_access_token',
-                        user_message_locale='en',
-                    )
-
-                    # Second Dropbox instance (refreshed token) - succeeds
-                    mock_dbx_refreshed.files_list_folder.return_value = Mock(
-                        entries=[],
-                        has_more=False,
-                    )
-
-                    # Mock Dropbox constructor to return different instances
-                    mock_dropbox_class.side_effect = [mock_dbx_expired, mock_dbx_refreshed]
-
-                    ...  # noqa: PIE790
-
-                    expected_calls = 2 if refresh_succeeds else 1
-
-                    assert mock_post.call_count == expected_calls
-                    # Verify new Dropbox client was created with refreshed token
-                    assert mock_dropbox_class.call_count == expected_calls
-
-                    mock_dropbox_class.assert_called_with('refreshed_token')
-            else:
-                # Without refresh credentials, should raise
-                with patch.object(..., 'files_list_folder') as mock_list:
-                    mock_list.side_effect = ApiError(
-                        request_id='test',
-                        error=mock_error,
-                        user_message_text='expired_access_token',
-                        user_message_locale='en',
-                    )
-
-                    with pytest.raises(ApiError):
-                        ...
-
-
-def upload_scenario(
-    *,
-    case_name: str | None = 'Test Case',
-    doc_name: str = 'test_doc.pdf',
-    match_score: float = 85.0,
-    manual_review: bool = False,
-) -> dict[str, Any]:
-    """Create test scenario for document upload."""
-    return {
-        'params': [case_name, doc_name, match_score],
-        'manual_review': manual_review,
-    }
-
-
-@pytest.mark.skip(
-    reason='Tests deprecated DocumentUploader API - needs rewrite for current upload_documents()'
-)
-@test.scenarios(**{
-    'successful upload': upload_scenario(
-        case_name='Client Matter',
-        doc_name='document.pdf',
-        match_score=90.0,
-    ),
-    'manual review - no case name': upload_scenario(
-        case_name=None,
-        manual_review=True,
-    ),
-    'manual review - low match score': upload_scenario(
-        case_name='Ambiguous Case',
-        match_score=50.0,
-        manual_review=True,
-    ),
-})
-class TestDocumentUpload:
-    def test(
+    def test_uploaded_list_tracking(
         self,
-        /,
-        params: list[Any],
-        manual_review: bool,
-    ):
-        tempdir = Path(tempfile.mkdtemp())
-        try:
-            case_name, doc_name, match_score = params
-            cache_path = tempdir / 'index_cache.json'
-            notifier = Mock(spec=Notifier)
+        mock_credential: Mock,
+        mock_pdf_file: Path,
+    ) -> None:
+        """Test uploaded files are tracked in list."""
+        manager = DropboxManager(credential=mock_credential)
 
-            # uploader = ...
+        mock_client = Mock()
+        mock_client.files_upload.return_value = Mock()
 
-            # Create temp PDF file
-            pdf_path = tempdir / doc_name
-            pdf_path.write_text('mock pdf content')
+        with patch.object(manager, 'client', mock_client):
+            # Upload multiple files
+            manager.upload(mock_pdf_file, '/Clio/Case1/Doc1.pdf')
+            manager.upload(mock_pdf_file, '/Clio/Case1/Doc2.pdf')
+            manager.upload(mock_pdf_file, '/Clio/Case2/Doc3.pdf')
 
-            # Mock Dropbox operations
-            with (
-                # patch.object(uploader, '_refresh_index_if_needed'),
-                # patch.object(uploader, '_upload_file_to_dropbox'),
-                # patch.object(uploader.cache, 'get_all_paths', return_value=[]),
-                NotImplemented
-            ):
-                # Mock folder matching
-                if case_name and not manual_review:
-                    with patch('eserv.upload.FolderMatcher.find_best_match') as mock_match:
-                        from eserv.util.target_finder import CaseMatch
+            # Verify all tracked
+            assert len(manager.uploaded) == 3
+            assert '/Clio/Case1/Doc1.pdf' in manager.uploaded
+            assert '/Clio/Case1/Doc2.pdf' in manager.uploaded
+            assert '/Clio/Case2/Doc3.pdf' in manager.uploaded
 
-                        mock_match.return_value = CaseMatch(
-                            folder_path=f'/Clio/{case_name}',
-                            matched_on=case_name,
-                            score=match_score,
+
+class TestUploadDocuments:
+    """Test upload_documents orchestration."""
+
+    def test_successful_upload_to_matched_folder(
+        self,
+        mock_config: Mock,
+        mock_pdf_file: Path,
+    ) -> None:
+        """Test successful upload when folder match found."""
+        # Mock IndexCache
+        mock_cache = Mock()
+        mock_cache.is_stale.return_value = False
+        mock_cache.get_all_paths.return_value = [
+            '/Clio/Smith v. Jones',
+            '/Clio/Doe v. Roe',
+        ]
+
+        # Mock FolderMatcher
+        mock_match = Mock()
+        mock_match.folder_path = '/Clio/Smith v. Jones'
+        mock_matcher = Mock()
+        mock_matcher.find_best_match.return_value = mock_match
+
+        # Mock DropboxManager
+        mock_dbx = Mock()
+        mock_dbx.uploaded = ['/Clio/Smith v. Jones/Motion.pdf']
+
+        # Mock Notifier
+        mock_notifier = Mock()
+
+        with patch('eserv.stages.upload.IndexCache', return_value=mock_cache):
+            with patch('eserv.stages.upload.FolderMatcher', return_value=mock_matcher):
+                with patch('eserv.stages.upload.DropboxManager', return_value=mock_dbx):
+                    with patch('eserv.stages.upload.Notifier', return_value=mock_notifier):
+                        # Execute upload
+                        result = upload_documents(
+                            documents=[mock_pdf_file],
+                            case_name='Smith v. Jones',
+                            lead_name='Motion',
+                            config=mock_config,
                         )
 
-                        result = eserv.upload_documents(
-                            [pdf_path],
-                            case_name,
-                            config=NotImplemented,
+                        # Verify result
+                        assert result.status == status.SUCCESS
+                        assert result.folder_path == '/Clio/Smith v. Jones'
+
+                        # Verify upload called
+                        mock_dbx.upload.assert_called_once()
+
+                        # Verify success notification sent
+                        mock_notifier.notify_upload_success.assert_called_once()
+
+    def test_manual_review_routing_no_folder_match(
+        self,
+        mock_config: Mock,
+        mock_pdf_file: Path,
+    ) -> None:
+        """Test manual review routing when no folder match found."""
+        # Mock IndexCache
+        mock_cache = Mock()
+        mock_cache.is_stale.return_value = False
+        mock_cache.get_all_paths.return_value = ['/Clio/Smith v. Jones']
+
+        # Mock FolderMatcher with no match
+        mock_matcher = Mock()
+        mock_matcher.find_best_match.return_value = None
+
+        # Mock DropboxManager
+        mock_dbx = Mock()
+        mock_dbx.uploaded = ['/Clio/Manual Review/Motion.pdf']
+
+        # Mock Notifier
+        mock_notifier = Mock()
+
+        with patch('eserv.stages.upload.IndexCache', return_value=mock_cache):
+            with patch('eserv.stages.upload.FolderMatcher', return_value=mock_matcher):
+                with patch('eserv.stages.upload.DropboxManager', return_value=mock_dbx):
+                    with patch('eserv.stages.upload.Notifier', return_value=mock_notifier):
+                        # Execute upload with unknown case
+                        result = upload_documents(
+                            documents=[mock_pdf_file],
+                            case_name='Unknown Case',
+                            lead_name='Motion',
+                            config=mock_config,
                         )
 
-                        ...  # noqa: PIE790
+                        # Verify result
+                        assert result.status == status.MANUAL_REVIEW
+                        assert result.folder_path == '/Clio/Manual Review/'
 
-                        assert result.status == eserv.status.SUCCESS
-                        assert len(result.uploaded_files) == 1
-                        assert result.match is not None
-                        assert result.match.score == match_score
-                else:
-                    result = eserv.upload_documents([pdf_path], case_name, config=NotImplemented)
+                        # Verify upload to manual review folder
+                        mock_dbx.upload.assert_called_once()
 
-                    assert result.status == eserv.status.MANUAL_REVIEW
-                    assert len(result.uploaded_files) == 1
-                    ...  # noqa: PIE790
+                        # Verify manual review notification sent
+                        mock_notifier.notify_manual_review.assert_called_once()
 
-        finally:
-            shutil.rmtree(tempdir, ignore_errors=True)
+    def test_empty_document_list_returns_no_work(self, mock_config: Mock) -> None:
+        """Test NO_WORK status when no documents provided."""
+        # Execute with empty documents list
+        result = upload_documents(documents=[], case_name='Smith v. Jones', config=mock_config)
 
+        # Verify NO_WORK status
+        assert result.status == status.NO_WORK
 
-@pytest.mark.skip(
-    reason='verify() method removed - validation now happens implicitly during Dropbox client creation'
-)
-@test.scenarios(**{
-    'verify credentials configured': {
-        'has_access_token': True,
-        'has_client_secret': True,
-        'has_refresh_token': True,
-        'expected_configured': True,
-    },
-    'missing access_token': {
-        'has_access_token': False,
-        'has_client_secret': True,
-        'has_refresh_token': True,
-        'expected_configured': False,
-    },
-    'missing client_secret': {
-        'has_access_token': True,
-        'has_client_secret': False,
-        'has_refresh_token': True,
-        'expected_configured': False,
-    },
-    'missing refresh token': {
-        'has_access_token': True,
-        'has_client_secret': True,
-        'has_refresh_token': False,
-        'expected_configured': False,
-    },
-})
-class TestRefreshCredentialsValidation:
-    def test(
+    def test_multi_file_naming_logic(
         self,
-        *,
-        has_access_token: bool,
-        has_client_secret: bool,
-        has_refresh_token: bool,
-        expected_configured: bool,
-        tempdir: Callable[[str], Path],
-        record: EmailRecord,
-    ):
-        from datetime import UTC, datetime, timedelta
+        mock_config: Mock,
+        tempdir,
+    ) -> None:
+        """Test multi-file naming with numbering."""
+        # Create multiple PDF files
+        tmp = tempdir('pdfs')
+        pdf1 = tmp / 'doc1.pdf'
+        pdf2 = tmp / 'doc2.pdf'
+        pdf3 = tmp / 'doc3.pdf'
+        pdf1.write_bytes(b'%PDF-1.4\nDoc1')
+        pdf2.write_bytes(b'%PDF-1.4\nDoc2')
+        pdf3.write_bytes(b'%PDF-1.4\nDoc3')
 
-        from eserv.stages.upload import DropboxManager
-        from eserv.types import OAuthCredential
+        # Mock dependencies
+        mock_cache = Mock()
+        mock_cache.is_stale.return_value = False
+        mock_cache.get_all_paths.return_value = ['/Clio/Smith v. Jones']
 
-        # NOTE: This test is deprecated. The verify() method was removed during
-        # credential management simplification. Validation now happens implicitly
-        # when the Dropbox client is created in DropboxManager.client property.
-        # See tests/eserv/util/test_oauth_manager.py for current credential tests.
+        mock_match = Mock()
+        mock_match.folder_path = '/Clio/Smith v. Jones'
+        mock_matcher = Mock()
+        mock_matcher.find_best_match.return_value = mock_match
 
-        # Create mock credential with conditional fields
-        credential = OAuthCredential(
-            type='dropbox',
-            account='test',
-            client_id='mock_id',
-            client_secret='mock_secret' if has_client_secret else '',
-            token_type='bearer',
-            scope='files.content.write',
-            access_token='mock_token' if has_access_token else '',
-            refresh_token='mock_refresh' if has_refresh_token else '',
-            expires_at=datetime.now(UTC) + timedelta(hours=1),
-        )
+        mock_dbx = Mock()
+        mock_dbx.uploaded = []
 
-        manager = DropboxManager(credential=credential)
+        mock_notifier = Mock()
 
-        # verify() method no longer exists - skipped test
-        ...
+        with patch('eserv.stages.upload.IndexCache', return_value=mock_cache):
+            with patch('eserv.stages.upload.FolderMatcher', return_value=mock_matcher):
+                with patch('eserv.stages.upload.DropboxManager', return_value=mock_dbx):
+                    with patch('eserv.stages.upload.Notifier', return_value=mock_notifier):
+                        # Execute upload with multiple files
+                        upload_documents(
+                            documents=[pdf1, pdf2, pdf3],
+                            case_name='Smith v. Jones',
+                            lead_name='Motion',
+                            config=mock_config,
+                        )
+
+                        # Verify upload called 3 times with numbered filenames
+                        assert mock_dbx.upload.call_count == 3
+
+    def test_cache_refresh_on_stale_index(
+        self,
+        mock_config: Mock,
+        mock_pdf_file: Path,
+    ) -> None:
+        """Test cache is refreshed when stale."""
+        # Mock IndexCache as stale
+        mock_cache = Mock()
+        mock_cache.is_stale.return_value = True
+        mock_cache.get_all_paths.return_value = ['/Clio/Smith v. Jones']
+
+        # Mock DropboxManager.index()
+        mock_dbx = Mock()
+        mock_dbx.index.return_value = {'/Clio/Smith v. Jones': {'name': 'Smith v. Jones'}}
+        mock_dbx.uploaded = []
+
+        # Mock FolderMatcher
+        mock_match = Mock()
+        mock_match.folder_path = '/Clio/Smith v. Jones'
+        mock_matcher = Mock()
+        mock_matcher.find_best_match.return_value = mock_match
+
+        mock_notifier = Mock()
+
+        with patch('eserv.stages.upload.IndexCache', return_value=mock_cache):
+            with patch('eserv.stages.upload.FolderMatcher', return_value=mock_matcher):
+                with patch('eserv.stages.upload.DropboxManager', return_value=mock_dbx):
+                    with patch('eserv.stages.upload.Notifier', return_value=mock_notifier):
+                        # Execute upload
+                        upload_documents(
+                            documents=[mock_pdf_file],
+                            case_name='Smith v. Jones',
+                            config=mock_config,
+                        )
+
+                        # Verify index refreshed
+                        mock_dbx.index.assert_called_once()
+                        mock_cache.refresh.assert_called_once()
+
+    def test_notification_sent_for_each_outcome(
+        self,
+        mock_config: Mock,
+        mock_pdf_file: Path,
+    ) -> None:
+        """Test notifications are sent for success and manual review."""
+        mock_cache = Mock()
+        mock_cache.is_stale.return_value = False
+        mock_cache.get_all_paths.return_value = ['/Clio/Smith v. Jones']
+
+        mock_dbx = Mock()
+        mock_dbx.uploaded = []
+
+        mock_notifier = Mock()
+
+        # Test success notification
+        mock_match = Mock()
+        mock_match.folder_path = '/Clio/Smith v. Jones'
+        mock_matcher = Mock()
+        mock_matcher.find_best_match.return_value = mock_match
+
+        with patch('eserv.stages.upload.IndexCache', return_value=mock_cache):
+            with patch('eserv.stages.upload.FolderMatcher', return_value=mock_matcher):
+                with patch('eserv.stages.upload.DropboxManager', return_value=mock_dbx):
+                    with patch('eserv.stages.upload.Notifier', return_value=mock_notifier):
+                        upload_documents(
+                            documents=[mock_pdf_file],
+                            case_name='Smith v. Jones',
+                            config=mock_config,
+                        )
+
+                        # Verify success notification
+                        mock_notifier.notify_upload_success.assert_called_once()
+
+        # Test manual review notification
+        mock_matcher.find_best_match.return_value = None
+        mock_notifier.reset_mock()
+
+        with patch('eserv.stages.upload.IndexCache', return_value=mock_cache):
+            with patch('eserv.stages.upload.FolderMatcher', return_value=mock_matcher):
+                with patch('eserv.stages.upload.DropboxManager', return_value=mock_dbx):
+                    with patch('eserv.stages.upload.Notifier', return_value=mock_notifier):
+                        upload_documents(
+                            documents=[mock_pdf_file],
+                            case_name='Unknown Case',
+                            config=mock_config,
+                        )
+
+                        # Verify manual review notification
+                        mock_notifier.notify_manual_review.assert_called_once()
