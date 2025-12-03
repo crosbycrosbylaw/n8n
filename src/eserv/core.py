@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import traceback
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from bs4 import BeautifulSoup
@@ -10,29 +9,22 @@ from rampy import console
 from eserv import (
     config,
     download_documents,
+    error_tracker,
     extract_upload_info,
     processed_result,
+    stage,
+    state_tracker,
     status,
     upload_documents,
 )
 from eserv.errors import PipelineError
 from eserv.monitor.processor import EmailProcessor
-from eserv.types import EmailState, ErrorTracker, PipelineStage, UploadResult
+from eserv.types import UploadResult
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from eserv.monitor.types import BatchResult, EmailRecord, ProcessedResult
-    from eserv.util.configuration import Config
-
-
-@dataclass(frozen=True, slots=True)
-class PipelineConfig:
-    """Configuration for pipeline execution."""
-
-    config: Config
-    state: EmailState
-    tracker: ErrorTracker
 
 
 class Pipeline:
@@ -41,8 +33,8 @@ class Pipeline:
     def __init__(self, env_path: Path | None = None) -> None:
         """Initialize pipeline with configuration."""
         self.config = config(env_path)
-        self.state = EmailState(self.config.state.state_file)
-        self.tracker = ErrorTracker(self.config.paths.service_dir / 'error_log.json')
+        self.state = state_tracker(self.config.state.state_file)
+        self.tracker = error_tracker(self.config.paths.service_dir / 'error_log.json')
 
     def process(self, record: EmailRecord) -> UploadResult:
         """Process HTML file through complete pipeline.
@@ -64,7 +56,7 @@ class Pipeline:
             except Exception as e:
                 tracker.error(
                     message=f'Failed to initialize soup from html: {e!s}',
-                    stage=PipelineStage.EMAIL_PARSING,
+                    stage=stage.EMAIL_PARSING,
                     context={
                         'exception_type': type(e).__name__,
                         'traceback': traceback.format_exc(),
@@ -81,7 +73,7 @@ class Pipeline:
             except Exception as e:
                 tracker.error(
                     message=f'Failed to download documents: {e!s}',
-                    stage=PipelineStage.DOCUMENT_DOWNLOAD,
+                    stage=stage.DOCUMENT_DOWNLOAD,
                     context={
                         'exception_type': type(e).__name__,
                         'traceback': traceback.format_exc(),
@@ -102,7 +94,7 @@ class Pipeline:
             except Exception as e:
                 tracker.error(
                     message=f'Failed to parse upload information: {e!s}',
-                    stage=PipelineStage.EMAIL_PARSING,
+                    stage=stage.EMAIL_PARSING,
                     context={
                         'exception_type': type(e).__name__,
                         'traceback': traceback.format_exc(),
@@ -136,19 +128,19 @@ class Pipeline:
                 case status.MANUAL_REVIEW:
                     tracker.warning(
                         message='No folder match found, sent to manual review',
-                        stage=PipelineStage.FOLDER_MATCHING,
+                        stage=stage.FOLDER_MATCHING,
                         context={'folder': result.folder_path},
                     )
                 case status.NO_WORK:
                     tracker.warning(
                         message='No PDF files found after download',
-                        stage=PipelineStage.DOCUMENT_DOWNLOAD,
+                        stage=stage.DOCUMENT_DOWNLOAD,
                         context={'store_path': store_path.as_posix()},
                     )
                 case status.ERROR:
                     tracker.error(
                         message=result.error_msg,
-                        stage=PipelineStage.DROPBOX_UPLOAD,
+                        stage=stage.DROPBOX_UPLOAD,
                         context={
                             'folder_path': result.folder_path,
                             'uploaded_files': result.uploaded_files,

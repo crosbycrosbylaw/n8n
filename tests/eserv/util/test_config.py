@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from typing import Final
 
-from eserv.util.configuration import Config
+import eserv
 
 MIN_TOKEN_LENGTH: Final[int] = 10
 
 
 def test_config_from_env():
     """Test Config.from_env() loads all configuration."""
-    config = Config.from_env()
+    config = eserv.config()
 
     # Verify SMTP config
     assert config.smtp.server

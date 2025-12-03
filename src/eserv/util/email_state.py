@@ -85,7 +85,7 @@ class EmailState:
 
 if TYPE_CHECKING:
 
-    def processed_state_tracker(json_path: Path) -> EmailState:
+    def state_tracker(json_path: Path) -> EmailState:
         """Initialize an audit log for processed emails (UID-based).
 
         Args:
@@ -96,4 +96,4 @@ if TYPE_CHECKING:
         ...
 
 
-processed_state_tracker = create_field_factory(EmailState)
+state_tracker = create_field_factory(EmailState)
