@@ -2,6 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Memorizations
+
+-   assume python version >=3.14
+-   prefer abstraction to reusable functions over repetitive implementations
+-   prefer concise variable names
+-   always update claude.md to reflect changes made in edits
+
 ## Project Overview
 
 `eserv` is a document routing automation system for a law firm. It processes court filing notification emails, downloads documents, matches case names to Dropbox folders using fuzzy matching, and uploads documents to the appropriate client folders.
@@ -151,98 +158,115 @@ All critical deployment blockers and optional improvements have been completed. 
 ### Critical Fixes (Issues #1-5)
 
 **✅ Issue #1: EmailState.record() isinstance() string literal**
-- **File:** `src/eserv/util/email_state.py:59`
-- **Fix:** Changed `isinstance(arg, 'ProcessedResult')` to `isinstance(arg, ProcessedResult)`
-- **Impact:** Audit log now works correctly; deduplication functional
+
+-   **File:** `src/eserv/util/email_state.py:59`
+-   **Fix:** Changed `isinstance(arg, 'ProcessedResult')` to `isinstance(arg, ProcessedResult)`
+-   **Impact:** Audit log now works correctly; deduplication functional
 
 **✅ Issue #2: Pipeline.process() return type mismatch**
-- **File:** `src/eserv/core.py:107`
-- **Fix:** Returns proper `UploadResult` instead of `cons.info()` result
-- **Impact:** No more runtime crashes on duplicate email processing
+
+-   **File:** `src/eserv/core.py:107`
+-   **Fix:** Returns proper `UploadResult` instead of `cons.info()` result
+-   **Impact:** No more runtime crashes on duplicate email processing
 
 **✅ Issue #3: Email deduplication UID vs case_name mismatch**
-- **File:** `src/eserv/core.py:106`
-- **Fix:** Changed from `state.is_processed(case_name)` to `state.is_processed(record.uid)`
-- **Impact:** Deduplication now correctly prevents reprocessing same email (by UID)
+
+-   **File:** `src/eserv/core.py:106`
+-   **Fix:** Changed from `state.is_processed(case_name)` to `state.is_processed(record.uid)`
+-   **Impact:** Deduplication now correctly prevents reprocessing same email (by UID)
 
 **✅ Issue #4: GraphClient filter expression syntax error**
-- **File:** `src/eserv/monitor/client.py:91`
-- **Fix:** Changed from `NOT hasAttachments:false` to `hasAttachments eq true`
-- **Impact:** Graph API queries now work (no more 400 Bad Request errors)
+
+-   **File:** `src/eserv/monitor/client.py:91`
+-   **Fix:** Changed from `NOT hasAttachments:false` to `hasAttachments eq true`
+-   **Impact:** Graph API queries now work (no more 400 Bad Request errors)
 
 **✅ Issue #5: GraphClient pagination - silent data loss**
-- **File:** `src/eserv/monitor/client.py:93-148`
-- **Fix:** Implemented full pagination loop using `@odata.nextLink`
-- **Impact:** All emails processed regardless of count (no 50-email limit)
+
+-   **File:** `src/eserv/monitor/client.py:93-148`
+-   **Fix:** Implemented full pagination loop using `@odata.nextLink`
+-   **Impact:** All emails processed regardless of count (no 50-email limit)
 
 ### High Priority Fixes (Issue #6)
 
 **✅ Issue #6: DocumentUploader missing refresh credentials**
-- **File:** `src/eserv/core.py:112-123`
-- **Fix:** Now passes `dbx_app_key`, `dbx_app_secret`, `dbx_refresh_token` to uploader
-- **Impact:** Token refresh works correctly when access token expires
+
+-   **File:** `src/eserv/core.py:112-123`
+-   **Fix:** Now passes `dbx_app_key`, `dbx_app_secret`, `dbx_refresh_token` to uploader
+-   **Impact:** Token refresh works correctly when access token expires
 
 ### Medium Priority Fixes (Issues #7-8)
 
 **✅ Issue #7: EmailState.record() overload signature mismatch**
-- **File:** `src/eserv/util/email_state.py:52`
-- **Fix:** Added default value `error: ErrorDict | None = None` to overload
-- **Impact:** Type checker (mypy) now passes
+
+-   **File:** `src/eserv/util/email_state.py:52`
+-   **Fix:** Added default value `error: ErrorDict | None = None` to overload
+-   **Impact:** Type checker (mypy) now passes
 
 **✅ Issue #8: GraphClient HTML body validation**
-- **File:** `src/eserv/monitor/client.py:134`
-- **Fix:** Added validation to raise `ValueError` if HTML body is empty
-- **Impact:** Clear error signals instead of silent failures
+
+-   **File:** `src/eserv/monitor/client.py:134`
+-   **Fix:** Added validation to raise `ValueError` if HTML body is empty
+-   **Impact:** Clear error signals instead of silent failures
 
 ### Optional Improvements (Issues #9-12)
 
 **✅ Issue #9: Comprehensive unit tests for monitor/ module**
-- **File:** `tests/eserv/monitor/test_client.py` (new)
-- **Coverage:** 15 test cases across 6 test classes
-- **Areas:** Filter expressions, pagination, folder resolution, error handling, MAPI flags, HTML validation
+
+-   **File:** `tests/eserv/monitor/test_client.py` (new)
+-   **Coverage:** 15 test cases across 6 test classes
+-   **Areas:** Filter expressions, pagination, folder resolution, error handling, MAPI flags, HTML validation
 
 **✅ Issue #10: Error tracking context population**
-- **File:** `src/eserv/core.py`
-- **Fix:** Added rich diagnostic context to all error tracking calls
-- **Context includes:** Exception type, traceback, file paths, case names, etc.
-- **Impact:** Error logs now highly useful for debugging production issues
+
+-   **File:** `src/eserv/core.py`
+-   **Fix:** Added rich diagnostic context to all error tracking calls
+-   **Context includes:** Exception type, traceback, file paths, case names, etc.
+-   **Impact:** Error logs now highly useful for debugging production issues
 
 **✅ Issue #11: Automatic error log cleanup**
-- **File:** `src/eserv/core.py:183`
-- **Fix:** Added `self.tracker.clear_old_errors(days=30)` on monitor start
-- **Impact:** Prevents unbounded error log growth; retains last 30 days
+
+-   **File:** `src/eserv/core.py:183`
+-   **Fix:** Added `self.tracker.clear_old_errors(days=30)` on monitor start
+-   **Impact:** Prevents unbounded error log growth; retains last 30 days
 
 **✅ Issue #12: Network failure categorization and retry logic**
-- **File:** `src/eserv/monitor/client.py:48-94`
-- **Fix:** Implemented retry with exponential backoff for 429/5xx errors
-- **Impact:** Resilient to transient failures; no unnecessary retries on auth errors
+
+-   **File:** `src/eserv/monitor/client.py:48-94`
+-   **Fix:** Implemented retry with exponential backoff for 429/5xx errors
+-   **Impact:** Resilient to transient failures; no unnecessary retries on auth errors
 
 ### Second Pass Fixes (Issues #13-17)
 
 **✅ Issue #13: Incorrect default_factory in ErrorTracker**
-- **File:** `src/eserv/util/error_tracking.py:80`
-- **Fix:** Changed `field(default_factory=list[Any])` to `field(default_factory=list)`
-- **Impact:** Prevents TypeError at runtime when ErrorTracker is instantiated
+
+-   **File:** `src/eserv/util/error_tracking.py:80`
+-   **Fix:** Changed `field(default_factory=list[Any])` to `field(default_factory=list)`
+-   **Impact:** Prevents TypeError at runtime when ErrorTracker is instantiated
 
 **✅ Issue #14: Incorrect default_factory in EmailState**
-- **File:** `src/eserv/util/email_state.py:24`
-- **Fix:** Changed `field(default_factory=dict[str, Any])` to `field(default_factory=dict)`
-- **Impact:** Prevents TypeError at runtime when EmailState is instantiated
+
+-   **File:** `src/eserv/util/email_state.py:24`
+-   **Fix:** Changed `field(default_factory=dict[str, Any])` to `field(default_factory=dict)`
+-   **Impact:** Prevents TypeError at runtime when EmailState is instantiated
 
 **✅ Issue #15: Incorrect default_factory in CredentialConfig**
-- **File:** `src/eserv/util/config.py:137`
-- **Fix:** Changed `field(default_factory=dict[Any, Any])` to `field(default_factory=dict)`
-- **Impact:** Prevents TypeError at runtime when CredentialConfig is instantiated
+
+-   **File:** `src/eserv/util/config.py:137`
+-   **Fix:** Changed `field(default_factory=dict[Any, Any])` to `field(default_factory=dict)`
+-   **Impact:** Prevents TypeError at runtime when CredentialConfig is instantiated
 
 **✅ Issue #16: Bare except clause in DocumentUploader**
-- **File:** `src/eserv/upload.py:207`
-- **Fix:** Changed `except:` to `except Exception:`
-- **Impact:** Prevents catching KeyboardInterrupt and SystemExit, allows graceful shutdown
+
+-   **File:** `src/eserv/upload.py:207`
+-   **Fix:** Changed `except:` to `except Exception:`
+-   **Impact:** Prevents catching KeyboardInterrupt and SystemExit, allows graceful shutdown
 
 **✅ Issue #17: Incorrect exception type in download**
-- **File:** `src/eserv/download.py:114`
-- **Fix:** Changed `raise Warning(message)` to `raise ValueError(message)`
-- **Impact:** Proper exception handling with standard exception types
+
+-   **File:** `src/eserv/download.py:114`
+-   **Fix:** Changed `raise Warning(message)` to `raise ValueError(message)`
+-   **Impact:** Proper exception handling with standard exception types
 
 ---
 
@@ -330,7 +354,3 @@ python -m pytest --cov=eserv ./tests
 ```
 
 All 17 issues have been resolved (12 from initial pass + 5 from second pass) and the system is ready for production deployment.
-- python version is equal to or greater than 3.14
-- prefer abstraction to reusable functions over repetitive implementations
-- prefer concise variable names to overly verbose
-- always update claude.md after committing changes

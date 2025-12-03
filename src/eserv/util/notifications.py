@@ -11,7 +11,7 @@ Classes:
 from __future__ import annotations
 
 import smtplib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import TYPE_CHECKING
@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 from rampy import console
 
 if TYPE_CHECKING:
-    from .config import SMTPConfig
+    from eserv.util.configuration import SMTPConfig
 
 
 @dataclass(slots=True, frozen=True)
@@ -47,7 +47,12 @@ class Notifier:
     """
 
     smtp_config: SMTPConfig
-    notification_config: NotificationConfig = NotificationConfig()
+    notification_config: NotificationConfig = field(init=False)
+
+    def __post_init__(self) -> None:  # noqa: D105
+        from eserv.util.types import NotificationConfig  # noqa: PLC0415
+
+        self.notification_config = NotificationConfig()
 
     def _send_email(self, subject: str, body: str) -> None:
         """Send an email notification.

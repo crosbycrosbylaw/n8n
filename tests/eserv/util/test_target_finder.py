@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
 from rampy import test
 
 from eserv.util.target_finder import FolderMatcher, PartyExtractor
@@ -24,7 +23,6 @@ def party_scenario(
         'params': [case_name],
         'expected_count': expected_count,
         'expected_parties': expected_parties,
-        'exception': None,
     }
 
 
@@ -57,22 +55,14 @@ class TestPartyExtractor:
         params: list[Any],
         expected_count: int,
         expected_parties: list[str],
-        exception: type[Exception] | None,
     ):
-        def execute() -> None:
-            case_name = params[0]
-            parties = PartyExtractor.extract_parties(case_name)
+        case_name = params[0]
+        parties = PartyExtractor.extract_parties(case_name)
 
-            assert len(parties) == expected_count
+        assert len(parties) == expected_count
 
-            for expected in expected_parties:
-                assert any(expected in p for p in parties), f'{expected} not found in {parties}'
-
-        if exception is not None:
-            with pytest.raises(exception):
-                execute()
-        else:
-            execute()
+        for expected in expected_parties:
+            assert any(expected in p for p in parties), f'{expected} not found in {parties}'
 
 
 def matcher_scenario(
@@ -88,7 +78,6 @@ def matcher_scenario(
         'params': [folders, case_name, min_score],
         'should_match': should_match,
         'expected_folder': expected_folder,
-        'exception': None,
     }
 
 
@@ -126,24 +115,16 @@ class TestFolderMatcher:
         params: list[Any],
         should_match: bool,
         expected_folder: str | None,
-        exception: type[Exception] | None,
     ):
-        def execute() -> None:
-            folders, case_name, min_score = params
-            matcher = FolderMatcher(folder_paths=folders, min_score=min_score)
-            match = matcher.find_best_match(case_name)
+        folders, case_name, min_score = params
+        matcher = FolderMatcher(folder_paths=folders, min_score=min_score)
+        match = matcher.find_best_match(case_name)
 
-            if should_match:
-                assert match is not None, f'Expected match for {case_name}'
-                if expected_folder:
-                    assert match.folder_path == expected_folder
-            else:
-                # May or may not match depending on fuzzy score
-                # Just verify it doesn't crash
-                pass
-
-        if exception is not None:
-            with pytest.raises(exception):
-                execute()
+        if should_match:
+            assert match is not None, f'Expected match for {case_name}'
+            if expected_folder:
+                assert match.folder_path == expected_folder
         else:
-            execute()
+            # May or may not match depending on fuzzy score
+            # Just verify it doesn't crash
+            pass

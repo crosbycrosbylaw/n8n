@@ -7,7 +7,7 @@ from .flags import status_flag
 
 if TYPE_CHECKING:
     from eserv.core import Pipeline
-    from eserv.util import EmailState
+    from eserv.util.types import EmailState
 
     from .client import GraphClient
     from .flags import StatusFlag
@@ -27,7 +27,7 @@ class EmailProcessor:
         from .client import GraphClient  # noqa: PLC0415
 
         self.client = GraphClient(
-            self.pipeline.config.credentials['microsoftOutlookOAuth2Api'],
+            self.pipeline.config.credentials['microsoft-outlook'],
             self.pipeline.config.monitoring,
         )
         self.state = self.pipeline.state

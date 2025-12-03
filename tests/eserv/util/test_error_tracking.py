@@ -11,7 +11,6 @@ import pytest
 from rampy import test
 
 from eserv.util.error_tracking import ErrorTracker, PipelineStage
-from eserv.util.email_state import hash_email_subject
 
 if TYPE_CHECKING:
     from typing import Any
@@ -69,25 +68,21 @@ class TestErrorTracker:
 
                 if test_persistence:
                     # Test persistence across instances
-                    tracker1 = ErrorTracker(log_file=log_file)
-                    tracker1.log_error(
-                        email_hash=email_hash,
-                        stage=stage,
-                        error_message=error_message,
-                    )
+                    tracker1 = ErrorTracker(file=log_file)
+                    tracker1.error(error_message, stage)
 
-                    tracker2 = ErrorTracker(log_file=log_file)
+                    tracker2 = ErrorTracker(file=log_file)
                     errors = tracker2.get_errors_for_email(email_hash)
                     assert len(errors) == 1
                     assert errors[0]['error'] == error_message
 
                 elif test_retrieval:
                     # Test error retrieval by email and stage
-                    tracker = ErrorTracker(log_file=log_file)
-                    tracker.log_error(email_hash, stage, error_message)
+                    tracker = ErrorTracker(file=log_file)
+                    tracker.error(error_message, stage)
 
                     # Also log another error for different stage
-                    tracker.log_error(email_hash, PipelineStage.EMAIL_PARSING, 'Parse error')
+                    tracker.error(email_hash, PipelineStage.EMAIL_PARSING, 'Parse error')
 
                     # Retrieve by email
                     email_errors = tracker.get_errors_for_email(email_hash)

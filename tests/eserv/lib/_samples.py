@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ['SAMPLE_EMAIL', 'create_sample_email', 'get_sample_html_path']
+__all__ = ['SAMPLE_EMAIL', 'create_sample_email']
 
 import typing
 from typing import Any, TypedDict

@@ -1,24 +1,28 @@
 import threading
 import time
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 
 import requests
 from requests.exceptions import HTTPError
 
 if TYPE_CHECKING:
     from eserv.monitor.flags import StatusFlag
-    from eserv.util import OAuthCredential
-    from eserv.util.config import MonitoringConfig
+    from eserv.util.configuration import MonitoringConfig
+    from eserv.util.types import OAuthCredential
 
     from .types import EmailRecord
+
+_STATUS_CODES: Final[dict[str, int]] = {'rate-limit': 429, 'server-error': 500}
 
 
 class GraphClient:
     """Microsoft Graph API client for email monitoring."""
 
-    def __init__(self, credential: OAuthCredential, config: MonitoringConfig) -> None:
+    def __init__(self, credential: OAuthCredential[GraphClient], config: MonitoringConfig) -> None:
         """Initialize a Microsoft Graph client."""
+        credential.set_client(self)
+
         self.cred = credential
         self.config = config
         self._folder_id_cache: dict[str, str] = {}
@@ -42,8 +46,10 @@ class GraphClient:
             True if error should be retried (429, 5xx), False for fatal errors (4xx).
 
         """
-        # Retry on rate limiting (429) and server errors (5xx)
-        return status_code == 429 or status_code >= 500
+        return any([
+            status_code == _STATUS_CODES['rate-limit'],
+            status_code >= _STATUS_CODES['server-error'],
+        ])
 
     def _request(self, method: str, path: str, **kwds: Any) -> dict[str, Any]:
         """Make Graph API request with retry logic for transient failures.
@@ -133,7 +139,13 @@ class GraphClient:
         num_days: int,
         processed_uids: set[str],
     ) -> list[EmailRecord]:
-        """Fetch emails from monitoring folder, exclude already-processed."""
+        """Fetch emails from monitoring folder, excluding any that were already processed.
+
+        Raises:
+            ValueError:
+                If the email's html body is empty.
+
+        """
         from .types import EmailRecord  # noqa: PLC0415
 
         folder_id = self.resolve_monitoring_folder_id()
@@ -186,7 +198,8 @@ class GraphClient:
 
                 # Validate HTML body is not empty
                 if not html_body:
-                    raise ValueError(f'Email {uid} has no HTML body')
+                    message = f'Email {uid} has no HTML body'
+                    raise ValueError(message)
 
                 records.append(
                     EmailRecord(

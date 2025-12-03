@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, NewType, overload
+from typing import TYPE_CHECKING, Literal, overload
+
+from eserv.monitor.types import StatusFlag
 
 if TYPE_CHECKING:
     from eserv.monitor.result import ErrorDict
-
-StatusFlag = NewType('StatusFlag', dict[Literal['id', 'value'], str])
 
 
 @overload

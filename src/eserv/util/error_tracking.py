@@ -10,19 +10,20 @@ Classes:
 
 from __future__ import annotations
 
-from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Self, Unpack
+from typing import TYPE_CHECKING, Any, Literal, NoReturn, Self, Unpack, overload
 
 import orjson
 from rampy import console
+from rampy.util import create_field_factory
 
 from eserv.errors._core import PipelineError
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
     from pathlib import Path
     from typing import TypedDict
 
@@ -57,7 +58,7 @@ class ErrorTracker:
     """
 
     file: Path
-    uid: str = field(default='unknown')
+    uid: str = field(default='n/a')
 
     @contextmanager
     def track(self, uid: str) -> Generator[Self]:
@@ -115,18 +116,49 @@ class ErrorTracker:
         self._errors.append(entry)
         self._save_errors()
 
+    if TYPE_CHECKING:
+
+        @overload
+        def error(
+            self,
+            message: str,
+            stage: PipelineStage,
+            context: dict[str, Any] | None = None,
+        ) -> None: ...
+        @overload
+        def error(
+            self,
+            message: str,
+            stage: PipelineStage,
+            context: dict[str, Any] | None = None,
+            *,
+            raises: Literal[True],
+        ) -> NoReturn: ...
+        @overload
+        def error(
+            self,
+            message: str,
+            stage: PipelineStage,
+            context: dict[str, Any] | None = None,
+            *,
+            raises: Literal[False],
+        ) -> PipelineError: ...
+
     def error(
         self,
         message: str,
         stage: PipelineStage,
-        context: dict[str, str] | None = None,
-    ) -> PipelineError:
+        context: dict[str, Any] | None = None,
+        *,
+        raises: bool | None = None,
+    ) -> PipelineError | None:
         """Log a pipeline error.
 
         Args:
             stage: Pipeline stage where error occurred.
             message: Human-readable error description.
             context: Optional additional context (e.g., file paths, API responses).
+            raises (bool): Whether to raise the `PipelineError` created from the entry.
 
         """
         self._save_entry(
@@ -140,7 +172,10 @@ class ErrorTracker:
         error = PipelineError(message=message, stage=stage)
         console.bind(uid=self.uid, stage=stage.value, exc_info=error).exception()
 
-        return error
+        if raises is True:
+            raise error
+
+        return error if raises is False else None
 
     def exception(
         self,
@@ -231,3 +266,22 @@ class ErrorTracker:
         self._save_errors()
 
         console.bind(cutoff_days=days).info('Cleared old errors')
+
+
+if TYPE_CHECKING:
+
+    def error_tracker(file: Path, uid: str = 'n/a') -> ErrorTracker:
+        """Initialize an error tracker.
+
+        Args:
+            file (Path):
+                Path to error log JSON file.
+            uid (str):
+                The identifier for an email to be tracked.
+                Should only be passed to initializer if processing a single email.
+
+        """
+        ...
+
+
+error_tracker = create_field_factory(ErrorTracker)

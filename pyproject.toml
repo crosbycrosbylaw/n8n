@@ -17,4 +17,6 @@ setuptools.package-dir          = { "*" = "src" }
 setuptools.packages             = ["eserv"]
 
 pyright.extends = "../pyrightconfig.json"
-ruff.extend     = "../ruff.toml"
+pyright.strict  = ["src/eserv"]
+
+ruff.extend = "../ruff.toml"

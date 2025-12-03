@@ -1,26 +1,25 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, overload
 
 import orjson
+from rampy.util import create_field_factory
 
 from eserv.monitor.result import processed_result
+from eserv.monitor.types import ProcessedResult
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from eserv.monitor.types import EmailRecord, ErrorDict, ProcessedResultDict
 
-# Import ProcessedResult at runtime for isinstance check
-from eserv.monitor.types import ProcessedResult
-
 
 @dataclass
 class EmailState:
     """Audit log for processed emails (UID-based)."""
 
-    state_file: Path
+    json_path: Path
     _entries: dict[str, ProcessedResult] = field(default_factory=dict, init=False)
 
     @property
@@ -34,12 +33,12 @@ class EmailState:
 
     def _load(self) -> None:
         """Load from JSON, fresh start if missing."""
-        if not self.state_file.exists():
+        if not self.json_path.exists():
             self._entries = {}
             return
 
         try:
-            with self.state_file.open('rb') as f:
+            with self.json_path.open('rb') as f:
                 data: dict[str, ProcessedResultDict] = orjson.loads(f.read())
 
             self._entries = {uid: processed_result(entry) for uid, entry in data.items()}
@@ -78,7 +77,23 @@ class EmailState:
             uid: entry.asdict() for uid, entry in self._entries.items()
         }
 
-        self.state_file.parent.mkdir(parents=True, exist_ok=True)
+        self.json_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with self.state_file.open('wb') as f:
+        with self.json_path.open('wb') as f:
             f.write(orjson.dumps(data, option=orjson.OPT_INDENT_2))
+
+
+if TYPE_CHECKING:
+
+    def processed_state_tracker(json_path: Path) -> EmailState:
+        """Initialize an audit log for processed emails (UID-based).
+
+        Args:
+            json_path (Path):
+                The path to the JSON file to read and write to.
+
+        """
+        ...
+
+
+processed_state_tracker = create_field_factory(EmailState)

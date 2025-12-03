@@ -5,14 +5,8 @@ import typing
 import requests
 from requests.models import CaseInsensitiveDict
 
-from .extract import (
-    extract_aspnet_form_data,
-    extract_download_info,
-    extract_filename_from_disposition,
-    extract_links_from_response_html,
-    extract_post_request_url,
-)
-from .util.doc_store import get_document_store
+from eserv.extract import *
+from eserv.util import document_store
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
@@ -148,7 +142,7 @@ def download_documents(soup: BeautifulSoup) -> tuple[str | None, Path]:
 
     """
     info = extract_download_info(soup)
-    store = get_document_store(info.doc_name)
+    store = document_store(info.doc_name)
 
     with requests.sessions.Session() as session:
         response = session.get(info.source, **OPTIONS)

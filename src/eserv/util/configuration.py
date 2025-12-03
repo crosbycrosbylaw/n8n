@@ -8,7 +8,7 @@ and formats at application startup.
 
 Classes:
     SMTPConfig: Email delivery configuration.
-    DropboxConfig: Dropbox API configuration.
+    CredentialsConfig: API authorization configurations.
     PathsConfig: File storage paths.
     EmailStateConfig: Email state tracking configuration.
     CacheConfig: Cache configuration.
@@ -22,17 +22,17 @@ import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from dotenv import load_dotenv
 from rampy import console
 
 from eserv.errors import InvalidFormatError, MissingVariableError
-from eserv.util import CredentialManager
+from eserv.util.types import CredentialManager
 
 if TYPE_CHECKING:
-    from eserv.util import OAuthCredential
     from eserv.util.oauth_manager import CredentialType
+    from eserv.util.types import OAuthCredential
 
 
 @dataclass(slots=True, frozen=True)
@@ -109,11 +109,15 @@ class SMTPConfig:
         )
 
 
-def _credential_path_factory() -> Path:
-    if not (cred_path := os.getenv('CREDENTIALS_PATH')):
+def _credential_manager_factory() -> CredentialManager:
+    if not Config.dotenv_loaded:
+        message = 'Credential manager instantiation occurred before dotenv file was loaded.'
+        raise RuntimeError(message)
+
+    if not (string := os.getenv('CREDENTIALS_PATH')):
         raise MissingVariableError(name='CREDENTIALS_PATH')
 
-    return Path(cred_path).resolve(strict=True)
+    return CredentialManager(Path(string).resolve(strict=True))
 
 
 @dataclass(slots=True, frozen=True)
@@ -126,20 +130,11 @@ class CredentialConfig:
 
     """
 
-    path: Path = field(init=True, default_factory=_credential_path_factory)
-
-    @property
-    def manager(self) -> CredentialManager:  # noqa: D102
-        return CredentialManager(self.path)
-
-    _cache: dict[CredentialType, OAuthCredential] = field(
-        init=False,
-        default_factory=dict,
-    )
+    manager: CredentialManager = field(init=False, default_factory=_credential_manager_factory)
 
     def __getitem__(self, name: CredentialType) -> OAuthCredential:
         """Retrieve the named authorization credential, storing the value if not found in cache."""
-        return self._cache.setdefault(name, self.manager.get_credential(name))
+        return self.manager.get_credential(name)
 
 
 @dataclass(slots=True, frozen=True)
@@ -273,7 +268,24 @@ class Config:
 
     """
 
-    credentials: CredentialConfig
+    dotenv_path: ClassVar[Path | None] = None
+    dotenv_loaded: ClassVar[bool] = False
+
+    @classmethod
+    def load(cls, dotenv: Path | None, **kwds: Any) -> None:
+        """Load environment variables from the specified .env file and update class attributes.
+
+        Args:
+            dotenv (Path | None):
+                Path to a `.env` file to load, or `None` to resolve with `dotenv.find_dotenv`.
+            **kwds (Any):
+                Keyword arguments to pass through to the `dotenv.load_dotenv` method.
+
+        """
+        cls.dotenv_path = None if not dotenv else dotenv.resolve(strict=True)
+        cls.dotenv_loaded = load_dotenv(cls.dotenv_path, **kwds)
+
+    credentials: CredentialConfig = field(init=False, default_factory=CredentialConfig)
 
     smtp: SMTPConfig
     paths: PathsConfig
@@ -281,29 +293,29 @@ class Config:
     cache: CacheConfig
     monitoring: MonitoringConfig
 
-    @classmethod
-    def from_env(cls, env_file: Path | None = None) -> Config:
-        """Load complete configuration from environment variables.
-
-        Args:
-            env_file: Optional path to .env file. If None, uses default .env in cwd.
-
-        """
-        load_dotenv(None if not env_file else env_file.resolve(strict=True))
-
-        config_dict: dict[str, Any] = {
-            'credentials': CredentialConfig(),
-            'smtp': (smtp := SMTPConfig.from_env()),
-            'paths': (paths := PathsConfig.from_env()),
-            'cache': (cache := CacheConfig.from_env(paths.service_dir)),
-            'state': EmailStateConfig.from_env(paths.service_dir),
-            'monitoring': MonitoringConfig.from_env(),
-        }
-
+    def __post_init__(self) -> None:
+        """Print basic configuration information to the console after initialization."""
         console.bind(
-            smtp_server=smtp.server,
-            service_dir=str(paths.service_dir),
-            cache_ttl_hours=cache.ttl_hours,
+            dotenv_path=f'{self.dotenv_path!s}',
+            service_dir=f'{self.paths.service_dir!s}',
+            cache_ttl=f'{self.cache.ttl_hours!s}',
+            smtp_server=self.smtp.server,
         ).info('Configuration loaded')
 
-        return cls(**config_dict)
+
+def config(dotenv: Path | None = None) -> Config:
+    """Load complete configuration from environment variables.
+
+    Args:
+        dotenv: Optional path to .env file. If None, uses default .env in cwd.
+
+    """
+    Config.load(dotenv)
+
+    return Config(
+        smtp=SMTPConfig.from_env(),
+        monitoring=MonitoringConfig.from_env(),
+        paths=(paths := PathsConfig.from_env()),
+        cache=CacheConfig.from_env(paths.service_dir),
+        state=EmailStateConfig.from_env(paths.service_dir),
+    )

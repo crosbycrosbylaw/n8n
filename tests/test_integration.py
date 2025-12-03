@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 import pytest
 from rampy import test
 
-from eserv.util.config import Config
+from eserv.util.configuration import Config
 from eserv.util.email_state import EmailState, hash_email_subject
 from eserv.util.error_tracking import ErrorTracker, PipelineStage
 from eserv.util.index_cache import IndexCache
@@ -75,7 +75,9 @@ class TestUploadWorkflow:
                 index_cache = IndexCache(cache_file=cache_file, ttl_hours=4)
 
                 # Populate cache with folders
-                folder_index = {folder: {'id': f'id_{i}', 'name': folder} for i, folder in enumerate(folders)}
+                folder_index = {
+                    folder: {'id': f'id_{i}', 'name': folder} for i, folder in enumerate(folders)
+                }
                 index_cache.refresh(folder_index)
 
                 # Simulate duplicate email if requested

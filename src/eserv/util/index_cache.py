@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any
 
 import orjson
 from rampy import console
+from rampy.util import create_field_factory
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -141,3 +142,21 @@ class IndexCache:
 
         """
         return [*self._index.keys()]
+
+
+if TYPE_CHECKING:
+
+    def dropbox_index_cache(cache_file: Path, ttl_hours: int) -> IndexCache:
+        """Initialize a dropbox file index cache.
+
+        Args:
+            cache_file (Path):
+                Path to cache JSON file.
+            ttl_hours (int):
+                Cache time-to-live in hours.
+
+        """
+        ...
+
+
+dropbox_index_cache = create_field_factory(IndexCache)

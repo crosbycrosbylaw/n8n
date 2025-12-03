@@ -10,7 +10,7 @@ Tests cover:
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
@@ -19,11 +19,9 @@ from requests.exceptions import HTTPError
 
 from eserv.monitor.client import GraphClient
 from eserv.monitor.flags import status_flag
-from eserv.monitor.types import EmailRecord
 
 if TYPE_CHECKING:
-    from eserv.util import OAuthCredential
-    from eserv.util.config import MonitoringConfig
+    pass
 
 
 @pytest.fixture
@@ -126,7 +124,9 @@ class TestPagination:
         # Mock first page response with nextLink
         page1_response = Mock()
         page1_response.status_code = 200
-        page1_response.text = '{"value": [{"id": "msg1"}], "@odata.nextLink": "https://next-page-url"}'
+        page1_response.text = (
+            '{"value": [{"id": "msg1"}], "@odata.nextLink": "https://next-page-url"}'
+        )
         page1_response.json.return_value = {
             'value': [
                 {
@@ -158,16 +158,12 @@ class TestPagination:
         body1_response = Mock()
         body1_response.status_code = 200
         body1_response.text = '{}'
-        body1_response.json.return_value = {
-            'body': {'content': '<html>Test body 1</html>'}
-        }
+        body1_response.json.return_value = {'body': {'content': '<html>Test body 1</html>'}}
 
         body2_response = Mock()
         body2_response.status_code = 200
         body2_response.text = '{}'
-        body2_response.json.return_value = {
-            'body': {'content': '<html>Test body 2</html>'}
-        }
+        body2_response.json.return_value = {'body': {'content': '<html>Test body 2</html>'}}
 
         # Set up mock responses in sequence
         mock_request.side_effect = [page1_response, body1_response, body2_response]
@@ -184,7 +180,10 @@ class TestPagination:
         # Verify nextLink was used
         mock_get.assert_called_once_with(
             'https://next-page-url',
-            headers={'Authorization': 'Bearer test_token_12345', 'Content-Type': 'application/json'},
+            headers={
+                'Authorization': 'Bearer test_token_12345',
+                'Content-Type': 'application/json',
+            },
             timeout=30,
         )
 
@@ -225,9 +224,7 @@ class TestFolderResolution:
         # Level 1: Inbox
         level1_response = Mock()
         level1_response.status_code = 200
-        level1_response.json.return_value = {
-            'value': [{'id': 'inbox_id', 'displayName': 'Inbox'}]
-        }
+        level1_response.json.return_value = {'value': [{'id': 'inbox_id', 'displayName': 'Inbox'}]}
 
         # Level 2: Test Folder
         level2_response = Mock()
@@ -268,9 +265,7 @@ class TestFolderResolution:
         """Test that folder ID is cached after first resolution."""
         response = Mock()
         response.status_code = 200
-        response.json.return_value = {
-            'value': [{'id': 'cached_id', 'displayName': 'Inbox'}]
-        }
+        response.json.return_value = {'value': [{'id': 'cached_id', 'displayName': 'Inbox'}]}
         mock_request.return_value = response
 
         # First call should hit API

@@ -8,7 +8,7 @@ from pathlib import Path
 import fire
 
 from eserv.core import Pipeline
-from eserv.monitor import EmailRecord
+from eserv.monitor.types import EmailRecord
 
 
 class _CLI:

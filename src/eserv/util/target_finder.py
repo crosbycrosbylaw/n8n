@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
 from rampy import console
+from rampy.util import create_field_factory
 from rapidfuzz import fuzz, process
 
 from .pdf_utils import extract_text_from_pdf
@@ -254,3 +255,19 @@ def extract_case_names_from_pdf(pdf_path: Path) -> list[str]:
     csl.bind(count=len(unique)).info('Extracted case names from PDF')
 
     return unique
+
+
+if TYPE_CHECKING:
+
+    def folder_matcher(folder_paths: list[str], min_score: float = 70) -> FolderMatcher:
+        """Initialize a folder matcher.
+
+        Args:
+            folder_paths: List of Dropbox folder paths to search.
+            min_score: Minimum confidence score (default 70.0).
+
+        """
+        ...
+
+
+folder_matcher = create_field_factory(FolderMatcher)

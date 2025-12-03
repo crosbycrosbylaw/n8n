@@ -15,18 +15,8 @@ from eserv.upload import DocumentUploader, UploadStatus
 from eserv.util.notifications import Notifier
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Callable
     from typing import Any
-
-
-@pytest.fixture
-def temp_dir() -> Generator[Path]:
-    path = test.directory('test-upload')
-
-    try:
-        yield path
-    finally:
-        path.clean()
 
 
 def scenario(
@@ -76,11 +66,10 @@ class TestDocumentUploaderTokenRefresh:
         params: list[bool],
         test_token_refresh: bool,
         test_expired_token: bool,
-        temp_dir: Path,
+        tempdir: Callable[[str], Path],
     ):
-
         has_refresh_credentials, refresh_succeeds = params
-        cache_path = temp_dir / 'index_cache.json'
+        cache_path = tempdir('test-uploader-token-refresh') / 'index_cache.json'
         notifier = Mock(spec=Notifier)
 
         # Setup uploader with or without refresh credentials
@@ -240,10 +229,10 @@ class TestDocumentUpload:
         params: list[Any],
         manual_review: bool,
     ):
-        temp_dir = Path(tempfile.mkdtemp())
+        tempdir = Path(tempfile.mkdtemp())
         try:
             case_name, doc_name, match_score = params
-            cache_path = temp_dir / 'index_cache.json'
+            cache_path = tempdir / 'index_cache.json'
             notifier = Mock(spec=Notifier)
 
             uploader = DocumentUploader(
@@ -255,7 +244,7 @@ class TestDocumentUpload:
             )
 
             # Create temp PDF file
-            pdf_path = temp_dir / doc_name
+            pdf_path = tempdir / doc_name
             pdf_path.write_text('mock pdf content')
 
             # Mock Dropbox operations
@@ -275,21 +264,21 @@ class TestDocumentUpload:
                             score=match_score,
                         )
 
-                        result = uploader.process_document(case_name, documents=[pdf_path])
+                        result = uploader.process_documents(case_name, documents=[pdf_path])
 
                         assert result.status == UploadStatus.SUCCESS
                         assert len(result.uploaded_files) == 1
                         assert result.match is not None
                         assert result.match.score == match_score
                 else:
-                    result = uploader.process_document(case_name, documents=[pdf_path])
+                    result = uploader.process_documents(case_name, documents=[pdf_path])
 
                     assert result.status == UploadStatus.MANUAL_REVIEW
                     assert len(result.uploaded_files) == 1
                     assert uploader.manual_review_folder in result.folder_path
 
         finally:
-            shutil.rmtree(temp_dir, ignore_errors=True)
+            shutil.rmtree(tempdir, ignore_errors=True)
 
 
 @test.scenarios(**{
@@ -326,10 +315,10 @@ class TestRefreshCredentialsValidation:
         has_app_secret: bool,
         has_refresh_token: bool,
         expected_configured: bool,
-        temp_dir: Path,
+        tempdir: Callable[[str], Path],
     ):
 
-        cache_path = temp_dir.joinpath('index_cache.json')
+        cache_path = tempdir('test-refresh-credentials-validation').joinpath('index_cache.json')
         notifier = Mock(spec=Notifier)
 
         uploader = DocumentUploader(

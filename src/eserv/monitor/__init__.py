@@ -1,20 +1,7 @@
 """Monitor module for eserv package."""
 
-__all__ = [
-    'BatchResult',
-    'EmailProcessor',
-    'EmailRecord',
-    'GraphClient',
-    'ProcessStatus',
-    'ProcessedResult',
-    'ProcessedResultDict',
-    'StatusFlag',
-    'processed_result',
-    'status_flag',
-]
+__all__ = ['processed_result', 'status_flag', 'types']
 
-from .client import GraphClient
-from .flags import StatusFlag, status_flag
-from .processor import EmailProcessor
-from .result import ProcessedResult, processed_result
-from .types import BatchResult, EmailRecord, ProcessedResultDict, ProcessStatus
+from . import types
+from .flags import status_flag
+from .result import processed_result

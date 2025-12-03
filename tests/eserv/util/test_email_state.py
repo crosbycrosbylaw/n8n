@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 import pytest
 from rampy import test
 
-from eserv.util.email_state import EmailState, hash_email_subject
+from eserv.util.email_state import EmailState
 
 if TYPE_CHECKING:
     from typing import Any
