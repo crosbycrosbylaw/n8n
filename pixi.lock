@@ -116,7 +116,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/f9/e8/989f4eaa369c7166dc24f0eaa3023f13788c40ff1b96701f7047421554a8/pymupdf-1.26.6-cp310-abi3-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/76/48/cadca48562c7f455a57025ddd7122886fedab618bf499106bb3d73797bcd/pymupdf_stubs-1.26.1.post1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/14/1b/a298b06749107c305e1fe0f814c6c74aea7b2f1e10989cb30f544a1b3253/python_dotenv-1.2.1-py3-none-any.whl
-      - pypi: git+https://github.com/zaynram/ramda-py.git?branch=master#3865d789f67db1f808f20c0818c4384d614cb542
+      - pypi: git+https://github.com/zaynram/ramda-py.git?branch=master#8e299d8a405f81a1f15ffd6a53f7869653ff6c90
       - pypi: https://files.pythonhosted.org/packages/a8/45/a132b9074aa18e799b891b91ad72133c98d8042c70f6240e4c5f9dabee2f/structlog-25.5.0-py3-none-any.whl
       - pypi: ./
 packages:
@@ -1221,7 +1221,7 @@ packages:
   - pkg:pypi/pyzmq?source=hash-mapping
   size: 185711
   timestamp: 1757387025899
-- pypi: git+https://github.com/zaynram/ramda-py.git?branch=master#3865d789f67db1f808f20c0818c4384d614cb542
+- pypi: git+https://github.com/zaynram/ramda-py.git?branch=master#8e299d8a405f81a1f15ffd6a53f7869653ff6c90
   name: rampy
   version: 0.0.1
 - conda: https://conda.anaconda.org/conda-forge/win-64/rapidfuzz-3.14.3-py314h13fbf68_1.conda

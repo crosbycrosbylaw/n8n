@@ -57,7 +57,7 @@ class DropboxManager:
     """
 
     credential: OAuthCredential
-    uploaded: list[str] = field(init=False, default_factory=list)
+    uploaded: list[str] = field(init=False, default_factory=list[Any])
     _client: Dropbox | None = field(init=False, default=None, repr=False)
 
     def index(self) -> dict[str, Any]:
@@ -82,6 +82,7 @@ class DropboxManager:
 
                 cursor = cast('str', result.cursor)
                 result = dropbox.files_list_folder_continue(cursor)
+                metadata_entries = cast('Iterable[Metadata]', result.entries)
 
         return out
 

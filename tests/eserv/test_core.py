@@ -31,8 +31,7 @@ if TYPE_CHECKING:
 @pytest.fixture
 def mock_dotenv_path(tempdir) -> Path:
     """Create mock .env file path."""
-    tmp = tempdir('config')
-    env_path = tmp / '.env'
+    env_path = tempdir / '.env'
     env_path.write_text('TEST_VAR=test_value\n')
     return env_path
 
@@ -52,7 +51,15 @@ def mock_dependencies():
     mock_track_cm = Mock()
     mock_track_cm.__enter__ = Mock(return_value=mock_track_cm)
     mock_track_cm.__exit__ = Mock(return_value=None)
-    mock_track_cm.error = Mock()
+
+    # Configure error() to raise PipelineError when raises=True
+    def mock_error(message, stage, context=None, raises=None):
+        if raises:
+            from eserv.errors._core import PipelineError
+
+            raise PipelineError(message=message, stage=stage)
+
+    mock_track_cm.error = Mock(side_effect=mock_error)
     mock_track_cm.warning = Mock()
     mock_tracker.track.return_value = mock_track_cm
 
@@ -101,20 +108,22 @@ class TestPipelineInit:
 
     def test_state_tracker_initialization(self, mock_dependencies: dict) -> None:
         """Test state tracker initialized from config."""
-        with patch('eserv.core.config', return_value=mock_dependencies['config']):
-            with patch(
+        with (
+            patch('eserv.core.config', return_value=mock_dependencies['config']),
+            patch(
                 'eserv.core.state_tracker',
                 return_value=mock_dependencies['state'],
-            ) as mock_state_fn:
-                with patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']):
-                    # Initialize pipeline
-                    pipeline = Pipeline()
+            ) as mock_state_fn,
+            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+        ):
+            # Initialize pipeline
+            pipeline = Pipeline()
 
-                    # Verify state_tracker called with state file path
-                    mock_state_fn.assert_called_once_with(Path('/tmp/state.json'))
+            # Verify state_tracker called with state file path
+            mock_state_fn.assert_called_once_with(Path('/tmp/state.json'))
 
-                    # Verify pipeline.state set
-                    assert pipeline.state is mock_dependencies['state']
+            # Verify pipeline.state set
+            assert pipeline.state is mock_dependencies['state']
 
     def test_error_tracker_initialization(self, mock_dependencies: dict) -> None:
         """Test error tracker initialized from config."""
@@ -146,7 +155,8 @@ class TestPipelineProcess:
     ) -> None:
         """Test successful processing through all 6 stages."""
         # Setup temp store path
-        store_path = tempdir('docs')
+        store_path = tempdir / 'docs'
+        store_path.mkdir(exist_ok=True)
         pdf_path = store_path / 'Motion.pdf'
         pdf_path.write_bytes(b'%PDF-1.4\nTest PDF')
 
@@ -240,7 +250,8 @@ class TestPipelineProcess:
         tempdir,
     ) -> None:
         """Test upload info extraction failure raises PipelineError."""
-        store_path = tempdir('docs')
+        store_path = tempdir / 'docs'
+        store_path.mkdir(exist_ok=True)
 
         with patch('eserv.core.config', return_value=mock_dependencies['config']):
             with patch('eserv.core.state_tracker', return_value=mock_dependencies['state']):
@@ -268,7 +279,8 @@ class TestPipelineProcess:
         tempdir,
     ) -> None:
         """Test duplicate email detection via state tracker."""
-        store_path = tempdir('docs')
+        store_path = tempdir / 'docs'
+        store_path.mkdir(exist_ok=True)
 
         # Mock state to return True for is_processed
         mock_dependencies['state'].is_processed.return_value = True
@@ -299,7 +311,8 @@ class TestPipelineProcess:
     ) -> None:
         """Test NO_WORK when no PDF files after download."""
         # Empty store directory (no PDFs)
-        store_path = tempdir('docs')
+        store_path = tempdir / 'docs'
+        store_path.mkdir(exist_ok=True)
 
         with patch('eserv.core.config', return_value=mock_dependencies['config']):
             with patch('eserv.core.state_tracker', return_value=mock_dependencies['state']):
@@ -325,7 +338,8 @@ class TestPipelineProcess:
         tempdir,
     ) -> None:
         """Test SUCCESS status from successful upload."""
-        store_path = tempdir('docs')
+        store_path = tempdir / 'docs'
+        store_path.mkdir(exist_ok=True)
         pdf_path = store_path / 'Motion.pdf'
         pdf_path.write_bytes(b'%PDF-1.4\nTest')
 
@@ -357,7 +371,8 @@ class TestPipelineProcess:
         tempdir,
     ) -> None:
         """Test MANUAL_REVIEW status when no folder match."""
-        store_path = tempdir('docs')
+        store_path = tempdir / 'docs'
+        store_path.mkdir(exist_ok=True)
         pdf_path = store_path / 'Motion.pdf'
         pdf_path.write_bytes(b'%PDF-1.4\nTest')
 
@@ -392,7 +407,8 @@ class TestPipelineProcess:
         tempdir,
     ) -> None:
         """Test ERROR status from upload failure."""
-        store_path = tempdir('docs')
+        store_path = tempdir / 'docs'
+        store_path.mkdir(exist_ok=True)
         pdf_path = store_path / 'Motion.pdf'
         pdf_path.write_bytes(b'%PDF-1.4\nTest')
 
@@ -406,7 +422,7 @@ class TestPipelineProcess:
                                     mock_extract.return_value = Mock(case_name='Smith v. Jones')
                                     mock_upload.return_value = UploadResult(
                                         status=status.ERROR,
-                                        error_msg='Dropbox API error',
+                                        error='Dropbox API error',
                                     )
 
                                     # Initialize pipeline
@@ -476,7 +492,8 @@ class TestPipelineExecute:
         tempdir,
     ) -> None:
         """Test execute wraps process() successfully."""
-        store_path = tempdir('docs')
+        store_path = tempdir / 'docs'
+        store_path.mkdir(exist_ok=True)
         pdf_path = store_path / 'Motion.pdf'
         pdf_path.write_bytes(b'%PDF-1.4\nTest')
 
@@ -521,7 +538,7 @@ class TestPipelineExecute:
         mock_dependencies: dict,
         sample_email_record,
     ) -> None:
-        """Test generic exception converted to ProcessedResult."""
+        """Test generic exception converted to ProcessedResult with stage info."""
         with patch('eserv.core.config', return_value=mock_dependencies['config']):
             with patch('eserv.core.state_tracker', return_value=mock_dependencies['state']):
                 with patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']):
@@ -531,6 +548,10 @@ class TestPipelineExecute:
                         result = pipeline.execute(sample_email_record)
 
                         # Verify ProcessedResult with error
+                        # Error is wrapped in PipelineError with stage 'parsing'
                         assert result.error is not None
-                        assert result.error['category'] == 'unknown'
-                        assert 'Unexpected error' in result.error.get('message', '')
+                        assert result.error['category'] == 'parsing'
+                        assert 'message' in result.error
+                        message = result.error['message']
+                        assert isinstance(message, str)
+                        assert 'Unexpected error' in message

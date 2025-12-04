@@ -54,6 +54,7 @@ class Pipeline:
             # Parse email HTML
             try:
                 soup = BeautifulSoup(record.html_body, features='html.parser')
+                cons.info(event='Parsed email HTML')
             except Exception as e:
                 tracker.error(
                     message=f'Failed to initialize soup from html: {e!s}',
@@ -65,12 +66,15 @@ class Pipeline:
                     },
                     raises=True,
                 )
-            else:
-                cons.info(event='Parsed email HTML')
 
             # Download documents
             try:
                 doc_name, store_path = download_documents(soup)
+                cons.info(
+                    event='Downloaded documents',
+                    doc_name=doc_name,
+                    store_path=store_path.as_posix(),
+                )
             except Exception as e:
                 tracker.error(
                     message=f'Failed to download documents: {e!s}',
@@ -81,17 +85,17 @@ class Pipeline:
                     },
                     raises=True,
                 )
-            else:
-                cons.info(
-                    event='Downloaded documents',
-                    doc_name=doc_name,
-                    store_path=store_path.as_posix(),
-                )
 
             # Extract metadata
             try:
                 upload_info = extract_upload_info(soup, store_path)
                 case_name = upload_info.case_name or 'unknown'
+                cons = console.bind(case_name=case_name)
+                cons.info(
+                    event='Extracted upload info',
+                    doc_name=doc_name,
+                    doc_count=upload_info.doc_count,
+                )
             except Exception as e:
                 tracker.error(
                     message=f'Failed to parse upload information: {e!s}',
@@ -102,13 +106,6 @@ class Pipeline:
                         'store_path': store_path.as_posix(),
                     },
                     raises=True,
-                )
-            else:
-                cons = console.bind(case_name=case_name)
-                cons.info(
-                    event='Extracted upload info',
-                    doc_name=doc_name,
-                    doc_count=upload_info.doc_count,
                 )
 
             if record.uid and self.state.is_processed(record.uid):

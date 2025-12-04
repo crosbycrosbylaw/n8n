@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -47,8 +49,8 @@ class EmailProcessor:
             try:
                 flag = self._result_to_flag(result)
                 self.client.apply_flag(record.uid, flag)
-            except Exception:
-                console.bind().exception()
+            except Exception as err:
+                console.bind().exception(str(err))
 
             self.state.record(result)
 
@@ -58,6 +60,6 @@ class EmailProcessor:
     def _result_to_flag(result: ProcessedResult) -> StatusFlag:
         """Convert result to MAPI flag."""
         if not result.error:
-            return status_flag()
+            return status_flag(success=True)
 
         return status_flag(result.error)

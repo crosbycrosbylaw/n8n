@@ -60,10 +60,9 @@ def mock_config() -> Mock:
 
 
 @pytest.fixture
-def mock_pdf_file(tempdir) -> Path:
+def mock_pdf_file(tempdir: Path) -> Path:
     """Create mock PDF file."""
-    tmp = tempdir
-    pdf_path = tmp / 'test_document.pdf'
+    pdf_path = tempdir / 'test_document.pdf'
     pdf_path.write_bytes(b'%PDF-1.4\nMock PDF content')
     return pdf_path
 
@@ -78,7 +77,7 @@ class TestDropboxManagerClient:
         # Verify client not created yet
         assert manager._client is None
 
-        with patch('eserv.stages.upload.Dropbox') as mock_dropbox_class:
+        with patch('dropbox.Dropbox') as mock_dropbox_class:
             mock_client = Mock()
             mock_dropbox_class.return_value = mock_client
 
@@ -100,7 +99,7 @@ class TestDropboxManagerClient:
         """Test client is cached after first creation."""
         manager = DropboxManager(credential=mock_credential)
 
-        with patch('eserv.stages.upload.Dropbox') as mock_dropbox_class:
+        with patch('dropbox.Dropbox') as mock_dropbox_class:
             mock_client = Mock()
             mock_dropbox_class.return_value = mock_client
 
@@ -126,75 +125,84 @@ class TestDropboxManagerIndex:
         mock_client = Mock()
         mock_result = Mock()
         mock_result.has_more = False
-        mock_result.entries = [
-            Mock(
-                path_display='/Clio/Smith v. Jones',
-                name='Smith v. Jones',
-                id='folder_id_1',
-            ),
-            Mock(path_display='/Clio/Doe v. Roe', name='Doe v. Roe', id='folder_id_2'),
-        ]
 
-        # Mock FolderMetadata type check
+        # Create mock entries with proper attributes (avoid Mock's special 'name' attribute)
         from dropbox.files import FolderMetadata
 
-        for entry in mock_result.entries:
-            entry.__class__ = FolderMetadata
+        entry1 = Mock(spec=FolderMetadata)
+        entry1.path_display = '/Clio/Smith v. Jones'
+        entry1.name = 'Smith v. Jones'
+        entry1.id = 'folder_id_1'
+
+        entry2 = Mock(spec=FolderMetadata)
+        entry2.path_display = '/Clio/Doe v. Roe'
+        entry2.name = 'Doe v. Roe'
+        entry2.id = 'folder_id_2'
+
+        mock_result.entries = [entry1, entry2]
 
         mock_client.files_list_folder.return_value = mock_result
 
-        with patch.object(manager, 'client', mock_client):
-            # Fetch index
-            index = manager.index()
+        # Set _client directly since client is a read-only property
+        manager._client = mock_client
 
-            # Verify files_list_folder called
-            mock_client.files_list_folder.assert_called_once_with('/Clio/', recursive=True)
+        # Fetch index
+        index = manager.index()
 
-            # Verify index structure
-            assert '/Clio/Smith v. Jones' in index
-            assert index['/Clio/Smith v. Jones']['name'] == 'Smith v. Jones'
-            assert index['/Clio/Smith v. Jones']['id'] == 'folder_id_1'
-            assert '/Clio/Doe v. Roe' in index
+        # Verify files_list_folder called
+        mock_client.files_list_folder.assert_called_once_with('/Clio/', recursive=True)
+
+        # Verify index structure
+        assert '/Clio/Smith v. Jones' in index
+        assert index['/Clio/Smith v. Jones']['name'] == 'Smith v. Jones'
+        assert index['/Clio/Smith v. Jones']['id'] == 'folder_id_1'
+        assert '/Clio/Doe v. Roe' in index
 
     def test_pagination_handling(self, mock_credential: Mock) -> None:
         """Test pagination with has_more=True."""
         manager = DropboxManager(credential=mock_credential)
 
+        # Create mock entries with proper attributes
+        from dropbox.files import FolderMetadata
+
+        entry1 = Mock(spec=FolderMetadata)
+        entry1.path_display = '/Clio/Case1'
+        entry1.name = 'Case1'
+        entry1.id = 'id1'
+
+        entry2 = Mock(spec=FolderMetadata)
+        entry2.path_display = '/Clio/Case2'
+        entry2.name = 'Case2'
+        entry2.id = 'id2'
+
         # Mock first page
         mock_result_page1 = Mock()
         mock_result_page1.has_more = True
         mock_result_page1.cursor = 'cursor_123'
-        mock_result_page1.entries = [
-            Mock(path_display='/Clio/Case1', name='Case1', id='id1'),
-        ]
+        mock_result_page1.entries = [entry1]
 
         # Mock second page
         mock_result_page2 = Mock()
         mock_result_page2.has_more = False
-        mock_result_page2.entries = [
-            Mock(path_display='/Clio/Case2', name='Case2', id='id2'),
-        ]
-
-        from dropbox.files import FolderMetadata
-
-        for entry in mock_result_page1.entries + mock_result_page2.entries:
-            entry.__class__ = FolderMetadata
+        mock_result_page2.entries = [entry2]
 
         mock_client = Mock()
         mock_client.files_list_folder.return_value = mock_result_page1
         mock_client.files_list_folder_continue.return_value = mock_result_page2
 
-        with patch.object(manager, 'client', mock_client):
-            # Fetch index
-            index = manager.index()
+        # Set _client directly since client is a read-only property
+        manager._client = mock_client
 
-            # Verify pagination calls
-            mock_client.files_list_folder.assert_called_once()
-            mock_client.files_list_folder_continue.assert_called_once_with('cursor_123')
+        # Fetch index
+        index = manager.index()
 
-            # Verify both pages in index
-            assert '/Clio/Case1' in index
-            assert '/Clio/Case2' in index
+        # Verify pagination calls
+        mock_client.files_list_folder.assert_called_once()
+        mock_client.files_list_folder_continue.assert_called_once_with('cursor_123')
+
+        # Verify both pages in index
+        assert '/Clio/Case1' in index
+        assert '/Clio/Case2' in index
 
 
 class TestDropboxManagerUpload:
@@ -213,18 +221,20 @@ class TestDropboxManagerUpload:
         mock_metadata = Mock(path_display='/Clio/Smith v. Jones/Motion.pdf')
         mock_client.files_upload.return_value = mock_metadata
 
-        with patch.object(manager, 'client', mock_client):
-            # Upload file
-            manager.upload(mock_pdf_file, '/Clio/Smith v. Jones/Motion.pdf')
+        # Set _client directly since client is a read-only property
+        manager._client = mock_client
 
-            # Verify files_upload called
-            mock_client.files_upload.assert_called_once()
-            call_args = mock_client.files_upload.call_args
-            assert call_args[0][1] == '/Clio/Smith v. Jones/Motion.pdf'
+        # Upload file
+        manager.upload(mock_pdf_file, '/Clio/Smith v. Jones/Motion.pdf')
 
-            # Verify file added to uploaded list
-            assert len(manager.uploaded) == 1
-            assert manager.uploaded[0] == '/Clio/Smith v. Jones/Motion.pdf'
+        # Verify files_upload called
+        mock_client.files_upload.assert_called_once()
+        call_args = mock_client.files_upload.call_args
+        assert call_args[0][1] == '/Clio/Smith v. Jones/Motion.pdf'
+
+        # Verify file added to uploaded list
+        assert len(manager.uploaded) == 1
+        assert manager.uploaded[0] == '/Clio/Smith v. Jones/Motion.pdf'
 
     def test_uploaded_list_tracking(
         self,
@@ -237,17 +247,19 @@ class TestDropboxManagerUpload:
         mock_client = Mock()
         mock_client.files_upload.return_value = Mock()
 
-        with patch.object(manager, 'client', mock_client):
-            # Upload multiple files
-            manager.upload(mock_pdf_file, '/Clio/Case1/Doc1.pdf')
-            manager.upload(mock_pdf_file, '/Clio/Case1/Doc2.pdf')
-            manager.upload(mock_pdf_file, '/Clio/Case2/Doc3.pdf')
+        # Set _client directly since client is a read-only property
+        manager._client = mock_client
 
-            # Verify all tracked
-            assert len(manager.uploaded) == 3
-            assert '/Clio/Case1/Doc1.pdf' in manager.uploaded
-            assert '/Clio/Case1/Doc2.pdf' in manager.uploaded
-            assert '/Clio/Case2/Doc3.pdf' in manager.uploaded
+        # Upload multiple files
+        manager.upload(mock_pdf_file, '/Clio/Case1/Doc1.pdf')
+        manager.upload(mock_pdf_file, '/Clio/Case1/Doc2.pdf')
+        manager.upload(mock_pdf_file, '/Clio/Case2/Doc3.pdf')
+
+        # Verify all tracked
+        assert len(manager.uploaded) == 3
+        assert '/Clio/Case1/Doc1.pdf' in manager.uploaded
+        assert '/Clio/Case1/Doc2.pdf' in manager.uploaded
+        assert '/Clio/Case2/Doc3.pdf' in manager.uploaded
 
 
 class TestUploadDocuments:

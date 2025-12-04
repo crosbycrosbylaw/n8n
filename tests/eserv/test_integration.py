@@ -116,8 +116,51 @@ class TestUploadWorkflow:
             execute()
 
 
-def test_config_initialization():
-    config = eserv.config()
+def test_config_initialization(tmp_path: Path):
+    """Test config initialization with test environment."""
+    # Create mock credentials file
+    creds_file = tmp_path / 'credentials.json'
+    creds_file.write_text(
+        """[
+        {
+            "type": "dropbox",
+            "account": "test",
+            "client_id": "test_client",
+            "client_secret": "test_secret",
+            "token_type": "bearer",
+            "scope": "files.content.write",
+            "access_token": "test_token_long_enough",
+            "refresh_token": "refresh_token"
+        },
+        {
+            "type": "microsoft-outlook",
+            "account": "test",
+            "client_id": "test_client",
+            "client_secret": "test_secret",
+            "token_type": "bearer",
+            "scope": "Mail.Read",
+            "access_token": "test_token_long_enough",
+            "refresh_token": "refresh_token"
+        }
+    ]"""
+    )
+
+    # Create .env file
+    env_file = tmp_path / '.env'
+    env_file.write_text(
+        f"""CREDENTIALS_PATH={creds_file}
+SMTP_SERVER=smtp.example.com
+SMTP_PORT=587
+SMTP_FROM_ADDR=from@example.com
+SMTP_TO_ADDR=to@example.com
+SMTP_USERNAME=user@example.com
+SMTP_PASSWORD=password
+SERVICE_DIR={tmp_path}
+MANUAL_REVIEW_FOLDER=/Manual Review
+"""
+    )
+
+    config = eserv.config(env_file)
 
     # Verify all components are configured
     assert config.smtp.server

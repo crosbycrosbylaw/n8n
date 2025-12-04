@@ -19,7 +19,7 @@ from eserv.util.oauth_manager import (
 )
 
 if TYPE_CHECKING:
-    from typing import Any
+    pass
 
 
 class TestTokenRefresh:
@@ -385,7 +385,7 @@ class TestDropboxManager:
         assert manager._client is None
 
         # Access client property
-        with patch('eserv.stages.upload.Dropbox') as MockDropbox:
+        with patch('dropbox.Dropbox') as MockDropbox:
             mock_client = Mock()
             MockDropbox.return_value = mock_client
 
@@ -420,7 +420,7 @@ class TestDropboxManager:
 
         manager = DropboxManager(cred)
 
-        with patch('eserv.stages.upload.Dropbox') as MockDropbox:
+        with patch('dropbox.Dropbox') as MockDropbox:
             mock_client = Mock()
             MockDropbox.return_value = mock_client
 
@@ -452,7 +452,7 @@ class TestDropboxManager:
 
         manager = DropboxManager(cred)
 
-        with patch('eserv.stages.upload.Dropbox') as MockDropbox:
+        with patch('dropbox.Dropbox') as MockDropbox:
             _ = manager.client
 
             # Verify original credential values were used
@@ -523,10 +523,10 @@ class TestCredentialSerialization:
 class TestCredentialManager:
     """Test credential manager loading and expiry checking."""
 
-    def test_load_credentials_flat_format(self, tmp_path: Path):
+    def test_load_credentials_flat_format(self, tempdir: Path):
         """Test loading credentials from flat JSON format."""
         # Create test credentials file with flat format
-        creds_file = tmp_path / 'credentials.json'
+        creds_file = tempdir / 'credentials.json'
         test_data = [
             {
                 'type': 'dropbox',
@@ -557,10 +557,10 @@ class TestCredentialManager:
         assert cred.refresh_token == 'dbx_refresh'
         assert cred.handler is not None
 
-    def test_get_credential_refreshes_when_expired(self, tmp_path: Path):
+    def test_get_credential_refreshes_when_expired(self, tempdir: Path):
         """Test that get_credential auto-refreshes expired tokens."""
         # Create credentials with past expiry (flat format)
-        creds_file = tmp_path / 'credentials.json'
+        creds_file = tempdir / 'credentials.json'
         test_data = [
             {
                 'type': 'dropbox',
@@ -580,24 +580,27 @@ class TestCredentialManager:
 
         manager = CredentialManager(creds_file)
 
-        # Mock refresh handler
-        with patch('eserv.util.oauth_manager._refresh_dropbox') as mock_refresh:
-            mock_refresh.return_value = {
+        # Mock requests.post for token refresh
+        with patch('requests.post') as mock_post:
+            mock_response = Mock()
+            mock_response.json.return_value = {
                 'access_token': 'new_token',
                 'expires_in': 3600,
             }
+            mock_response.raise_for_status.return_value = None
+            mock_post.return_value = mock_response
 
             # Get credential (should trigger refresh)
             cred = manager.get_credential('dropbox')
 
             # Assert refresh was called
-            assert mock_refresh.called
+            assert mock_post.called
             assert cred.access_token == 'new_token'
 
-    def test_get_credential_no_refresh_when_valid(self, tmp_path: Path):
+    def test_get_credential_no_refresh_when_valid(self, tempdir: Path):
         """Test that get_credential doesn't refresh valid tokens."""
         # Create credentials with future expiry (flat format)
-        creds_file = tmp_path / 'credentials.json'
+        creds_file = tempdir / 'credentials.json'
         test_data = [
             {
                 'type': 'dropbox',
@@ -626,10 +629,10 @@ class TestCredentialManager:
             assert not mock_refresh.called
             assert cred.access_token == 'valid_token'
 
-    def test_persist_saves_flat_format(self, tmp_path: Path):
+    def test_persist_saves_flat_format(self, tempdir: Path):
         """Test that persist() saves credentials in flat format."""
         # Create initial credentials (flat format)
-        creds_file = tmp_path / 'credentials.json'
+        creds_file = tempdir / 'credentials.json'
         test_data = [
             {
                 'type': 'dropbox',

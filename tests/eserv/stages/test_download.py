@@ -66,7 +66,8 @@ class TestDownloadDocuments:
     def test_successful_single_pdf_download(self, mock_soup: Mock, tempdir) -> None:
         """Test successful download of single PDF document."""
         # Create temp directory for document store
-        temp_path = tempdir('downloads')
+        temp_path = tempdir / 'downloads'
+        temp_path.mkdir(exist_ok=True)
 
         # Mock extract_download_info
         mock_info = Mock()
@@ -109,7 +110,8 @@ class TestDownloadDocuments:
 
     def test_multi_file_download(self, mock_soup: Mock, tempdir) -> None:
         """Test download of multiple documents from HTML with links."""
-        temp_path = tempdir('downloads')
+        temp_path = tempdir / 'downloads'
+        temp_path.mkdir(exist_ok=True)
 
         mock_info = Mock()
         mock_info.doc_name = 'Motion'
