@@ -9,24 +9,19 @@ import eserv
 from tests.eserv.lib import SAMPLE_EMAIL
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Callable, Generator
+    from collections.abc import Generator
     from pathlib import Path
 
     from eserv.types import EmailRecord
 
 
 @pytest.fixture
-def _generator(dirname: str) -> Generator[Path]:
-    path = test.directory('eserv', dirname)
+def tempdir() -> Generator[Path]:
+    path = test.directory('pytest_temp')
     try:
         yield path
     finally:
         path.clean()
-
-
-@pytest.fixture
-def tempdir() -> Callable[[str], Path]:
-    return _generator
 
 
 @pytest.fixture

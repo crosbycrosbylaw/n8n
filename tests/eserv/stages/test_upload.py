@@ -62,7 +62,7 @@ def mock_config() -> Mock:
 @pytest.fixture
 def mock_pdf_file(tempdir) -> Path:
     """Create mock PDF file."""
-    tmp = tempdir('pdfs')
+    tmp = tempdir
     pdf_path = tmp / 'test_document.pdf'
     pdf_path.write_bytes(b'%PDF-1.4\nMock PDF content')
     return pdf_path
@@ -361,7 +361,7 @@ class TestUploadDocuments:
     ) -> None:
         """Test multi-file naming with numbering."""
         # Create multiple PDF files
-        tmp = tempdir('pdfs')
+        tmp = tempdir
         pdf1 = tmp / 'doc1.pdf'
         pdf2 = tmp / 'doc2.pdf'
         pdf3 = tmp / 'doc3.pdf'

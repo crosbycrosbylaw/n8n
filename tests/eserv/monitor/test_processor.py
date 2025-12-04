@@ -156,7 +156,7 @@ class process_batch_scenario:
 class TestProcessBatch:
     """Test batch processing workflow."""
 
-    def test_dynamic(
+    def test_dynamic(  # noqa: PLR0913, PLR0917
         self,
         records: list[EmailRecord],
         expect_succeeded: int,

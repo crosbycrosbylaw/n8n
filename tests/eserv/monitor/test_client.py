@@ -174,7 +174,7 @@ class TestPagination:
         records = graph_client.fetch_unprocessed_emails(num_days=1, processed_uids=set())
 
         # Should have fetched both pages
-        assert len(records) == 2
+        assert len(records) == 2  # noqa: PLR2004
         assert records[0].uid == 'msg1'
         assert records[1].uid == 'msg2'
 
