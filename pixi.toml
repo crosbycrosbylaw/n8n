@@ -1,5 +1,5 @@
+dependencies.fire             = ">=0.7.1,<0.8"
 dependencies.python           = ">=3.14"
-dependencies.fire = ">=0.7.1,<0.8"
 environments.default.features = ["eserv", "dev"]
 
 [workspace]

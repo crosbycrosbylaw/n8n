@@ -52,12 +52,7 @@ class EmailProcessor:
 
             self.state.record(result)
 
-        return BatchResult(
-            total=len(batch),
-            succeeded=sum(1 for r in results if r.status == 'success'),
-            failed=sum(1 for r in results if r.status == 'error'),
-            results=results,
-        )
+        return BatchResult(results=results)
 
     @staticmethod
     def _result_to_flag(result: ProcessedResult) -> StatusFlag:

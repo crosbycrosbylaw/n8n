@@ -8,6 +8,7 @@ __all__ = [
     'GraphClient',
     'ProcessedResult',
 ]
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Literal, NewType, NotRequired, ReadOnly, Required, TypedDict
@@ -72,10 +73,22 @@ class EmailRecord(EmailInfo):
 class BatchResult:
     """Summary of batch processing."""
 
-    total: int
-    succeeded: int
-    failed: int
-    results: list[ProcessedResult]
+    results: Sequence[ProcessedResult]
+
+    @property
+    def total(self) -> int:
+        """Return the size of the batch."""
+        return len(self.results)
+
+    @property
+    def succeeded(self) -> int:
+        """Return the number of successful results in this batch."""
+        return len([x for x in self.results if x.status == 'success'])
+
+    @property
+    def failed(self) -> int:
+        """Return the number of unsuccessful results in this batch."""
+        return len([x for x in self.results if x.status == 'error'])
 
 
 @dataclass(slots=True)
@@ -86,11 +99,11 @@ class ProcessedResult:
     error: ErrorDict | None
 
     processed_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    status: Literal['success', 'error'] = field(init=False)
 
-    @property
-    def status(self) -> ProcessStatus:
-        """Return the processing status based on error state."""
-        return 'success' if self.error is None else 'error'
+    def __post_init__(self) -> None:
+        """Set the processing status based on error state."""
+        self.status = 'success' if self.error is None else 'error'
 
     def asdict(self) -> ProcessedResultDict:
         """Convert the ProcessedResult instance to a dictionary.
