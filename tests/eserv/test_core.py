@@ -37,11 +37,14 @@ def mock_dotenv_path(tempdir) -> Path:
 
 
 @pytest.fixture
-def mock_dependencies():
+def mock_dependencies(tempdir):
     """Mock all Pipeline dependencies."""
+    service_dir = tempdir / 'svc'
+    service_dir.mkdir(exist_ok=True, parents=True)
+
     mock_config = Mock()
-    mock_config.state = Mock(state_file=Path('/tmp/state.json'))  # noqa: S108
-    mock_config.paths = Mock(service_dir=Path('/tmp'))  # noqa: S108
+    mock_config.state = Mock(state_file=service_dir / 'state.json')
+    mock_config.paths = Mock(service_dir=service_dir)
     mock_state = Mock(spec=['is_processed', 'processed'])
     mock_state.is_processed.return_value = False
     mock_state.processed = set()
@@ -107,7 +110,7 @@ class TestPipelineInit:
             # Verify pipeline attributes set
             assert pipeline.config is mock_dependencies['config']
 
-    def test_state_tracker_initialization(self, mock_dependencies: dict) -> None:
+    def test_state_tracker_initialization(self, tempdir, mock_dependencies: dict) -> None:
         """Test state tracker initialized from config."""
         with (
             patch('eserv.core.config', return_value=mock_dependencies['config']),
@@ -121,12 +124,12 @@ class TestPipelineInit:
             pipeline = Pipeline()
 
             # Verify state_tracker called with state file path
-            mock_state_fn.assert_called_once_with(Path('/tmp/state.json'))  # noqa: S108
+            mock_state_fn.assert_called_once_with(tempdir / 'svc' / 'state.json')
 
             # Verify pipeline.state set
             assert pipeline.state is mock_dependencies['state']
 
-    def test_error_tracker_initialization(self, mock_dependencies: dict) -> None:
+    def test_error_tracker_initialization(self, tempdir, mock_dependencies: dict) -> None:
         """Test error tracker initialized from config."""
         with (
             patch('eserv.core.config', return_value=mock_dependencies['config']),
@@ -140,7 +143,7 @@ class TestPipelineInit:
             pipeline = Pipeline()
 
             # Verify error_tracker called with error log path
-            expected_path = Path('/tmp') / 'error_log.json'  # noqa: S108
+            expected_path = tempdir / 'svc' / 'error_log.json'
             mock_tracker_fn.assert_called_once_with(expected_path)
 
             # Verify pipeline.tracker set
