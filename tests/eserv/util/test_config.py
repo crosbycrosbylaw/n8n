@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-import tempfile
-from pathlib import Path
-from typing import Final
-from unittest.mock import patch
+from typing import TYPE_CHECKING, Final
 
 import pytest
 
 import eserv
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 MIN_TOKEN_LENGTH: Final[int] = 10
 

@@ -5,8 +5,6 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-import pytest
-
 import eserv
 from eserv.monitor.types import EmailRecord
 
@@ -84,13 +82,43 @@ class TestEmailStatePersistence:
         assert 'test-uid-123' in state2.processed
 
 
-class TestEmailStateRotation:
-    """Test state rotation behavior."""
+class TestEmailStateClearFlags:
+    """Test clear_flags functionality for manual reprocessing."""
 
-    def test_rotation_feature_removed(self) -> None:
-        """Test that weekly rotation feature has been removed.
+    def test_clear_flags_removes_uid(self, tempdir: Path) -> None:
+        """Test clear_flags removes UID from processed set."""
+        state_file = tempdir / 'email_state.json'
+        state = eserv.state_tracker(state_file)
 
-        NOTE: Weekly rotation feature was removed (see CLAUDE.md).
-        The current implementation uses a fresh start approach with UID primary keys.
-        """
-        pytest.skip('Rotation feature removed - using fresh start approach')
+        # Record email
+        record = create_test_record('clear-test-123', 'Test Case')
+        state.record(record)
+        assert state.is_processed('clear-test-123')
+
+        # Clear flags
+        state.clear_flags('clear-test-123')
+        assert not state.is_processed('clear-test-123')
+        assert 'clear-test-123' not in state.processed
+
+    def test_clear_flags_persists_removal(self, tempdir: Path) -> None:
+        """Test clear_flags persists removal across instances."""
+        state_file = tempdir / 'email_state.json'
+
+        # Record and clear in first instance
+        state1 = eserv.state_tracker(state_file)
+        record = create_test_record('persist-clear-456', 'Test Case')
+        state1.record(record)
+        state1.clear_flags('persist-clear-456')
+
+        # Verify removal persists in new instance
+        state2 = eserv.state_tracker(state_file)
+        assert not state2.is_processed('persist-clear-456')
+
+    def test_clear_flags_nonexistent_uid_is_noop(self, tempdir: Path) -> None:
+        """Test clear_flags with nonexistent UID does not raise error."""
+        state_file = tempdir / 'email_state.json'
+        state = eserv.state_tracker(state_file)
+
+        # Should not raise exception
+        state.clear_flags('nonexistent-uid-789')
+        assert not state.is_processed('nonexistent-uid-789')
