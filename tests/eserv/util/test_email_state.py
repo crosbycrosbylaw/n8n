@@ -2,127 +2,95 @@
 
 from __future__ import annotations
 
-import shutil
-import tempfile
-from pathlib import Path
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 import pytest
-from rampy import test
 
 import eserv
+from eserv.monitor.types import EmailRecord
 
 if TYPE_CHECKING:
-    from typing import Any
+    from pathlib import Path
 
 
-def scenario(
-    *,
-    subject: str = 'Test Email',
-    matched_folder: str | None = '/Test/Folder',
-    test_duplicate: bool = False,
-    test_rotation: bool = False,
-    test_persistence: bool = False,
-) -> dict[str, Any]:
-    """Create test scenario for EmailState."""
-    return {
-        'params': [subject, matched_folder],
-        'test_duplicate': test_duplicate,
-        'test_rotation': test_rotation,
-        'test_persistence': test_persistence,
-    }
+def create_test_record(uid: str, subject: str) -> EmailRecord:
+    """Create test EmailRecord."""
+    return EmailRecord(
+        uid=uid,
+        sender='court@example.com',
+        subject=subject,
+        received_at=datetime.now(UTC),
+        html_body='<html>test</html>',
+    )
 
 
-@test.scenarios(**{
-    'mark and check processed': scenario(subject='Case 123'),
-    'duplicate detection': scenario(subject='Duplicate Test', test_duplicate=True),
-    'weekly rotation': scenario(subject='Old Email', test_rotation=True),
-    'persistence': scenario(subject='Persist Test', test_persistence=True),
-})
-class TestEmailState:
-    def test(
-        self,
-        /,
-        params: list[Any],
-        test_duplicate: bool,
-        test_rotation: bool,
-        test_persistence: bool,
-    ):
-        temp_dir = Path(tempfile.mkdtemp())
-        try:
-            subject, _ = params
-            state_file = temp_dir / 'email_state.json'
+class TestEmailStateBasic:
+    """Test basic email state tracking operations."""
 
-            if test_persistence:
-                # Test persistence across instances
-                from datetime import UTC, datetime
+    def test_unprocessed_uid_returns_false(self, tempdir: Path) -> None:
+        """Test is_processed returns False for unprocessed UID."""
+        state_file = tempdir / 'email_state.json'
+        state = eserv.state_tracker(state_file)
 
-                from eserv.monitor.types import EmailRecord
+        assert not state.is_processed('basic-test-789')
 
-                state1 = eserv.state_tracker(state_file)
-                record = EmailRecord(
-                    uid='test-uid-123',
-                    sender='court@example.com',
-                    subject=subject,
-                    received_at=datetime.now(UTC),
-                    html_body='<html>test</html>',
-                )
-                state1.record(record)
+    def test_mark_and_check_processed(self, tempdir: Path) -> None:
+        """Test marking UID as processed and checking status."""
+        state_file = tempdir / 'email_state.json'
+        state = eserv.state_tracker(state_file)
 
-                # Create new instance and verify persistence
-                state2 = eserv.state_tracker(state_file)
-                assert state2.is_processed('test-uid-123')
-                assert 'test-uid-123' in state2.processed
+        record = create_test_record('basic-test-789', 'Test Case')
+        state.record(record)
 
-            elif test_rotation:
-                # NOTE: Weekly rotation feature was removed (see CLAUDE.md)
-                # This test is skipped as the functionality no longer exists
-                # The current implementation uses a fresh start approach with UID primary keys
-                pytest.skip('Rotation feature removed - using fresh start approach')
+        assert state.is_processed('basic-test-789')
+        assert 'basic-test-789' in state.processed
 
-            elif test_duplicate:
-                # Test duplicate detection
-                from datetime import UTC, datetime
 
-                from eserv.monitor.types import EmailRecord
+class TestEmailStateDuplicates:
+    """Test duplicate email detection."""
 
-                state = eserv.state_tracker(state_file)
-                record = EmailRecord(
-                    uid='duplicate-test-456',
-                    sender='court@example.com',
-                    subject=subject,
-                    received_at=datetime.now(UTC),
-                    html_body='<html>test</html>',
-                )
+    def test_duplicate_recording_idempotent(self, tempdir: Path) -> None:
+        """Test recording same UID twice is idempotent."""
+        state_file = tempdir / 'email_state.json'
+        state = eserv.state_tracker(state_file)
 
-                # Record twice
-                state.record(record)
-                state.record(record)
+        record = create_test_record('duplicate-test-456', 'Duplicate Test')
 
-                # Should still only be processed once
-                assert state.is_processed('duplicate-test-456')
-                assert len(state.processed) == 1
+        # Record twice
+        state.record(record)
+        state.record(record)
 
-            else:
-                # Test basic mark/check
-                from datetime import UTC, datetime
+        # Should still only be processed once
+        assert state.is_processed('duplicate-test-456')
+        assert len(state.processed) == 1
 
-                from eserv.monitor.types import EmailRecord
 
-                state = eserv.state_tracker(state_file)
-                assert not state.is_processed('basic-test-789')
+class TestEmailStatePersistence:
+    """Test state persistence across instances."""
 
-                record = EmailRecord(
-                    uid='basic-test-789',
-                    sender='court@example.com',
-                    subject=subject,
-                    received_at=datetime.now(UTC),
-                    html_body='<html>test</html>',
-                )
-                state.record(record)
+    def test_state_persists_across_instances(self, tempdir: Path) -> None:
+        """Test state persists when creating new tracker instance."""
+        state_file = tempdir / 'email_state.json'
 
-                assert state.is_processed('basic-test-789')
-                assert 'basic-test-789' in state.processed
+        # Create first instance and record email
+        state1 = eserv.state_tracker(state_file)
+        record = create_test_record('test-uid-123', 'Persist Test')
+        state1.record(record)
 
-        finally:
-            shutil.rmtree(temp_dir, ignore_errors=True)
+        # Create new instance and verify persistence
+        state2 = eserv.state_tracker(state_file)
+        assert state2.is_processed('test-uid-123')
+        assert 'test-uid-123' in state2.processed
+
+
+class TestEmailStateRotation:
+    """Test state rotation behavior."""
+
+    def test_rotation_feature_removed(self) -> None:
+        """Test that weekly rotation feature has been removed.
+
+        NOTE: Weekly rotation feature was removed (see CLAUDE.md).
+        The current implementation uses a fresh start approach with UID primary keys.
+        """
+        pytest.skip('Rotation feature removed - using fresh start approach')

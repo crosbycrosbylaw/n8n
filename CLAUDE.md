@@ -170,8 +170,35 @@ pixi run push
 -   **Error handling:** Typed exceptions (`PipelineError`) with stage/message; context managers for error tracking
 -   **Docstrings:** Comprehensive with Args, Returns, Raises sections
 -   **Type re-exports:** Subpackages use `types.py` as barrel modules to cleanly expose public types
+-   **Testing:** Follow standardized patterns defined in `tests/TESTING_STANDARDS.md` - use Scenario Factory Pattern (Pattern A) for data-driven tests, Fixture Class Pattern (Pattern B) for complex mocking, and Class-Based Pattern (Pattern C) for logical grouping
 
 ## Development History
+
+### Test Suite Standardization (December 2025)
+
+**Major refactoring:** Standardized testing patterns across all test files for consistency and maintainability.
+
+**Improvements:**
+
+-   **Created comprehensive testing standards** - Documented three distinct testing patterns (Scenario Factory, Fixture Class, Class-Based) in `tests/TESTING_STANDARDS.md`
+-   **Pattern A (Scenario Factory)** - For data-driven tests with scenario factory functions returning dicts; uses `@test.scenarios` decorator
+-   **Pattern B (Fixture Class)** - For complex mock orchestration using `@fixture_class` and `test.subtestfix`; context managers for patches
+-   **Pattern C (Class-Based)** - For traditional unit tests with logical grouping
+-   **Migrated test_processor.py** - Converted from dataclass scenarios to factory functions (simpler, more consistent)
+-   **Migrated test_email_state.py** - Removed complex conditional logic; split into separate test classes; uses tempdir fixture from conftest
+-   **Migrated test_extract_aspnet_form.py** - Renamed generic `scenario()` to `aspnet_form_scenario()`; renamed `exception` to `should_raise`; cleaner exception handling
+
+**Standardized conventions:**
+-   Scenario factory functions named `{component}_scenario`
+-   Positional-only `self` parameter (`/`) for scenario tests
+-   `rampy.test.directory()` for tempdir management (not manual tempfile/shutil)
+-   `should_raise` parameter for exception testing
+-   Descriptive docstrings on all test classes and factories
+
+**Reference implementations:**
+-   Pattern A: `tests/eserv/util/test_target_finder.py`
+-   Pattern B: `tests/eserv/stages/conftest.py` + `tests/eserv/stages/test_upload.py`
+-   Pattern C: `tests/eserv/test_core.py`
 
 ### Credential Management Simplification (December 2025)
 

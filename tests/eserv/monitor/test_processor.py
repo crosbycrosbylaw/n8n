@@ -10,9 +10,8 @@ Tests cover:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 from unittest.mock import Mock
 
 import pytest
@@ -23,6 +22,7 @@ from eserv.monitor.processor import EmailProcessor
 from eserv.monitor.types import EmailInfo, EmailRecord, ProcessedResult
 
 if TYPE_CHECKING:
+    from typing import Any
     from collections.abc import Callable, Sequence
 
     from eserv.monitor.types import ErrorDict
@@ -83,26 +83,32 @@ class TestEmailProcessorInit:
         assert evaluator(processor, mock_pipeline)
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class process_batch_scenario:
-    records: Sequence[EmailRecord]
-    expect_succeeded: int
+def process_batch_scenario(
+    *,
+    records: Sequence[EmailRecord],
+    expect_succeeded: int,
+    expect_total: int | None = None,
+    expect_called: int | None = None,
+    mock_execute: Callable[[EmailRecord], ProcessedResult] | None = None,
+    insert_sample: bool = False,
+    verify_flags_applied: bool = False,
+    verify_state_recorded: bool = False,
+) -> dict[str, Any]:
+    """Create test scenario for batch processing."""
+    return {
+        'params': [records],
+        'expect_succeeded': expect_succeeded,
+        'expect_total': expect_total,
+        'expect_called': expect_called,
+        'mock_execute': mock_execute,
+        'insert_sample': insert_sample,
+        'verify_flags_applied': verify_flags_applied,
+        'verify_state_recorded': verify_state_recorded,
+    }
 
-    expect_total: int | None = None
-    expect_called: int | None = None
-    mock_execute: Callable[[EmailRecord], ProcessedResult] | None = None
 
-    switches: set[
-        Literal[
-            'insert_sample',
-            'verify_flags_applied',
-            'verify_state_recorded',
-        ]
-    ] = field(default_factory=set)
-
-
-@test.scenarios(
-    successful_batch=process_batch_scenario(
+@test.scenarios(**{
+    'successful batch': process_batch_scenario(
         records=[
             EmailRecord(
                 uid='email-456',
@@ -120,13 +126,15 @@ class process_batch_scenario:
             ),
         ],
         expect_succeeded=3,
-        switches={'insert_sample', 'verify_flags_applied', 'verify_state_recorded'},
+        insert_sample=True,
+        verify_flags_applied=True,
+        verify_state_recorded=True,
     ),
-    empty_batch=process_batch_scenario(
+    'empty batch': process_batch_scenario(
         records=[],
         expect_succeeded=0,
     ),
-    partial_failures=process_batch_scenario(
+    'partial failures': process_batch_scenario(
         records=[
             EmailRecord(
                 uid='email-456',
@@ -148,25 +156,30 @@ class process_batch_scenario:
             error={'category': 'download', 'message': 'Network error'} if rec.uid == 'email-456' else None,
         ),
         expect_succeeded=2,
-        switches={'insert_sample'},
+        insert_sample=True,
     ),
-)
+})
 class TestProcessBatch:
     """Test batch processing workflow."""
 
-    def test_dynamic(  # noqa: PLR0913, PLR0917
+    def test(  # noqa: PLR0913
         self,
-        records: list[EmailRecord],
+        /,
+        params: list[Any],
         expect_succeeded: int,
         expect_total: int | None,
         expect_called: int | None,
         mock_execute: Callable[...] | None,
-        switches: set[str],
+        insert_sample: bool,
+        verify_flags_applied: bool,
+        verify_state_recorded: bool,
         mock_pipeline: Mock,
         sample_email_record: EmailRecord,
     ) -> None:
+        """Test batch processing with various scenarios."""
+        records = params[0].copy()
 
-        if 'insert_sample' in switches:
+        if insert_sample:
             records.insert(0, sample_email_record)
 
         # Convert dict records back to EmailRecord objects (rampy serialization workaround)
@@ -225,10 +238,10 @@ class TestProcessBatch:
 
         assert mock_pipeline.execute.call_count == expect_called
 
-        if 'verify_flags_applied' in switches:
+        if verify_flags_applied:
             assert mock_client.apply_flag.call_count == expect_called
 
-        if 'verify_state_recorded' in switches:
+        if verify_state_recorded:
             assert mock_pipeline.state.record.call_count == expect_called
 
 
@@ -299,31 +312,39 @@ class TestResultFlagConversion:
         assert processor._result_to_flag(result) == expect_flag
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class batch_result_scenario:
-    count: int
-    error: ErrorDict | None
-    expect_succeeded: int
+def batch_result_scenario(
+    *,
+    count: int,
+    error: ErrorDict | None,
+    expect_succeeded: int,
+) -> dict[str, Any]:
+    """Create test scenario for batch result calculations."""
+    return {
+        'params': [count, error],
+        'expect_succeeded': expect_succeeded,
+    }
 
 
-@test.scenarios(
-    all_successes=batch_result_scenario(count=5, error=None, expect_succeeded=5),
-    all_failures=batch_result_scenario(
+@test.scenarios(**{
+    'all successes': batch_result_scenario(count=5, error=None, expect_succeeded=5),
+    'all failures': batch_result_scenario(
         count=5,
         error={'category': 'download', 'message': 'Error'},
         expect_succeeded=0,
     ),
-    mixed_results=batch_result_scenario(count=3, error=None, expect_succeeded=2),
-)
+    'mixed results': batch_result_scenario(count=3, error=None, expect_succeeded=2),
+})
 class TestBatchResultSummary:
     """Test batch result count calculations."""
 
-    def test_dynamic(
+    def test(
         self,
-        count: int,
-        error: ErrorDict | None,
+        /,
+        params: list[Any],
         expect_succeeded: int,
     ) -> None:
+        """Test batch result calculations."""
+        count, error = params
         from eserv.monitor.types import BatchResult
 
         # Create results based on scenario
