@@ -12,9 +12,10 @@ Tests cover:
 
 from __future__ import annotations
 
+from collections.abc import Callable, Generator
+from contextlib import _GeneratorContextManager, contextmanager
 from datetime import UTC, datetime
-from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal
 from unittest.mock import Mock, patch
 
 import pytest
@@ -25,7 +26,7 @@ from eserv.stages import status
 from eserv.stages.types import UploadResult
 
 if TYPE_CHECKING:
-    pass
+    from pathlib import Path
 
 
 @pytest.fixture
@@ -37,7 +38,7 @@ def mock_dotenv_path(tempdir) -> Path:
 
 
 @pytest.fixture
-def mock_dependencies(tempdir):
+def mock_dependencies(tempdir) -> dict[str, Mock]:
     """Mock all Pipeline dependencies."""
     service_dir = tempdir / 'svc'
     service_dir.mkdir(exist_ok=True, parents=True)
@@ -55,9 +56,9 @@ def mock_dependencies(tempdir):
     mock_track_cm.__exit__ = Mock(return_value=None)
 
     # Configure error() to raise PipelineError when raises=True
-    def mock_error(message, stage, context=None, raises=None) -> None:  # noqa: ARG001
+    def mock_error(message, stage, context=None, raises=None) -> None:
         if raises:
-            from eserv.errors._core import PipelineError  # noqa: PLC2701
+            from eserv.errors._core import PipelineError
 
             raise PipelineError(message=message, stage=stage)
 
@@ -87,64 +88,77 @@ def sample_email_record():
     )
 
 
+type CoreDependency = Literal['config', 'state', 'tracker', 'track_cm']
+type MockCoreFactory = Callable[[*tuple[CoreDependency, ...]], _GeneratorContextManager[dict[CoreDependency, Mock]]]
+
+
+@pytest.fixture
+def mock_core_factory(
+    mock_dependencies,
+) -> MockCoreFactory:
+    lookup = {'config': 'config', 'state': 'state_tracker', 'tracker': 'error_tracker'}
+
+    @contextmanager
+    def _mock_core(*deps: CoreDependency) -> Generator[Any]:
+        out: dict[CoreDependency, Mock] = {
+            name: Mock(return_value=mock_dependencies[name]) for name in deps if name in lookup
+        }
+        try:
+            with patch.multiple(target='eserv.core', **{lookup[name]: out[name] for name in out}):
+                yield out
+        finally:
+            pass
+
+    return _mock_core
+
+
 class TestPipelineInit:
     """Test Pipeline initialization."""
 
     def test_config_loading_from_dotenv_path(
         self,
         mock_dotenv_path: Path,
-        mock_dependencies: dict,
+        mock_core_factory: MockCoreFactory,
+        mock_dependencies: dict[str, Mock],
     ) -> None:
         """Test config loaded from .env path."""
-        with (
-            patch('eserv.core.config', return_value=mock_dependencies['config']) as mock_config_fn,
-            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
-            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
-        ):
-            # Initialize pipeline with dotenv path
+        with mock_core_factory('config', 'state', 'tracker') as mock_core:
             pipeline = Pipeline(dotenv_path=mock_dotenv_path)
 
-            # Verify config called with path
-            mock_config_fn.assert_called_once_with(mock_dotenv_path)
-
-            # Verify pipeline attributes set
+            mock_core['config'].assert_called_once_with(mock_dotenv_path)
             assert pipeline.config is mock_dependencies['config']
 
-    def test_state_tracker_initialization(self, tempdir, mock_dependencies: dict) -> None:
+    def test_state_tracker_initialization(
+        self,
+        tempdir,
+        mock_dependencies: dict,
+        mock_core_factory: MockCoreFactory,
+    ) -> None:
         """Test state tracker initialized from config."""
-        with (
-            patch('eserv.core.config', return_value=mock_dependencies['config']),
-            patch(
-                'eserv.core.state_tracker',
-                return_value=mock_dependencies['state'],
-            ) as mock_state_fn,
-            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
-        ):
+        with mock_core_factory('config', 'state', 'tracker') as mock_core:
             # Initialize pipeline
             pipeline = Pipeline()
 
             # Verify state_tracker called with state file path
-            mock_state_fn.assert_called_once_with(tempdir / 'svc' / 'state.json')
+            mock_core['state'].assert_called_once_with(tempdir / 'svc' / 'state.json')
 
             # Verify pipeline.state set
             assert pipeline.state is mock_dependencies['state']
 
-    def test_error_tracker_initialization(self, tempdir, mock_dependencies: dict) -> None:
+    def test_error_tracker_initialization(
+        self,
+        tempdir,
+        mock_dependencies: dict,
+        mock_core_factory: MockCoreFactory,
+    ) -> None:
         """Test error tracker initialized from config."""
-        with (
-            patch('eserv.core.config', return_value=mock_dependencies['config']),
-            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
-            patch(
-                'eserv.core.error_tracker',
-                return_value=mock_dependencies['tracker'],
-            ) as mock_tracker_fn,
-        ):
+        with mock_core_factory('config', 'state', 'tracker') as mock_core:
             # Initialize pipeline
             pipeline = Pipeline()
 
             # Verify error_tracker called with error log path
             expected_path = tempdir / 'svc' / 'error_log.json'
-            mock_tracker_fn.assert_called_once_with(expected_path)
+            mock_core['tracker'].assert_called_once_with(expected_path)
 
             # Verify pipeline.tracker set
             assert pipeline.tracker is mock_dependencies['tracker']
@@ -156,6 +170,7 @@ class TestPipelineProcess:
     def test_successful_complete_workflow(
         self,
         mock_dependencies: dict,
+        mock_core_factory: MockCoreFactory,
         sample_email_record,
         tempdir,
     ) -> None:
@@ -168,9 +183,7 @@ class TestPipelineProcess:
 
         # Mock all stage functions
         with (
-            patch('eserv.core.config', return_value=mock_dependencies['config']),
-            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
-            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            mock_core_factory('config', 'state', 'tracker'),
             patch('eserv.core.BeautifulSoup') as mock_soup_class,
             patch('eserv.core.download_documents', return_value=('Motion', store_path)),
             patch('eserv.core.extract_upload_info') as mock_extract,
@@ -207,13 +220,12 @@ class TestPipelineProcess:
     def test_html_parsing_failure(
         self,
         mock_dependencies: dict,
+        mock_core_factory: MockCoreFactory,
         sample_email_record,
     ) -> None:
         """Test HTML parsing failure raises PipelineError."""
         with (
-            patch('eserv.core.config', return_value=mock_dependencies['config']),
-            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
-            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            mock_core_factory('config', 'state', 'tracker'),
             patch(
                 'eserv.core.BeautifulSoup',
                 side_effect=Exception('Parse error'),
@@ -232,13 +244,12 @@ class TestPipelineProcess:
     def test_download_failure(
         self,
         mock_dependencies: dict,
+        mock_core_factory: MockCoreFactory,
         sample_email_record,
     ) -> None:
         """Test document download failure raises PipelineError."""
         with (
-            patch('eserv.core.config', return_value=mock_dependencies['config']),
-            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
-            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            mock_core_factory('config', 'state', 'tracker'),
             patch('eserv.core.BeautifulSoup'),
             patch(
                 'eserv.core.download_documents',
@@ -258,6 +269,7 @@ class TestPipelineProcess:
     def test_upload_info_extraction_failure(
         self,
         mock_dependencies: dict,
+        mock_core_factory: MockCoreFactory,
         sample_email_record,
         tempdir,
     ) -> None:
@@ -266,9 +278,7 @@ class TestPipelineProcess:
         store_path.mkdir(exist_ok=True)
 
         with (
-            patch('eserv.core.config', return_value=mock_dependencies['config']),
-            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
-            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            mock_core_factory('config', 'state', 'tracker'),
             patch('eserv.core.BeautifulSoup'),
             patch('eserv.core.download_documents', return_value=('Motion', store_path)),
             patch(
@@ -289,6 +299,7 @@ class TestPipelineProcess:
     def test_duplicate_detection_uid_already_processed(
         self,
         mock_dependencies: dict,
+        mock_core_factory: MockCoreFactory,
         sample_email_record,
         tempdir,
     ) -> None:
@@ -300,9 +311,7 @@ class TestPipelineProcess:
         mock_dependencies['state'].is_processed.return_value = True
 
         with (
-            patch('eserv.core.config', return_value=mock_dependencies['config']),
-            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
-            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            mock_core_factory('config', 'state', 'tracker'),
             patch('eserv.core.BeautifulSoup'),
             patch('eserv.core.download_documents', return_value=('Motion', store_path)),
             patch('eserv.core.extract_upload_info') as mock_extract,
@@ -322,6 +331,7 @@ class TestPipelineProcess:
     def test_no_pdfs_after_download(
         self,
         mock_dependencies: dict,
+        mock_core_factory: MockCoreFactory,
         sample_email_record,
         tempdir,
     ) -> None:
@@ -331,9 +341,7 @@ class TestPipelineProcess:
         store_path.mkdir(exist_ok=True)
 
         with (
-            patch('eserv.core.config', return_value=mock_dependencies['config']),
-            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
-            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            mock_core_factory('config', 'state', 'tracker'),
             patch('eserv.core.BeautifulSoup'),
             patch('eserv.core.download_documents', return_value=('Motion', store_path)),
             patch('eserv.core.extract_upload_info') as mock_extract,
@@ -352,6 +360,7 @@ class TestPipelineProcess:
     def test_upload_success_status(
         self,
         mock_dependencies: dict,
+        mock_core_factory: MockCoreFactory,
         sample_email_record,
         tempdir,
     ) -> None:
@@ -362,9 +371,7 @@ class TestPipelineProcess:
         pdf_path.write_bytes(b'%PDF-1.4\nTest')
 
         with (
-            patch('eserv.core.config', return_value=mock_dependencies['config']),
-            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
-            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            mock_core_factory('config', 'state', 'tracker'),
             patch('eserv.core.BeautifulSoup'),
             patch('eserv.core.download_documents', return_value=('Motion', store_path)),
             patch('eserv.core.extract_upload_info') as mock_extract,
@@ -387,6 +394,7 @@ class TestPipelineProcess:
     def test_upload_manual_review_status(
         self,
         mock_dependencies: dict,
+        mock_core_factory: MockCoreFactory,
         sample_email_record,
         tempdir,
     ) -> None:
@@ -397,9 +405,7 @@ class TestPipelineProcess:
         pdf_path.write_bytes(b'%PDF-1.4\nTest')
 
         with (
-            patch('eserv.core.config', return_value=mock_dependencies['config']),
-            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
-            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            mock_core_factory('config', 'state', 'tracker'),
             patch('eserv.core.BeautifulSoup'),
             patch('eserv.core.download_documents', return_value=('Motion', store_path)),
             patch('eserv.core.extract_upload_info') as mock_extract,
@@ -425,6 +431,7 @@ class TestPipelineProcess:
     def test_upload_error_status(
         self,
         mock_dependencies: dict,
+        mock_core_factory: MockCoreFactory,
         sample_email_record,
         tempdir,
     ) -> None:
@@ -435,9 +442,7 @@ class TestPipelineProcess:
         pdf_path.write_bytes(b'%PDF-1.4\nTest')
 
         with (
-            patch('eserv.core.config', return_value=mock_dependencies['config']),
-            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
-            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            mock_core_factory('config', 'state', 'tracker'),
             patch('eserv.core.BeautifulSoup'),
             patch('eserv.core.download_documents', return_value=('Motion', store_path)),
             patch('eserv.core.extract_upload_info') as mock_extract,
@@ -463,12 +468,14 @@ class TestPipelineProcess:
 class TestPipelineMonitor:
     """Test Pipeline.monitor() workflow."""
 
-    def test_batch_processing_via_email_processor(self, mock_dependencies: dict) -> None:
+    def test_batch_processing_via_email_processor(
+        self,
+        mock_dependencies: dict,
+        mock_core_factory: MockCoreFactory,
+    ) -> None:
         """Test monitor delegates to EmailProcessor."""
         with (
-            patch('eserv.core.config', return_value=mock_dependencies['config']),
-            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
-            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            mock_core_factory('config', 'state', 'tracker'),
             patch('eserv.core.EmailProcessor') as mock_processor_class,
         ):
             # Mock EmailProcessor.process_batch
@@ -490,11 +497,14 @@ class TestPipelineMonitor:
             # Verify result returned
             assert result is mock_batch_result
 
-    def test_error_log_cleanup_before_processing(self, mock_dependencies: dict) -> None:
+    def test_error_log_cleanup_before_processing(
+        self,
+        mock_dependencies: dict,
+        mock_core_factory: MockCoreFactory,
+    ) -> None:
         """Test error log cleanup called before monitoring."""
         with (
-            patch('eserv.core.config', return_value=mock_dependencies['config']),
-            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
+            mock_core_factory('config', 'state', 'tracker'),
             patch('eserv.core.EmailProcessor') as mock_processor_class,
         ):
             mock_processor = Mock()
@@ -515,6 +525,7 @@ class TestPipelineExecute:
     def test_successful_execution_wrapper(
         self,
         mock_dependencies: dict,
+        mock_core_factory: MockCoreFactory,
         sample_email_record,
         tempdir,
     ) -> None:
@@ -525,9 +536,7 @@ class TestPipelineExecute:
         pdf_path.write_bytes(b'%PDF-1.4\nTest')
 
         with (
-            patch('eserv.core.config', return_value=mock_dependencies['config']),
-            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
-            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            mock_core_factory('config', 'state', 'tracker'),
             patch('eserv.core.BeautifulSoup'),
             patch('eserv.core.download_documents', return_value=('Motion', store_path)),
             patch('eserv.core.extract_upload_info') as mock_extract,
@@ -547,13 +556,12 @@ class TestPipelineExecute:
     def test_pipeline_error_converted_to_processed_result(
         self,
         mock_dependencies: dict,
+        mock_core_factory: MockCoreFactory,
         sample_email_record,
     ) -> None:
         """Test PipelineError converted to ProcessedResult with error."""
         with (
-            patch('eserv.core.config', return_value=mock_dependencies['config']),
-            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
-            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            mock_core_factory('config', 'state', 'tracker'),
             patch('eserv.core.BeautifulSoup', side_effect=Exception('Parse error')),
         ):
             # Initialize pipeline
@@ -567,13 +575,12 @@ class TestPipelineExecute:
     def test_generic_exception_converted_to_processed_result(
         self,
         mock_dependencies: dict,
+        mock_core_factory: MockCoreFactory,
         sample_email_record,
     ) -> None:
         """Test generic exception converted to ProcessedResult with stage info."""
         with (
-            patch('eserv.core.config', return_value=mock_dependencies['config']),
-            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
-            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            mock_core_factory('config', 'state', 'tracker'),
             patch('eserv.core.BeautifulSoup', side_effect=RuntimeError('Unexpected error')),
         ):
             # Initialize pipeline

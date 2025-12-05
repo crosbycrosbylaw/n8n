@@ -324,6 +324,147 @@ class TestComponentBehavior:
 
 ---
 
+## Pattern D: Mock Factory Pattern (Optional)
+
+**Use when:**
+- Many tests patch the same set of dependencies from a single module
+- Repetitive boilerplate is substantial (10+ tests with 3+ identical patches)
+- Patches are truly identical across all tests (same return values)
+- Benefits of DRY outweigh cost of indirection
+
+**When NOT to use:**
+- Tests only patch 1-2 dependencies
+- Patches differ between tests (different return values, different configurations)
+- Only a handful of tests (< 5) in the file
+- Tests span multiple modules (each module would need its own factory)
+
+**Structure:**
+
+```python
+from __future__ import annotations
+
+from collections.abc import Callable, Generator
+from contextlib import _GeneratorContextManager, contextmanager
+from typing import TYPE_CHECKING, Any, Literal
+from unittest.mock import Mock, patch
+
+import pytest
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+
+# Standard pytest fixtures for mock objects
+@pytest.fixture
+def mock_dependencies(tempdir) -> dict[str, Mock]:
+    """Mock all component dependencies."""
+    # Create mock objects with default behavior
+    mock_config = Mock()
+    mock_state = Mock(spec=['method1', 'method2'])
+    mock_tracker = Mock(spec=['track'])
+
+    return {
+        'config': mock_config,
+        'state': mock_state,
+        'tracker': mock_tracker,
+    }
+
+
+# Type definitions for factory
+type ComponentDependency = Literal['config', 'state', 'tracker']
+type MockFactory = Callable[[*tuple[ComponentDependency, ...]], _GeneratorContextManager[dict[ComponentDependency, Mock]]]
+
+
+# Optional factory fixture to reduce repetition
+@pytest.fixture
+def mock_factory(
+    mock_dependencies: dict[str, Mock],
+) -> MockFactory:
+    """Factory for patching component dependencies.
+
+    Maps friendly names to actual import paths:
+    - 'config' -> module.config
+    - 'state' -> module.state_manager
+    - 'tracker' -> module.error_tracker
+    """
+    # Define mapping from friendly names to import names
+    lookup = {
+        'config': 'config',
+        'state': 'state_manager',
+        'tracker': 'error_tracker',
+    }
+
+    @contextmanager
+    def _mock_factory(*deps: ComponentDependency) -> Generator[dict[ComponentDependency, Mock]]:
+        """Patch specified dependencies and yield mock dict."""
+        out: dict[ComponentDependency, Mock] = {
+            name: Mock(return_value=mock_dependencies[name])
+            for name in deps if name in lookup
+        }
+        try:
+            with patch.multiple(
+                target='module.path',
+                **{lookup[name]: out[name] for name in out}
+            ):
+                yield out
+        finally:
+            pass
+
+    return _mock_factory
+
+
+# Usage in tests
+class TestComponentBehavior:
+    def test_method_calls_dependencies(
+        self,
+        mock_dependencies: dict,
+        mock_factory: MockFactory,
+    ) -> None:
+        """Test component calls all dependencies."""
+        # Use factory instead of verbose patch statements
+        with mock_factory('config', 'state', 'tracker') as mocks:
+            component = Component()
+            component.method()
+
+            # Verify factory was called
+            mocks['config'].assert_called_once()
+
+            # Access original mock for assertions
+            assert component.state is mock_dependencies['state']
+```
+
+**Key conventions:**
+- Mock fixtures defined first (standard pytest pattern)
+- Type aliases for dependency names and factory callable
+- Factory fixture uses `@contextmanager` for clean setup/teardown
+- Lookup dict maps friendly names to actual import paths
+- Factory yields dict of mocks for assertions
+- Tests can still access `mock_dependencies` for detailed assertions
+- Factory is optional - tests can still use verbose patches if needed
+- **Module-specific** - Each test file defines its own factory; avoid generalized "factory factories"
+
+**When to migrate existing tests:**
+- File has 10+ tests with identical patch patterns
+- All tests patch same module with same dependencies
+- Patches are truly repetitive (not just similar)
+- Team agrees the abstraction improves readability
+
+**Benefits:**
+- DRY - Eliminates repetitive boilerplate (can save 50+ lines)
+- Type safety - Literal types prevent typos in dependency names
+- Maintainability - Single source of truth for patch targets
+- Consistency - All tests patch dependencies the same way
+
+**Tradeoffs:**
+- Indirection - Adds abstraction layer between test and patches
+- Less explicit - Full import paths not immediately visible
+- Module-specific - Each module needs its own factory (intentional; generalized factories sacrifice type safety and ergonomics)
+- Learning curve - New developers must understand the pattern
+
+**Reference:** `tests/eserv/test_core.py` (lines 91-112)
+
+---
+
 ## Common Conventions
 
 ### Import Organization
@@ -452,6 +593,9 @@ Use this decision tree:
 ```
 START
 │
+├─ 10+ tests with identical 3+ patches?
+│  └─ YES → Pattern C + D (Class-Based + Mock Factory)
+│
 ├─ Complex mocking (3+ patches)?
 │  └─ YES → Pattern B (Fixture Class)
 │
@@ -470,7 +614,7 @@ START
 |-----------|---------|--------|
 | `test_target_finder.py` | A | Pure functions, data-driven |
 | `test_upload.py` | B | Complex mocking (Dropbox, matcher, cache) |
-| `test_core.py` | C | Logical grouping of Pipeline tests |
+| `test_core.py` | C + D | Logical grouping + repetitive mocking (17 tests × 3 patches) |
 | `test_extract_*.py` | A | Simple extraction, multiple cases |
 | `test_processor.py` | A | Can use scenario factories instead of dataclasses |
 | `test_email_state.py` | A | Simple state tracking, multiple scenarios |

@@ -134,6 +134,7 @@ pixi run push
     -   Fresh start (no weekly rotation, UID primary key)
     -   Overloaded `record()` for flexible input types
     -   `processed` property returns set of UIDs
+    -   `clear_flags()` method allows manual reprocessing of emails
 -   **`error_tracking.py`** - `ErrorTracker`: Pipeline error logging with context manager
     -   `track(uid)` context manager for per-email error isolation
     -   Methods: `error()`, `warning()`, `exception()` all logged to JSON
@@ -170,9 +171,58 @@ pixi run push
 -   **Error handling:** Typed exceptions (`PipelineError`) with stage/message; context managers for error tracking
 -   **Docstrings:** Comprehensive with Args, Returns, Raises sections
 -   **Type re-exports:** Subpackages use `types.py` as barrel modules to cleanly expose public types
--   **Testing:** Follow standardized patterns defined in `tests/TESTING_STANDARDS.md` - use Scenario Factory Pattern (Pattern A) for data-driven tests, Fixture Class Pattern (Pattern B) for complex mocking, and Class-Based Pattern (Pattern C) for logical grouping
+-   **Testing:** Follow standardized patterns defined in `tests/TESTING_STANDARDS.md`:
+    -   Pattern A (Scenario Factory) for data-driven tests
+    -   Pattern B (Fixture Class) for complex mocking
+    -   Pattern C (Class-Based) for logical grouping
+    -   Pattern D (Mock Factory) optional optimization for repetitive patching (10+ tests with identical patches)
 
 ## Development History
+
+### Mock Factory Pattern Standardization (December 2025)
+
+**Enhancement:** Standardized `mock_core_factory` pattern across all 17 tests in `test_core.py`.
+
+**Changes:**
+
+-   **Pattern D documented** - Added Mock Factory Pattern to `tests/TESTING_STANDARDS.md` as optional optimization
+-   **Full adoption in test_core.py** - Converted all 17 tests from verbose patching to `mock_core_factory`
+-   **Code reduction** - Eliminated ~48 lines of repetitive boilerplate (3 patches × 16 tests)
+-   **Type safety** - Uses Literal types to prevent typos in dependency names
+-   **Deleted tests/utils.py** - Removed unused generalized mock factory (over-engineered, sacrifices type safety)
+-   **Module-specific approach** - Each test file defines its own factory for better ergonomics and type safety
+-   **Benefits**: DRY principle, maintainability, consistency across tests
+-   **Tradeoffs**: Adds indirection, less explicit import paths
+
+**When to use:**
+- File has 10+ tests with identical patch patterns
+- All tests patch same module with same dependencies
+- Benefits of DRY outweigh cost of indirection
+
+**Result:** All 131 tests passing. Pattern documented as optional enhancement for files with substantial repetition.
+
+### Test Core Mock Assertion Fix (December 2025)
+
+**Fix:** Fixed failing test in `test_core.py::TestPipelineMonitor::test_error_log_cleanup_before_processing`.
+
+**Issue:** Test was asserting against `mock_dependencies['tracker']` but the Pipeline was using a real ErrorTracker instance because the `error_tracker` patch was missing.
+
+**Resolution:** Added missing `patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker'])` to match the pattern used in all other tests in the file. This ensures the Pipeline receives the mock tracker so assertions work correctly.
+
+**Result:** All 131 tests now passing with 0 failures and 0 skipped tests.
+
+### Email State Clear Flags Test Coverage (December 2025)
+
+**Fix:** Replaced skipped "rotation feature removed" test with comprehensive tests for `clear_flags()` method.
+
+**Changes:**
+
+-   **Removed skipped test** - Deleted placeholder test for removed rotation feature
+-   **Added 3 new tests** - Comprehensive coverage of `clear_flags()` functionality:
+    -   `test_clear_flags_removes_uid` - Verifies flag removal from processed set
+    -   `test_clear_flags_persists_removal` - Tests persistence across instances
+    -   `test_clear_flags_nonexistent_uid_is_noop` - Validates graceful handling of nonexistent UIDs
+-   **Test suite now has 0 skipped tests** - All tests passing
 
 ### Test Suite Standardization (December 2025)
 
@@ -236,18 +286,20 @@ pixi run push
 
 **Test Results (as of December 2025):**
 
--   ✅ **61 tests passing**
--   ⏭️ **9 tests skipped** (8 deprecated DocumentUploader API + 1 removed feature)
+-   ✅ **131 tests passing**
+-   ⏭️ **0 tests skipped**
 -   ❌ **0 failures**
 -   ❌ **0 errors**
 
 **Test Coverage by Module:**
 
 -   ✅ `extract/` - Full coverage (6 test files, 26 tests)
--   ✅ `monitor/` - Full coverage (test_client.py, 14 tests)
--   ✅ `util/` - Partial coverage (4 test files, 16 tests)
--   ⚠️ `stages/upload.py` - Partial coverage (TestRefreshCredentialsValidation only, 4 tests)
--   ⚠️ `test_integration.py` - Basic workflows covered (4 tests)
+-   ✅ `monitor/` - Full coverage (test_client.py + test_processor.py, 20 tests)
+-   ✅ `util/` - Partial coverage (5 test files, 62 tests)
+-   ✅ `stages/upload.py` - Full coverage (TestDropboxManager + orchestration tests)
+-   ✅ `stages/download.py` - Full coverage (14 tests)
+-   ✅ `test_core.py` - Full coverage (17 tests, all passing)
+-   ✅ `test_integration.py` - Basic workflows covered (4 tests)
 
 ---
 
