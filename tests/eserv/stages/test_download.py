@@ -11,21 +11,20 @@ Tests cover:
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
 import pytest
 
 from eserv.stages.download import (
-    _bypass_aspnet_form,
-    _process_accepted_response,
-    _process_response,
+    _bypass_aspnet_form,  # noqa: PLC2701
+    _process_accepted_response,  # noqa: PLC2701
+    _process_response,  # noqa: PLC2701
     download_documents,
 )
 
 if TYPE_CHECKING:
-    pass
+    from pathlib import Path
 
 
 @pytest.fixture
@@ -37,10 +36,12 @@ def mock_response() -> Mock:
     response.text = '<html><body>Test</body></html>'
     response.url = 'http://example.com/document'
     response.headers = Mock()
-    response.headers.lower_items = Mock(return_value=[
-        ('content-type', 'application/pdf'),
-        ('content-disposition', 'attachment; filename="document.pdf"'),
-    ])
+    response.headers.lower_items = Mock(
+        return_value=[
+            ('content-type', 'application/pdf'),
+            ('content-disposition', 'attachment; filename="document.pdf"'),
+        ]
+    )
     response.raise_for_status = Mock()
     return response
 
@@ -63,7 +64,7 @@ def mock_soup() -> Mock:
 class TestDownloadDocuments:
     """Test download_documents orchestration."""
 
-    def test_successful_single_pdf_download(self, mock_soup: Mock, tempdir) -> None:
+    def test_successful_single_pdf_download(self, mock_soup: Mock, tempdir: Path) -> None:
         """Test successful download of single PDF document."""
         # Create temp directory for document store
         temp_path = tempdir / 'downloads'
@@ -74,39 +75,43 @@ class TestDownloadDocuments:
         mock_info.doc_name = 'Motion'
         mock_info.source = 'http://example.com/document.pdf'
 
-        with patch('eserv.stages.download.extract_download_info', return_value=mock_info):
-            with patch('eserv.stages.download.document_store', return_value=temp_path):
-                with patch('requests.sessions.Session') as mock_session_class:
-                    # Setup mock session
-                    mock_session = Mock()
-                    mock_response = Mock()
-                    mock_response.status_code = 200
-                    mock_response.content = b'%PDF-1.4\nTest PDF content'
-                    mock_response.text = ''
-                    mock_response.url = 'http://example.com/document.pdf'
-                    mock_response.headers = Mock()
-                    mock_response.headers.lower_items = Mock(return_value=[
-                        ('content-type', 'application/pdf'),
-                        ('content-disposition', 'attachment; filename="Motion.pdf"'),
-                    ])
-                    mock_response.raise_for_status = Mock()
-                    mock_session.get.return_value = mock_response
-                    mock_session.__enter__ = Mock(return_value=mock_session)
-                    mock_session.__exit__ = Mock(return_value=None)
-                    mock_session_class.return_value = mock_session
+        with (
+            patch('eserv.stages.download.extract_download_info', return_value=mock_info),
+            patch('eserv.stages.download.document_store', return_value=temp_path),
+            patch('requests.sessions.Session') as mock_session_class,
+        ):
+            # Setup mock session
+            mock_session = Mock()
+            mock_response = Mock()
+            mock_response.status_code = 200
+            mock_response.content = b'%PDF-1.4\nTest PDF content'
+            mock_response.text = ''
+            mock_response.url = 'http://example.com/document.pdf'
+            mock_response.headers = Mock()
+            mock_response.headers.lower_items = Mock(
+                return_value=[
+                    ('content-type', 'application/pdf'),
+                    ('content-disposition', 'attachment; filename="Motion.pdf"'),
+                ]
+            )
+            mock_response.raise_for_status = Mock()
+            mock_session.get.return_value = mock_response
+            mock_session.__enter__ = Mock(return_value=mock_session)
+            mock_session.__exit__ = Mock(return_value=None)
+            mock_session_class.return_value = mock_session
 
-                    # Execute download
-                    doc_name, store_path = download_documents(mock_soup)
+            # Execute download
+            doc_name, store_path = download_documents(mock_soup)
 
-                    # Verify return values
-                    assert doc_name == 'Motion'
-                    assert store_path == temp_path
+            # Verify return values
+            assert doc_name == 'Motion'
+            assert store_path == temp_path
 
-                    # Verify session.get called
-                    mock_session.get.assert_called_once()
+            # Verify session.get called
+            mock_session.get.assert_called_once()
 
-                    # Verify file was saved
-                    assert (temp_path / 'Motion.pdf').exists()
+            # Verify file was saved
+            assert (temp_path / 'Motion.pdf').exists()
 
     def test_multi_file_download(self, mock_soup: Mock, tempdir) -> None:
         """Test download of multiple documents from HTML with links."""
@@ -124,68 +129,75 @@ class TestDownloadDocuments:
             Mock(source='http://example.com/doc3.pdf'),
         ]
 
-        with patch('eserv.stages.download.extract_download_info', return_value=mock_info):
-            with patch('eserv.stages.download.document_store', return_value=temp_path):
-                with patch(
-                    'eserv.stages.download.extract_links_from_response_html',
-                    return_value=mock_links,
-                ):
-                    with patch('requests.sessions.Session') as mock_session_class:
-                        mock_session = Mock()
+        with (
+            patch('eserv.stages.download.extract_download_info', return_value=mock_info),
+            patch('eserv.stages.download.document_store', return_value=temp_path),
+            patch('requests.sessions.Session') as mock_session_class,
+            patch(
+                'eserv.stages.download.extract_links_from_response_html',
+                return_value=mock_links,
+            ),
+        ):
+            mock_session = Mock()
 
-                        # First call returns HTML with links
-                        html_response = Mock()
-                        html_response.status_code = 200
-                        html_response.content = b'<html>Links</html>'
-                        html_response.text = '<html><a href="doc1.pdf">Link1</a></html>'
-                        html_response.url = 'http://example.com/index.html'
-                        html_response.headers = Mock()
-                        html_response.headers.lower_items = Mock(
-                            return_value=[('content-type', 'text/html')]
-                        )
-                        html_response.raise_for_status = Mock()
+            # First call returns HTML with links
+            html_response = Mock()
+            html_response.status_code = 200
+            html_response.content = b'<html>Links</html>'
+            html_response.text = '<html><a href="doc1.pdf">Link1</a></html>'
+            html_response.url = 'http://example.com/index.html'
+            html_response.headers = Mock()
+            html_response.headers.lower_items = Mock(return_value=[('content-type', 'text/html')])
+            html_response.raise_for_status = Mock()
 
-                        # Subsequent calls return PDFs
-                        def mock_get(url, **kwargs):
-                            if 'index.html' in url:
-                                return html_response
-                            # Return PDF responses
-                            pdf_response = Mock()
-                            pdf_response.status_code = 200
-                            pdf_response.content = b'%PDF-1.4\nTest PDF'
-                            pdf_response.text = ''
-                            pdf_response.url = url
-                            pdf_response.headers = Mock()
-                            pdf_response.headers.lower_items = Mock(return_value=[
-                                ('content-type', 'application/pdf'),
-                                ('content-disposition', f'attachment; filename="{url.split("/")[-1]}"'),
-                            ])
-                            pdf_response.raise_for_status = Mock()
-                            return pdf_response
+            # Subsequent calls return PDFs
+            def mock_get(url, **_: ...) -> ...:
+                if 'index.html' in url:
+                    return html_response
+                # Return PDF responses
+                pdf_response = Mock()
+                pdf_response.status_code = 200
+                pdf_response.content = b'%PDF-1.4\nTest PDF'
+                pdf_response.text = ''
+                pdf_response.url = url
+                pdf_response.headers = Mock()
+                pdf_response.headers.lower_items = Mock(
+                    return_value=[
+                        ('content-type', 'application/pdf'),
+                        (
+                            'content-disposition',
+                            f'attachment; filename="{url.split("/")[-1]}"',
+                        ),
+                    ]
+                )
+                pdf_response.raise_for_status = Mock()
+                return pdf_response
 
-                        mock_session.get.side_effect = mock_get
-                        mock_session.__enter__ = Mock(return_value=mock_session)
-                        mock_session.__exit__ = Mock(return_value=None)
-                        mock_session_class.return_value = mock_session
+            mock_session.get.side_effect = mock_get
+            mock_session.__enter__ = Mock(return_value=mock_session)
+            mock_session.__exit__ = Mock(return_value=None)
+            mock_session_class.return_value = mock_session
 
-                        # Execute download
-                        doc_name, store_path = download_documents(mock_soup)
+            # Execute download
+            doc_name, store_path = download_documents(mock_soup)
 
-                        # Verify return values
-                        assert doc_name == 'Motion'
-                        assert store_path == temp_path
+            # Verify return values
+            assert doc_name == 'Motion'
+            assert store_path == temp_path
 
-                        # Verify session.get called 4 times (1 HTML + 3 PDFs)
-                        assert mock_session.get.call_count == 4
+            # Verify session.get called 4 times (1 HTML + 3 PDFs)
+            assert mock_session.get.call_count == 4
 
     def test_missing_download_info_raises_error(self, mock_soup: Mock) -> None:
         """Test that missing download info raises an error."""
-        with patch(
-            'eserv.stages.download.extract_download_info',
-            side_effect=ValueError('No download info'),
+        with (
+            patch(
+                'eserv.stages.download.extract_download_info',
+                side_effect=ValueError('No download info'),
+            ),
+            pytest.raises(ValueError, match='No download info'),
         ):
-            with pytest.raises(ValueError, match='No download info'):
-                download_documents(mock_soup)
+            download_documents(mock_soup)
 
 
 class TestProcessResponse:
@@ -194,10 +206,12 @@ class TestProcessResponse:
     def test_pdf_content_type_handling(self, mock_session: Mock, mock_response: Mock) -> None:
         """Test direct PDF response is processed correctly."""
         # Setup PDF response
-        mock_response.headers.lower_items = Mock(return_value=[
-            ('content-type', 'application/pdf'),
-            ('content-disposition', 'attachment; filename="document.pdf"'),
-        ])
+        mock_response.headers.lower_items = Mock(
+            return_value=[
+                ('content-type', 'application/pdf'),
+                ('content-disposition', 'attachment; filename="document.pdf"'),
+            ]
+        )
 
         # Process response
         result = _process_response(mock_session, mock_response)
@@ -215,9 +229,11 @@ class TestProcessResponse:
         """Test HTML with __VIEWSTATE triggers ASP.NET form bypass."""
         # Setup HTML response with ASP.NET form
         mock_response.text = '<html><input id="__VIEWSTATE" value="test" /></html>'
-        mock_response.headers.lower_items = Mock(return_value=[
-            ('content-type', 'text/html'),
-        ])
+        mock_response.headers.lower_items = Mock(
+            return_value=[
+                ('content-type', 'text/html'),
+            ]
+        )
 
         # Mock POST response after bypass
         post_response = Mock()
@@ -226,27 +242,31 @@ class TestProcessResponse:
         post_response.text = ''
         post_response.url = 'http://example.com/document'
         post_response.headers = Mock()
-        post_response.headers.lower_items = Mock(return_value=[
-            ('content-type', 'application/pdf'),
-            ('content-disposition', 'attachment; filename="document.pdf"'),
-        ])
+        post_response.headers.lower_items = Mock(
+            return_value=[
+                ('content-type', 'application/pdf'),
+                ('content-disposition', 'attachment; filename="document.pdf"'),
+            ]
+        )
         post_response.raise_for_status = Mock()
 
-        with patch('eserv.stages.download.extract_aspnet_form_data', return_value={}):
-            with patch(
+        with (
+            patch('eserv.stages.download.extract_aspnet_form_data', return_value={}),
+            patch(
                 'eserv.stages.download.extract_post_request_url',
                 return_value='http://example.com/post',
-            ):
-                mock_session.post.return_value = post_response
+            ),
+        ):
+            mock_session.post.return_value = post_response
 
-                # Process response
-                result = _process_response(mock_session, mock_response)
+            # Process response
+            result = _process_response(mock_session, mock_response)
 
-                # Verify POST was called
-                mock_session.post.assert_called_once()
+            # Verify POST was called
+            mock_session.post.assert_called_once()
 
-                # Verify result contains PDF
-                assert len(result) == 1
+            # Verify result contains PDF
+            assert len(result) == 1
 
     def test_html_with_document_links_recursion(
         self,
@@ -256,9 +276,11 @@ class TestProcessResponse:
         """Test HTML with document links triggers recursive downloads."""
         # Setup HTML response
         mock_response.text = '<html><a href="doc.pdf">Document</a></html>'
-        mock_response.headers.lower_items = Mock(return_value=[
-            ('content-type', 'text/html'),
-        ])
+        mock_response.headers.lower_items = Mock(
+            return_value=[
+                ('content-type', 'text/html'),
+            ]
+        )
 
         # Mock extracted links
         mock_link = Mock(source='http://example.com/doc.pdf')
@@ -270,10 +292,12 @@ class TestProcessResponse:
         pdf_response.text = ''
         pdf_response.url = 'http://example.com/doc.pdf'
         pdf_response.headers = Mock()
-        pdf_response.headers.lower_items = Mock(return_value=[
-            ('content-type', 'application/pdf'),
-            ('content-disposition', 'attachment; filename="doc.pdf"'),
-        ])
+        pdf_response.headers.lower_items = Mock(
+            return_value=[
+                ('content-type', 'application/pdf'),
+                ('content-disposition', 'attachment; filename="doc.pdf"'),
+            ]
+        )
         pdf_response.raise_for_status = Mock()
 
         with patch(
@@ -299,9 +323,11 @@ class TestProcessResponse:
         """Test recursion depth limit of 2 is enforced."""
         # Setup HTML response
         mock_response.text = '<html>Test</html>'
-        mock_response.headers.lower_items = Mock(return_value=[
-            ('content-type', 'text/html'),
-        ])
+        mock_response.headers.lower_items = Mock(
+            return_value=[
+                ('content-type', 'text/html'),
+            ]
+        )
 
         # Process with depth=2 should raise
         with pytest.raises(RuntimeError, match='exceeded maximum recursion depth'):
@@ -314,9 +340,11 @@ class TestProcessResponse:
     ) -> None:
         """Test unknown content-type raises ValueError."""
         # Setup response with unknown content type
-        mock_response.headers.lower_items = Mock(return_value=[
-            ('content-type', 'application/unknown'),
-        ])
+        mock_response.headers.lower_items = Mock(
+            return_value=[
+                ('content-type', 'application/unknown'),
+            ]
+        )
 
         # Process response should raise
         with pytest.raises(ValueError, match="unknown content-type: 'application/unknown'"):
@@ -340,24 +368,26 @@ class TestBypassAspnetForm:
         post_response.content = b'%PDF-1.4\nPDF content'
         post_response.raise_for_status = Mock()
 
-        with patch('eserv.stages.download.extract_aspnet_form_data', return_value=mock_form_data):
-            with patch(
+        with (
+            patch('eserv.stages.download.extract_aspnet_form_data', return_value=mock_form_data),
+            patch(
                 'eserv.stages.download.extract_post_request_url',
                 return_value='http://example.com/post',
-            ):
-                mock_session.post.return_value = post_response
+            ),
+        ):
+            mock_session.post.return_value = post_response
 
-                # Execute bypass
-                result = _bypass_aspnet_form(mock_session, base_text, base_link)
+            # Execute bypass
+            result = _bypass_aspnet_form(mock_session, base_text, base_link)
 
-                # Verify POST called with correct parameters
-                mock_session.post.assert_called_once()
-                call_args = mock_session.post.call_args
-                assert call_args[0][0] == 'http://example.com/post'
-                assert call_args[1]['data'] == mock_form_data
+            # Verify POST called with correct parameters
+            mock_session.post.assert_called_once()
+            call_args = mock_session.post.call_args
+            assert call_args[0][0] == 'http://example.com/post'
+            assert call_args[1]['data'] == mock_form_data
 
-                # Verify response returned
-                assert result == post_response
+            # Verify response returned
+            assert result == post_response
 
     def test_missing_form_data_raises_error(self, mock_session: Mock) -> None:
         """Test missing form data raises error."""
@@ -365,12 +395,14 @@ class TestBypassAspnetForm:
         base_link = 'http://example.com/form'
 
         # Mock extract_aspnet_form_data to raise error
-        with patch(
-            'eserv.stages.download.extract_aspnet_form_data',
-            side_effect=ValueError('Missing form data'),
+        with (
+            patch(
+                'eserv.stages.download.extract_aspnet_form_data',
+                side_effect=ValueError('Missing form data'),
+            ),
+            pytest.raises(ValueError, match='Missing form data'),
         ):
-            with pytest.raises(ValueError, match='Missing form data'):
-                _bypass_aspnet_form(mock_session, base_text, base_link)
+            _bypass_aspnet_form(mock_session, base_text, base_link)
 
     def test_missing_post_url_raises_error(self, mock_session: Mock) -> None:
         """Test missing POST URL raises error."""
@@ -378,13 +410,15 @@ class TestBypassAspnetForm:
         base_link = 'http://example.com/form'
 
         # Mock extract_post_request_url to raise error
-        with patch('eserv.stages.download.extract_aspnet_form_data', return_value={}):
-            with patch(
+        with (
+            patch('eserv.stages.download.extract_aspnet_form_data', return_value={}),
+            patch(
                 'eserv.stages.download.extract_post_request_url',
                 side_effect=ValueError('Missing POST URL'),
-            ):
-                with pytest.raises(ValueError, match='Missing POST URL'):
-                    _bypass_aspnet_form(mock_session, base_text, base_link)
+            ),
+            pytest.raises(ValueError, match='Missing POST URL'),
+        ):
+            _bypass_aspnet_form(mock_session, base_text, base_link)
 
 
 class TestProcessAcceptedResponse:

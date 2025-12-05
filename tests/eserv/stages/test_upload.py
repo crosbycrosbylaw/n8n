@@ -12,59 +12,17 @@ Tests cover:
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
-import pytest
-
 from eserv.stages import status
-from eserv.stages.upload import DropboxManager, upload_documents
+from eserv.stages.upload import DropboxManager
 
 if TYPE_CHECKING:
-    pass
+    from pathlib import Path
 
-
-@pytest.fixture
-def mock_credential() -> Mock:
-    """Create mock OAuthCredential."""
-    cred = Mock()
-    cred.access_token = 'test_access_token'
-    cred.refresh_token = 'test_refresh_token'
-    cred.client_id = 'test_client_id'
-    cred.client_secret = 'test_client_secret'
-    return cred
-
-
-@pytest.fixture
-def mock_config() -> Mock:
-    """Create mock Config object."""
-    config = Mock()
-    config.credentials = {
-        'dropbox': Mock(
-            access_token='test_token',
-            refresh_token='test_refresh',
-            client_id='test_id',
-            client_secret='test_secret',
-        ),
-    }
-    config.paths = Mock(manual_review_folder='/Clio/Manual Review/')
-    config.cache = Mock(index_file=Path('/tmp/index_cache.json'), ttl_hours=4)
-    config.smtp = Mock(
-        server='smtp.test.com',
-        port=587,
-        from_addr='test@example.com',
-        to_addr='recipient@example.com',
-    )
-    return config
-
-
-@pytest.fixture
-def mock_pdf_file(tempdir: Path) -> Path:
-    """Create mock PDF file."""
-    pdf_path = tempdir / 'test_document.pdf'
-    pdf_path.write_bytes(b'%PDF-1.4\nMock PDF content')
-    return pdf_path
+    from tests.eserv.conftest import SetupFilesFixture
+    from tests.eserv.stages.conftest import UploadDocumentSubtestFixture
 
 
 class TestDropboxManagerClient:
@@ -211,7 +169,7 @@ class TestDropboxManagerUpload:
     def test_successful_file_upload(
         self,
         mock_credential: Mock,
-        mock_pdf_file: Path,
+        mock_document: Path,
     ) -> None:
         """Test successful file upload to Dropbox."""
         manager = DropboxManager(credential=mock_credential)
@@ -225,7 +183,7 @@ class TestDropboxManagerUpload:
         manager._client = mock_client
 
         # Upload file
-        manager.upload(mock_pdf_file, '/Clio/Smith v. Jones/Motion.pdf')
+        manager.upload(mock_document, '/Clio/Smith v. Jones/Motion.pdf')
 
         # Verify files_upload called
         mock_client.files_upload.assert_called_once()
@@ -239,7 +197,7 @@ class TestDropboxManagerUpload:
     def test_uploaded_list_tracking(
         self,
         mock_credential: Mock,
-        mock_pdf_file: Path,
+        mock_document: Path,
     ) -> None:
         """Test uploaded files are tracked in list."""
         manager = DropboxManager(credential=mock_credential)
@@ -251,9 +209,9 @@ class TestDropboxManagerUpload:
         manager._client = mock_client
 
         # Upload multiple files
-        manager.upload(mock_pdf_file, '/Clio/Case1/Doc1.pdf')
-        manager.upload(mock_pdf_file, '/Clio/Case1/Doc2.pdf')
-        manager.upload(mock_pdf_file, '/Clio/Case2/Doc3.pdf')
+        manager.upload(mock_document, '/Clio/Case1/Doc1.pdf')
+        manager.upload(mock_document, '/Clio/Case1/Doc2.pdf')
+        manager.upload(mock_document, '/Clio/Case2/Doc3.pdf')
 
         # Verify all tracked
         assert len(manager.uploaded) == 3
@@ -262,241 +220,105 @@ class TestDropboxManagerUpload:
         assert '/Clio/Case2/Doc3.pdf' in manager.uploaded
 
 
-class TestUploadDocuments:
-    """Test upload_documents orchestration."""
-
-    def test_successful_upload_to_matched_folder(
-        self,
-        mock_config: Mock,
-        mock_pdf_file: Path,
-    ) -> None:
-        """Test successful upload when folder match found."""
-        # Mock IndexCache
-        mock_cache = Mock()
-        mock_cache.is_stale.return_value = False
-        mock_cache.get_all_paths.return_value = [
+def test_document_upload_orchestration(
+    mock_document: Path,
+    setup_files: SetupFilesFixture,
+    run_upload_subtest: UploadDocumentSubtestFixture,
+) -> None:
+    """Test various behaviors related to document uploading."""
+    run_upload_subtest(
+        'match found triggers successful upload',
+        documents=[mock_document],
+        cached_paths=[
             '/Clio/Smith v. Jones',
             '/Clio/Doe v. Roe',
-        ]
+        ],
+        uploaded=['/Clio/Smith v. Jones/Motion.pdf'],
+        case_name='Smith v. Jones',
+        assertions=lambda res: {
+            'statuses should be success': res.status == status.SUCCESS,
+            'path should be expected': res.folder_path == '/Clio/Smith v. Jones',
+        },
+        extensions=lambda self: [
+            self.mock_dbx.upload.assert_called_once(),
+            self.mock_notifier.notify_upload_success.assert_called_once(),
+        ],
+    )
 
-        # Mock FolderMatcher
-        mock_match = Mock()
-        mock_match.folder_path = '/Clio/Smith v. Jones'
-        mock_matcher = Mock()
-        mock_matcher.find_best_match.return_value = mock_match
+    run_upload_subtest(
+        'no match triggers manual review routing',
+        documents=[mock_document],
+        cached_paths=['/Clio/Smith v. Jones'],
+        uploaded=['/Clio/Manual Review/Motion.pdf'],
+        case_name='Unknown Case',
+        assertions=lambda res: {
+            'status should be review': res.status == status.MANUAL_REVIEW,
+            'path should be review': res.folder_path == '/Clio/Manual Review/',
+        },
+        extensions=lambda self: [
+            self.mock_dbx.upload.assert_called_once(),
+            self.mock_notifier.notify_manual_review.assert_called_once(),
+        ],
+    )
 
-        # Mock DropboxManager
-        mock_dbx = Mock()
-        mock_dbx.uploaded = ['/Clio/Smith v. Jones/Motion.pdf']
+    run_upload_subtest(
+        'empty document triggers no work early return',
+        documents=[],
+        assertions=lambda res: {
+            'status should be no work': res.status == status.NO_WORK,
+        },
+    )
 
-        # Mock Notifier
-        mock_notifier = Mock()
+    run_upload_subtest(
+        'multi-file naming conventions are consistent',
+        documents=setup_files({
+            'doc1.pdf': b'%PDF-1.4\nDoc1',
+            'doc2.pdf': b'%PDF-1.4\nDoc2',
+            'doc3.pdf': b'%PDF-1.4\nDoc3',
+        }),
+        cached_paths=['/Clio/Smith v. Jones'],
+        case_name='Smith v. Jones',
+        uploaded=[],
+        extensions=lambda self: {
+            'upload should be called per file': self.mock_dbx.upload.call_count == 3
+        },
+    )
 
-        with patch('eserv.stages.upload.IndexCache', return_value=mock_cache):
-            with patch('eserv.stages.upload.FolderMatcher', return_value=mock_matcher):
-                with patch('eserv.stages.upload.DropboxManager', return_value=mock_dbx):
-                    with patch('eserv.stages.upload.Notifier', return_value=mock_notifier):
-                        # Execute upload
-                        result = upload_documents(
-                            documents=[mock_pdf_file],
-                            case_name='Smith v. Jones',
-                            lead_name='Motion',
-                            config=mock_config,
-                        )
+    run_upload_subtest(
+        'cache refreshes when stale',
+        documents=[mock_document],
+        stale_cache=True,
+        case_name='Smith v. Jones',
+        cached_paths=['/Clio/Smith v. Jones'],
+        uploaded=[],
+        extensions=lambda self: [
+            self.mock_dbx.index.assert_called_once(),
+            self.mock_cache.refresh.assert_called_once(),
+        ],
+    )
 
-                        # Verify result
-                        assert result.status == status.SUCCESS
-                        assert result.folder_path == '/Clio/Smith v. Jones'
 
-                        # Verify upload called
-                        mock_dbx.upload.assert_called_once()
+def test_notification_sent_for_each_outcome(
+    run_upload_subtest: UploadDocumentSubtestFixture,
+    mock_document: Path,
+) -> None:
+    """Test notifications are sent for success and manual review."""
+    run_upload_subtest(
+        'success notifications sent for successful result',
+        documents=[mock_document],
+        cached_paths=['/Clio/Smith v. Jones'],
+        uploaded=[],
+        case_name='Smith v. Jones',
+        extensions=lambda self: [
+            self.mock_notifier.notify_upload_success.assert_called_once(),
+        ],
+    )
 
-                        # Verify success notification sent
-                        mock_notifier.notify_upload_success.assert_called_once()
-
-    def test_manual_review_routing_no_folder_match(
-        self,
-        mock_config: Mock,
-        mock_pdf_file: Path,
-    ) -> None:
-        """Test manual review routing when no folder match found."""
-        # Mock IndexCache
-        mock_cache = Mock()
-        mock_cache.is_stale.return_value = False
-        mock_cache.get_all_paths.return_value = ['/Clio/Smith v. Jones']
-
-        # Mock FolderMatcher with no match
-        mock_matcher = Mock()
-        mock_matcher.find_best_match.return_value = None
-
-        # Mock DropboxManager
-        mock_dbx = Mock()
-        mock_dbx.uploaded = ['/Clio/Manual Review/Motion.pdf']
-
-        # Mock Notifier
-        mock_notifier = Mock()
-
-        with patch('eserv.stages.upload.IndexCache', return_value=mock_cache):
-            with patch('eserv.stages.upload.FolderMatcher', return_value=mock_matcher):
-                with patch('eserv.stages.upload.DropboxManager', return_value=mock_dbx):
-                    with patch('eserv.stages.upload.Notifier', return_value=mock_notifier):
-                        # Execute upload with unknown case
-                        result = upload_documents(
-                            documents=[mock_pdf_file],
-                            case_name='Unknown Case',
-                            lead_name='Motion',
-                            config=mock_config,
-                        )
-
-                        # Verify result
-                        assert result.status == status.MANUAL_REVIEW
-                        assert result.folder_path == '/Clio/Manual Review/'
-
-                        # Verify upload to manual review folder
-                        mock_dbx.upload.assert_called_once()
-
-                        # Verify manual review notification sent
-                        mock_notifier.notify_manual_review.assert_called_once()
-
-    def test_empty_document_list_returns_no_work(self, mock_config: Mock) -> None:
-        """Test NO_WORK status when no documents provided."""
-        # Execute with empty documents list
-        result = upload_documents(documents=[], case_name='Smith v. Jones', config=mock_config)
-
-        # Verify NO_WORK status
-        assert result.status == status.NO_WORK
-
-    def test_multi_file_naming_logic(
-        self,
-        mock_config: Mock,
-        tempdir,
-    ) -> None:
-        """Test multi-file naming with numbering."""
-        # Create multiple PDF files
-        tmp = tempdir
-        pdf1 = tmp / 'doc1.pdf'
-        pdf2 = tmp / 'doc2.pdf'
-        pdf3 = tmp / 'doc3.pdf'
-        pdf1.write_bytes(b'%PDF-1.4\nDoc1')
-        pdf2.write_bytes(b'%PDF-1.4\nDoc2')
-        pdf3.write_bytes(b'%PDF-1.4\nDoc3')
-
-        # Mock dependencies
-        mock_cache = Mock()
-        mock_cache.is_stale.return_value = False
-        mock_cache.get_all_paths.return_value = ['/Clio/Smith v. Jones']
-
-        mock_match = Mock()
-        mock_match.folder_path = '/Clio/Smith v. Jones'
-        mock_matcher = Mock()
-        mock_matcher.find_best_match.return_value = mock_match
-
-        mock_dbx = Mock()
-        mock_dbx.uploaded = []
-
-        mock_notifier = Mock()
-
-        with patch('eserv.stages.upload.IndexCache', return_value=mock_cache):
-            with patch('eserv.stages.upload.FolderMatcher', return_value=mock_matcher):
-                with patch('eserv.stages.upload.DropboxManager', return_value=mock_dbx):
-                    with patch('eserv.stages.upload.Notifier', return_value=mock_notifier):
-                        # Execute upload with multiple files
-                        upload_documents(
-                            documents=[pdf1, pdf2, pdf3],
-                            case_name='Smith v. Jones',
-                            lead_name='Motion',
-                            config=mock_config,
-                        )
-
-                        # Verify upload called 3 times with numbered filenames
-                        assert mock_dbx.upload.call_count == 3
-
-    def test_cache_refresh_on_stale_index(
-        self,
-        mock_config: Mock,
-        mock_pdf_file: Path,
-    ) -> None:
-        """Test cache is refreshed when stale."""
-        # Mock IndexCache as stale
-        mock_cache = Mock()
-        mock_cache.is_stale.return_value = True
-        mock_cache.get_all_paths.return_value = ['/Clio/Smith v. Jones']
-
-        # Mock DropboxManager.index()
-        mock_dbx = Mock()
-        mock_dbx.index.return_value = {'/Clio/Smith v. Jones': {'name': 'Smith v. Jones'}}
-        mock_dbx.uploaded = []
-
-        # Mock FolderMatcher
-        mock_match = Mock()
-        mock_match.folder_path = '/Clio/Smith v. Jones'
-        mock_matcher = Mock()
-        mock_matcher.find_best_match.return_value = mock_match
-
-        mock_notifier = Mock()
-
-        with patch('eserv.stages.upload.IndexCache', return_value=mock_cache):
-            with patch('eserv.stages.upload.FolderMatcher', return_value=mock_matcher):
-                with patch('eserv.stages.upload.DropboxManager', return_value=mock_dbx):
-                    with patch('eserv.stages.upload.Notifier', return_value=mock_notifier):
-                        # Execute upload
-                        upload_documents(
-                            documents=[mock_pdf_file],
-                            case_name='Smith v. Jones',
-                            config=mock_config,
-                        )
-
-                        # Verify index refreshed
-                        mock_dbx.index.assert_called_once()
-                        mock_cache.refresh.assert_called_once()
-
-    def test_notification_sent_for_each_outcome(
-        self,
-        mock_config: Mock,
-        mock_pdf_file: Path,
-    ) -> None:
-        """Test notifications are sent for success and manual review."""
-        mock_cache = Mock()
-        mock_cache.is_stale.return_value = False
-        mock_cache.get_all_paths.return_value = ['/Clio/Smith v. Jones']
-
-        mock_dbx = Mock()
-        mock_dbx.uploaded = []
-
-        mock_notifier = Mock()
-
-        # Test success notification
-        mock_match = Mock()
-        mock_match.folder_path = '/Clio/Smith v. Jones'
-        mock_matcher = Mock()
-        mock_matcher.find_best_match.return_value = mock_match
-
-        with patch('eserv.stages.upload.IndexCache', return_value=mock_cache):
-            with patch('eserv.stages.upload.FolderMatcher', return_value=mock_matcher):
-                with patch('eserv.stages.upload.DropboxManager', return_value=mock_dbx):
-                    with patch('eserv.stages.upload.Notifier', return_value=mock_notifier):
-                        upload_documents(
-                            documents=[mock_pdf_file],
-                            case_name='Smith v. Jones',
-                            config=mock_config,
-                        )
-
-                        # Verify success notification
-                        mock_notifier.notify_upload_success.assert_called_once()
-
-        # Test manual review notification
-        mock_matcher.find_best_match.return_value = None
-        mock_notifier.reset_mock()
-
-        with patch('eserv.stages.upload.IndexCache', return_value=mock_cache):
-            with patch('eserv.stages.upload.FolderMatcher', return_value=mock_matcher):
-                with patch('eserv.stages.upload.DropboxManager', return_value=mock_dbx):
-                    with patch('eserv.stages.upload.Notifier', return_value=mock_notifier):
-                        upload_documents(
-                            documents=[mock_pdf_file],
-                            case_name='Unknown Case',
-                            config=mock_config,
-                        )
-
-                        # Verify manual review notification
-                        mock_notifier.notify_manual_review.assert_called_once()
+    run_upload_subtest(
+        'manual review notification sent for partially successful results',
+        documents=[mock_document],
+        case_name='Unknown Case',
+        extensions=lambda self: [
+            self.mock_notifier.notify_manual_review.assert_called_once(),
+        ],
+    )

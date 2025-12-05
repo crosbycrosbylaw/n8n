@@ -15,6 +15,7 @@ preview   = ["pixi-build"]
 [pypi-dependencies]
 
 eserv = { path = ".", editable = true }
+
 rampy = { git = "https://github.com/zaynram/ramda-py.git", branch = "master" }
 
 [feature]
@@ -49,11 +50,12 @@ rampy = { git = "https://github.com/zaynram/ramda-py.git", branch = "master" }
 
         ipykernel  = "*"
         ipywidgets = "*"
-        pytest     = ">=8.4.2,<9"
-        pytest-cov = ">=7.0.0,<8"
 
         [feature.dev.pypi-dependencies]
-        pymupdf-stubs = ">=1.26.1.post1, <2"
+        pymupdf-stubs          = ">=1.26.1.post1"
+        pytest                 = ">=9"
+        pytest-cov             = ">=7.0.0"
+        pytest-fixture-classes = ">=1.0.4"
 
         [feature.dev.tasks]
 

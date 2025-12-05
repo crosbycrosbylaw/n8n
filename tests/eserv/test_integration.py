@@ -66,11 +66,9 @@ class TestUploadWorkflow:
             try:
                 # Initialize components
                 state_file = temp_dir / 'email_state.json'
-                error_log = temp_dir / 'error_log.json'
                 cache_file = temp_dir / 'dbx_index.json'
 
                 email_state = eserv.state_tracker(state_file)
-                error_tracker = eserv.error_tracker(error_log)
                 index_cache = eserv.dbx_index_cache(cache_file, ttl_hours=4)
 
                 # Populate cache with folders
