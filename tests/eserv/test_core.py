@@ -40,9 +40,8 @@ def mock_dotenv_path(tempdir) -> Path:
 def mock_dependencies():
     """Mock all Pipeline dependencies."""
     mock_config = Mock()
-    mock_config.state = Mock(state_file=Path('/tmp/state.json'))
-    mock_config.paths = Mock(service_dir=Path('/tmp'))
-
+    mock_config.state = Mock(state_file=Path('/tmp/state.json'))  # noqa: S108
+    mock_config.paths = Mock(service_dir=Path('/tmp'))  # noqa: S108
     mock_state = Mock(spec=['is_processed', 'processed'])
     mock_state.is_processed.return_value = False
     mock_state.processed = set()
@@ -53,9 +52,9 @@ def mock_dependencies():
     mock_track_cm.__exit__ = Mock(return_value=None)
 
     # Configure error() to raise PipelineError when raises=True
-    def mock_error(message, stage, context=None, raises=None):
+    def mock_error(message, stage, context=None, raises=None) -> None:  # noqa: ARG001
         if raises:
-            from eserv.errors._core import PipelineError
+            from eserv.errors._core import PipelineError  # noqa: PLC2701
 
             raise PipelineError(message=message, stage=stage)
 
@@ -94,17 +93,19 @@ class TestPipelineInit:
         mock_dependencies: dict,
     ) -> None:
         """Test config loaded from .env path."""
-        with patch('eserv.core.config', return_value=mock_dependencies['config']) as mock_config_fn:
-            with patch('eserv.core.state_tracker', return_value=mock_dependencies['state']):
-                with patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']):
-                    # Initialize pipeline with dotenv path
-                    pipeline = Pipeline(dotenv_path=mock_dotenv_path)
+        with (
+            patch('eserv.core.config', return_value=mock_dependencies['config']) as mock_config_fn,
+            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
+            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+        ):
+            # Initialize pipeline with dotenv path
+            pipeline = Pipeline(dotenv_path=mock_dotenv_path)
 
-                    # Verify config called with path
-                    mock_config_fn.assert_called_once_with(mock_dotenv_path)
+            # Verify config called with path
+            mock_config_fn.assert_called_once_with(mock_dotenv_path)
 
-                    # Verify pipeline attributes set
-                    assert pipeline.config is mock_dependencies['config']
+            # Verify pipeline attributes set
+            assert pipeline.config is mock_dependencies['config']
 
     def test_state_tracker_initialization(self, mock_dependencies: dict) -> None:
         """Test state tracker initialized from config."""
@@ -120,28 +121,30 @@ class TestPipelineInit:
             pipeline = Pipeline()
 
             # Verify state_tracker called with state file path
-            mock_state_fn.assert_called_once_with(Path('/tmp/state.json'))
+            mock_state_fn.assert_called_once_with(Path('/tmp/state.json'))  # noqa: S108
 
             # Verify pipeline.state set
             assert pipeline.state is mock_dependencies['state']
 
     def test_error_tracker_initialization(self, mock_dependencies: dict) -> None:
         """Test error tracker initialized from config."""
-        with patch('eserv.core.config', return_value=mock_dependencies['config']):
-            with patch('eserv.core.state_tracker', return_value=mock_dependencies['state']):
-                with patch(
-                    'eserv.core.error_tracker',
-                    return_value=mock_dependencies['tracker'],
-                ) as mock_tracker_fn:
-                    # Initialize pipeline
-                    pipeline = Pipeline()
+        with (
+            patch('eserv.core.config', return_value=mock_dependencies['config']),
+            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
+            patch(
+                'eserv.core.error_tracker',
+                return_value=mock_dependencies['tracker'],
+            ) as mock_tracker_fn,
+        ):
+            # Initialize pipeline
+            pipeline = Pipeline()
 
-                    # Verify error_tracker called with error log path
-                    expected_path = Path('/tmp') / 'error_log.json'
-                    mock_tracker_fn.assert_called_once_with(expected_path)
+            # Verify error_tracker called with error log path
+            expected_path = Path('/tmp') / 'error_log.json'  # noqa: S108
+            mock_tracker_fn.assert_called_once_with(expected_path)
 
-                    # Verify pipeline.tracker set
-                    assert pipeline.tracker is mock_dependencies['tracker']
+            # Verify pipeline.tracker set
+            assert pipeline.tracker is mock_dependencies['tracker']
 
 
 class TestPipelineProcess:
@@ -161,40 +164,42 @@ class TestPipelineProcess:
         pdf_path.write_bytes(b'%PDF-1.4\nTest PDF')
 
         # Mock all stage functions
-        with patch('eserv.core.config', return_value=mock_dependencies['config']):
-            with patch('eserv.core.state_tracker', return_value=mock_dependencies['state']):
-                with patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']):
-                    with patch('eserv.core.BeautifulSoup') as mock_soup_class:
-                        with patch('eserv.core.download_documents', return_value=('Motion', store_path)):
-                            with patch('eserv.core.extract_upload_info') as mock_extract:
-                                with patch('eserv.core.upload_documents') as mock_upload:
-                                    # Setup mocks
-                                    mock_soup = Mock()
-                                    mock_soup_class.return_value = mock_soup
+        with (
+            patch('eserv.core.config', return_value=mock_dependencies['config']),
+            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
+            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            patch('eserv.core.BeautifulSoup') as mock_soup_class,
+            patch('eserv.core.download_documents', return_value=('Motion', store_path)),
+            patch('eserv.core.extract_upload_info') as mock_extract,
+            patch('eserv.core.upload_documents') as mock_upload,
+        ):
+            # Setup mocks
+            mock_soup = Mock()
+            mock_soup_class.return_value = mock_soup
 
-                                    mock_extract.return_value = Mock(
-                                        case_name='Smith v. Jones',
-                                        doc_count=1,
-                                    )
+            mock_extract.return_value = Mock(
+                case_name='Smith v. Jones',
+                doc_count=1,
+            )
 
-                                    mock_upload.return_value = UploadResult(
-                                        status=status.SUCCESS,
-                                        folder_path='/Clio/Smith v. Jones',
-                                        uploaded_files=['Motion.pdf'],
-                                    )
+            mock_upload.return_value = UploadResult(
+                status=status.SUCCESS,
+                folder_path='/Clio/Smith v. Jones',
+                uploaded_files=['Motion.pdf'],
+            )
 
-                                    # Initialize pipeline and process
-                                    pipeline = Pipeline()
-                                    result = pipeline.process(sample_email_record)
+            # Initialize pipeline and process
+            pipeline = Pipeline()
+            result = pipeline.process(sample_email_record)
 
-                                    # Verify result
-                                    assert result.status == status.SUCCESS
-                                    assert result.folder_path == '/Clio/Smith v. Jones'
+            # Verify result
+            assert result.status == status.SUCCESS
+            assert result.folder_path == '/Clio/Smith v. Jones'
 
-                                    # Verify all stages called
-                                    mock_soup_class.assert_called_once()
-                                    mock_extract.assert_called_once()
-                                    mock_upload.assert_called_once()
+            # Verify all stages called
+            mock_soup_class.assert_called_once()
+            mock_extract.assert_called_once()
+            mock_upload.assert_called_once()
 
     def test_html_parsing_failure(
         self,
@@ -202,22 +207,24 @@ class TestPipelineProcess:
         sample_email_record,
     ) -> None:
         """Test HTML parsing failure raises PipelineError."""
-        with patch('eserv.core.config', return_value=mock_dependencies['config']):
-            with patch('eserv.core.state_tracker', return_value=mock_dependencies['state']):
-                with patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']):
-                    with patch(
-                        'eserv.core.BeautifulSoup',
-                        side_effect=Exception('Parse error'),
-                    ):
-                        # Initialize pipeline
-                        pipeline = Pipeline()
+        with (
+            patch('eserv.core.config', return_value=mock_dependencies['config']),
+            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
+            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            patch(
+                'eserv.core.BeautifulSoup',
+                side_effect=Exception('Parse error'),
+            ),
+        ):
+            # Initialize pipeline
+            pipeline = Pipeline()
 
-                        # Process should raise PipelineError
-                        with pytest.raises(PipelineError):
-                            pipeline.process(sample_email_record)
+            # Process should raise PipelineError
+            with pytest.raises(PipelineError):
+                pipeline.process(sample_email_record)
 
-                        # Verify error logged
-                        mock_dependencies['track_cm'].error.assert_called_once()
+            # Verify error logged
+            mock_dependencies['track_cm'].error.assert_called_once()
 
     def test_download_failure(
         self,
@@ -225,23 +232,25 @@ class TestPipelineProcess:
         sample_email_record,
     ) -> None:
         """Test document download failure raises PipelineError."""
-        with patch('eserv.core.config', return_value=mock_dependencies['config']):
-            with patch('eserv.core.state_tracker', return_value=mock_dependencies['state']):
-                with patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']):
-                    with patch('eserv.core.BeautifulSoup'):
-                        with patch(
-                            'eserv.core.download_documents',
-                            side_effect=Exception('Download error'),
-                        ):
-                            # Initialize pipeline
-                            pipeline = Pipeline()
+        with (
+            patch('eserv.core.config', return_value=mock_dependencies['config']),
+            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
+            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            patch('eserv.core.BeautifulSoup'),
+            patch(
+                'eserv.core.download_documents',
+                side_effect=Exception('Download error'),
+            ),
+        ):
+            # Initialize pipeline
+            pipeline = Pipeline()
 
-                            # Process should raise PipelineError
-                            with pytest.raises(PipelineError):
-                                pipeline.process(sample_email_record)
+            # Process should raise PipelineError
+            with pytest.raises(PipelineError):
+                pipeline.process(sample_email_record)
 
-                            # Verify error logged
-                            mock_dependencies['track_cm'].error.assert_called_once()
+            # Verify error logged
+            mock_dependencies['track_cm'].error.assert_called_once()
 
     def test_upload_info_extraction_failure(
         self,
@@ -253,24 +262,26 @@ class TestPipelineProcess:
         store_path = tempdir / 'docs'
         store_path.mkdir(exist_ok=True)
 
-        with patch('eserv.core.config', return_value=mock_dependencies['config']):
-            with patch('eserv.core.state_tracker', return_value=mock_dependencies['state']):
-                with patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']):
-                    with patch('eserv.core.BeautifulSoup'):
-                        with patch('eserv.core.download_documents', return_value=('Motion', store_path)):
-                            with patch(
-                                'eserv.core.extract_upload_info',
-                                side_effect=Exception('Extraction error'),
-                            ):
-                                # Initialize pipeline
-                                pipeline = Pipeline()
+        with (
+            patch('eserv.core.config', return_value=mock_dependencies['config']),
+            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
+            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            patch('eserv.core.BeautifulSoup'),
+            patch('eserv.core.download_documents', return_value=('Motion', store_path)),
+            patch(
+                'eserv.core.extract_upload_info',
+                side_effect=Exception('Extraction error'),
+            ),
+        ):
+            # Initialize pipeline
+            pipeline = Pipeline()
 
-                                # Process should raise PipelineError
-                                with pytest.raises(PipelineError):
-                                    pipeline.process(sample_email_record)
+            # Process should raise PipelineError
+            with pytest.raises(PipelineError):
+                pipeline.process(sample_email_record)
 
-                                # Verify error logged
-                                mock_dependencies['track_cm'].error.assert_called_once()
+            # Verify error logged
+            mock_dependencies['track_cm'].error.assert_called_once()
 
     def test_duplicate_detection_uid_already_processed(
         self,
@@ -285,23 +296,25 @@ class TestPipelineProcess:
         # Mock state to return True for is_processed
         mock_dependencies['state'].is_processed.return_value = True
 
-        with patch('eserv.core.config', return_value=mock_dependencies['config']):
-            with patch('eserv.core.state_tracker', return_value=mock_dependencies['state']):
-                with patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']):
-                    with patch('eserv.core.BeautifulSoup'):
-                        with patch('eserv.core.download_documents', return_value=('Motion', store_path)):
-                            with patch('eserv.core.extract_upload_info') as mock_extract:
-                                mock_extract.return_value = Mock(case_name='Smith v. Jones')
+        with (
+            patch('eserv.core.config', return_value=mock_dependencies['config']),
+            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
+            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            patch('eserv.core.BeautifulSoup'),
+            patch('eserv.core.download_documents', return_value=('Motion', store_path)),
+            patch('eserv.core.extract_upload_info') as mock_extract,
+        ):
+            mock_extract.return_value = Mock(case_name='Smith v. Jones')
 
-                                # Initialize pipeline
-                                pipeline = Pipeline()
-                                result = pipeline.process(sample_email_record)
+            # Initialize pipeline
+            pipeline = Pipeline()
+            result = pipeline.process(sample_email_record)
 
-                                # Verify NO_WORK returned
-                                assert result.status == status.NO_WORK
+            # Verify NO_WORK returned
+            assert result.status == status.NO_WORK
 
-                                # Verify is_processed checked
-                                mock_dependencies['state'].is_processed.assert_called_once_with('email-123')
+            # Verify is_processed checked
+            mock_dependencies['state'].is_processed.assert_called_once_with('email-123')
 
     def test_no_pdfs_after_download(
         self,
@@ -314,22 +327,24 @@ class TestPipelineProcess:
         store_path = tempdir / 'docs'
         store_path.mkdir(exist_ok=True)
 
-        with patch('eserv.core.config', return_value=mock_dependencies['config']):
-            with patch('eserv.core.state_tracker', return_value=mock_dependencies['state']):
-                with patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']):
-                    with patch('eserv.core.BeautifulSoup'):
-                        with patch('eserv.core.download_documents', return_value=('Motion', store_path)):
-                            with patch('eserv.core.extract_upload_info') as mock_extract:
-                                with patch('eserv.core.upload_documents') as mock_upload:
-                                    mock_extract.return_value = Mock(case_name='Smith v. Jones')
-                                    mock_upload.return_value = UploadResult(status=status.NO_WORK)
+        with (
+            patch('eserv.core.config', return_value=mock_dependencies['config']),
+            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
+            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            patch('eserv.core.BeautifulSoup'),
+            patch('eserv.core.download_documents', return_value=('Motion', store_path)),
+            patch('eserv.core.extract_upload_info') as mock_extract,
+            patch('eserv.core.upload_documents') as mock_upload,
+        ):
+            mock_extract.return_value = Mock(case_name='Smith v. Jones')
+            mock_upload.return_value = UploadResult(status=status.NO_WORK)
 
-                                    # Initialize pipeline
-                                    pipeline = Pipeline()
-                                    result = pipeline.process(sample_email_record)
+            # Initialize pipeline
+            pipeline = Pipeline()
+            result = pipeline.process(sample_email_record)
 
-                                    # Verify NO_WORK status
-                                    assert result.status == status.NO_WORK
+            # Verify NO_WORK status
+            assert result.status == status.NO_WORK
 
     def test_upload_success_status(
         self,
@@ -343,26 +358,28 @@ class TestPipelineProcess:
         pdf_path = store_path / 'Motion.pdf'
         pdf_path.write_bytes(b'%PDF-1.4\nTest')
 
-        with patch('eserv.core.config', return_value=mock_dependencies['config']):
-            with patch('eserv.core.state_tracker', return_value=mock_dependencies['state']):
-                with patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']):
-                    with patch('eserv.core.BeautifulSoup'):
-                        with patch('eserv.core.download_documents', return_value=('Motion', store_path)):
-                            with patch('eserv.core.extract_upload_info') as mock_extract:
-                                with patch('eserv.core.upload_documents') as mock_upload:
-                                    mock_extract.return_value = Mock(case_name='Smith v. Jones')
-                                    mock_upload.return_value = UploadResult(
-                                        status=status.SUCCESS,
-                                        folder_path='/Clio/Smith v. Jones',
-                                        uploaded_files=['Motion.pdf'],
-                                    )
+        with (
+            patch('eserv.core.config', return_value=mock_dependencies['config']),
+            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
+            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            patch('eserv.core.BeautifulSoup'),
+            patch('eserv.core.download_documents', return_value=('Motion', store_path)),
+            patch('eserv.core.extract_upload_info') as mock_extract,
+            patch('eserv.core.upload_documents') as mock_upload,
+        ):
+            mock_extract.return_value = Mock(case_name='Smith v. Jones')
+            mock_upload.return_value = UploadResult(
+                status=status.SUCCESS,
+                folder_path='/Clio/Smith v. Jones',
+                uploaded_files=['Motion.pdf'],
+            )
 
-                                    # Initialize pipeline
-                                    pipeline = Pipeline()
-                                    result = pipeline.process(sample_email_record)
+            # Initialize pipeline
+            pipeline = Pipeline()
+            result = pipeline.process(sample_email_record)
 
-                                    # Verify SUCCESS status
-                                    assert result.status == status.SUCCESS
+            # Verify SUCCESS status
+            assert result.status == status.SUCCESS
 
     def test_upload_manual_review_status(
         self,
@@ -376,29 +393,31 @@ class TestPipelineProcess:
         pdf_path = store_path / 'Motion.pdf'
         pdf_path.write_bytes(b'%PDF-1.4\nTest')
 
-        with patch('eserv.core.config', return_value=mock_dependencies['config']):
-            with patch('eserv.core.state_tracker', return_value=mock_dependencies['state']):
-                with patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']):
-                    with patch('eserv.core.BeautifulSoup'):
-                        with patch('eserv.core.download_documents', return_value=('Motion', store_path)):
-                            with patch('eserv.core.extract_upload_info') as mock_extract:
-                                with patch('eserv.core.upload_documents') as mock_upload:
-                                    mock_extract.return_value = Mock(case_name='Unknown Case')
-                                    mock_upload.return_value = UploadResult(
-                                        status=status.MANUAL_REVIEW,
-                                        folder_path='/Clio/Manual Review/',
-                                        uploaded_files=['Motion.pdf'],
-                                    )
+        with (
+            patch('eserv.core.config', return_value=mock_dependencies['config']),
+            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
+            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            patch('eserv.core.BeautifulSoup'),
+            patch('eserv.core.download_documents', return_value=('Motion', store_path)),
+            patch('eserv.core.extract_upload_info') as mock_extract,
+            patch('eserv.core.upload_documents') as mock_upload,
+        ):
+            mock_extract.return_value = Mock(case_name='Unknown Case')
+            mock_upload.return_value = UploadResult(
+                status=status.MANUAL_REVIEW,
+                folder_path='/Clio/Manual Review/',
+                uploaded_files=['Motion.pdf'],
+            )
 
-                                    # Initialize pipeline
-                                    pipeline = Pipeline()
-                                    result = pipeline.process(sample_email_record)
+            # Initialize pipeline
+            pipeline = Pipeline()
+            result = pipeline.process(sample_email_record)
 
-                                    # Verify MANUAL_REVIEW status
-                                    assert result.status == status.MANUAL_REVIEW
+            # Verify MANUAL_REVIEW status
+            assert result.status == status.MANUAL_REVIEW
 
-                                    # Verify warning logged
-                                    mock_dependencies['track_cm'].warning.assert_called_once()
+            # Verify warning logged
+            mock_dependencies['track_cm'].warning.assert_called_once()
 
     def test_upload_error_status(
         self,
@@ -412,28 +431,30 @@ class TestPipelineProcess:
         pdf_path = store_path / 'Motion.pdf'
         pdf_path.write_bytes(b'%PDF-1.4\nTest')
 
-        with patch('eserv.core.config', return_value=mock_dependencies['config']):
-            with patch('eserv.core.state_tracker', return_value=mock_dependencies['state']):
-                with patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']):
-                    with patch('eserv.core.BeautifulSoup'):
-                        with patch('eserv.core.download_documents', return_value=('Motion', store_path)):
-                            with patch('eserv.core.extract_upload_info') as mock_extract:
-                                with patch('eserv.core.upload_documents') as mock_upload:
-                                    mock_extract.return_value = Mock(case_name='Smith v. Jones')
-                                    mock_upload.return_value = UploadResult(
-                                        status=status.ERROR,
-                                        error='Dropbox API error',
-                                    )
+        with (
+            patch('eserv.core.config', return_value=mock_dependencies['config']),
+            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
+            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            patch('eserv.core.BeautifulSoup'),
+            patch('eserv.core.download_documents', return_value=('Motion', store_path)),
+            patch('eserv.core.extract_upload_info') as mock_extract,
+            patch('eserv.core.upload_documents') as mock_upload,
+        ):
+            mock_extract.return_value = Mock(case_name='Smith v. Jones')
+            mock_upload.return_value = UploadResult(
+                status=status.ERROR,
+                error='Dropbox API error',
+            )
 
-                                    # Initialize pipeline
-                                    pipeline = Pipeline()
+            # Initialize pipeline
+            pipeline = Pipeline()
 
-                                    # Process should raise PipelineError
-                                    with pytest.raises(PipelineError):
-                                        pipeline.process(sample_email_record)
+            # Process should raise PipelineError
+            with pytest.raises(PipelineError):
+                pipeline.process(sample_email_record)
 
-                                    # Verify error logged
-                                    mock_dependencies['track_cm'].error.assert_called_once()
+            # Verify error logged
+            mock_dependencies['track_cm'].error.assert_called_once()
 
 
 class TestPipelineMonitor:
@@ -441,45 +462,48 @@ class TestPipelineMonitor:
 
     def test_batch_processing_via_email_processor(self, mock_dependencies: dict) -> None:
         """Test monitor delegates to EmailProcessor."""
-        with patch('eserv.core.config', return_value=mock_dependencies['config']):
-            with patch('eserv.core.state_tracker', return_value=mock_dependencies['state']):
-                with patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']):
-                    with patch('eserv.core.EmailProcessor') as mock_processor_class:
-                        # Mock EmailProcessor.process_batch
-                        mock_processor = Mock()
-                        mock_batch_result = Mock(total=5, succeeded=4, failed=1)
-                        mock_processor.process_batch.return_value = mock_batch_result
-                        mock_processor_class.return_value = mock_processor
+        with (
+            patch('eserv.core.config', return_value=mock_dependencies['config']),
+            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
+            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            patch('eserv.core.EmailProcessor') as mock_processor_class,
+        ):
+            # Mock EmailProcessor.process_batch
+            mock_processor = Mock()
+            mock_batch_result = Mock(total=5, succeeded=4, failed=1)
+            mock_processor.process_batch.return_value = mock_batch_result
+            mock_processor_class.return_value = mock_processor
 
-                        # Initialize pipeline and monitor
-                        pipeline = Pipeline()
-                        result = pipeline.monitor(num_days=1)
+            # Initialize pipeline and monitor
+            pipeline = Pipeline()
+            result = pipeline.monitor(num_days=1)
 
-                        # Verify EmailProcessor created with pipeline
-                        mock_processor_class.assert_called_once_with(pipeline)
+            # Verify EmailProcessor created with pipeline
+            mock_processor_class.assert_called_once_with(pipeline)
 
-                        # Verify process_batch called
-                        mock_processor.process_batch.assert_called_once_with(1)
+            # Verify process_batch called
+            mock_processor.process_batch.assert_called_once_with(1)
 
-                        # Verify result returned
-                        assert result is mock_batch_result
+            # Verify result returned
+            assert result is mock_batch_result
 
     def test_error_log_cleanup_before_processing(self, mock_dependencies: dict) -> None:
         """Test error log cleanup called before monitoring."""
-        with patch('eserv.core.config', return_value=mock_dependencies['config']):
-            with patch('eserv.core.state_tracker', return_value=mock_dependencies['state']):
-                with patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']):
-                    with patch('eserv.core.EmailProcessor') as mock_processor_class:
-                        mock_processor = Mock()
-                        mock_processor.process_batch.return_value = Mock()
-                        mock_processor_class.return_value = mock_processor
+        with (
+            patch('eserv.core.config', return_value=mock_dependencies['config']),
+            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
+            patch('eserv.core.EmailProcessor') as mock_processor_class,
+        ):
+            mock_processor = Mock()
+            mock_processor.process_batch.return_value = Mock()
+            mock_processor_class.return_value = mock_processor
 
-                        # Initialize pipeline and monitor
-                        pipeline = Pipeline()
-                        pipeline.monitor(num_days=1)
+            # Initialize pipeline and monitor
+            pipeline = Pipeline()
+            pipeline.monitor(num_days=1)
 
-                        # Verify error cleanup called
-                        mock_dependencies['tracker'].clear_old_errors.assert_called_once_with(days=30)
+            # Verify error cleanup called
+            mock_dependencies['tracker'].clear_old_errors.assert_called_once_with(days=30)
 
 
 class TestPipelineExecute:
@@ -497,23 +521,25 @@ class TestPipelineExecute:
         pdf_path = store_path / 'Motion.pdf'
         pdf_path.write_bytes(b'%PDF-1.4\nTest')
 
-        with patch('eserv.core.config', return_value=mock_dependencies['config']):
-            with patch('eserv.core.state_tracker', return_value=mock_dependencies['state']):
-                with patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']):
-                    with patch('eserv.core.BeautifulSoup'):
-                        with patch('eserv.core.download_documents', return_value=('Motion', store_path)):
-                            with patch('eserv.core.extract_upload_info') as mock_extract:
-                                with patch('eserv.core.upload_documents') as mock_upload:
-                                    mock_extract.return_value = Mock(case_name='Smith v. Jones')
-                                    mock_upload.return_value = UploadResult(status=status.SUCCESS)
+        with (
+            patch('eserv.core.config', return_value=mock_dependencies['config']),
+            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
+            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            patch('eserv.core.BeautifulSoup'),
+            patch('eserv.core.download_documents', return_value=('Motion', store_path)),
+            patch('eserv.core.extract_upload_info') as mock_extract,
+            patch('eserv.core.upload_documents') as mock_upload,
+        ):
+            mock_extract.return_value = Mock(case_name='Smith v. Jones')
+            mock_upload.return_value = UploadResult(status=status.SUCCESS)
 
-                                    # Initialize pipeline and execute
-                                    pipeline = Pipeline()
-                                    result = pipeline.execute(sample_email_record)
+            # Initialize pipeline and execute
+            pipeline = Pipeline()
+            result = pipeline.execute(sample_email_record)
 
-                                    # Verify ProcessedResult returned
-                                    assert result.error is None
-                                    assert result.status == 'success'
+            # Verify ProcessedResult returned
+            assert result.error is None
+            assert result.status == 'success'
 
     def test_pipeline_error_converted_to_processed_result(
         self,
@@ -521,17 +547,19 @@ class TestPipelineExecute:
         sample_email_record,
     ) -> None:
         """Test PipelineError converted to ProcessedResult with error."""
-        with patch('eserv.core.config', return_value=mock_dependencies['config']):
-            with patch('eserv.core.state_tracker', return_value=mock_dependencies['state']):
-                with patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']):
-                    with patch('eserv.core.BeautifulSoup', side_effect=Exception('Parse error')):
-                        # Initialize pipeline
-                        pipeline = Pipeline()
-                        result = pipeline.execute(sample_email_record)
+        with (
+            patch('eserv.core.config', return_value=mock_dependencies['config']),
+            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
+            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            patch('eserv.core.BeautifulSoup', side_effect=Exception('Parse error')),
+        ):
+            # Initialize pipeline
+            pipeline = Pipeline()
+            result = pipeline.execute(sample_email_record)
 
-                        # Verify ProcessedResult with error returned
-                        assert result.error is not None
-                        assert result.status == 'error'
+            # Verify ProcessedResult with error returned
+            assert result.error is not None
+            assert result.status == 'error'
 
     def test_generic_exception_converted_to_processed_result(
         self,
@@ -539,19 +567,21 @@ class TestPipelineExecute:
         sample_email_record,
     ) -> None:
         """Test generic exception converted to ProcessedResult with stage info."""
-        with patch('eserv.core.config', return_value=mock_dependencies['config']):
-            with patch('eserv.core.state_tracker', return_value=mock_dependencies['state']):
-                with patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']):
-                    with patch('eserv.core.BeautifulSoup', side_effect=RuntimeError('Unexpected error')):
-                        # Initialize pipeline
-                        pipeline = Pipeline()
-                        result = pipeline.execute(sample_email_record)
+        with (
+            patch('eserv.core.config', return_value=mock_dependencies['config']),
+            patch('eserv.core.state_tracker', return_value=mock_dependencies['state']),
+            patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker']),
+            patch('eserv.core.BeautifulSoup', side_effect=RuntimeError('Unexpected error')),
+        ):
+            # Initialize pipeline
+            pipeline = Pipeline()
+            result = pipeline.execute(sample_email_record)
 
-                        # Verify ProcessedResult with error
-                        # Error is wrapped in PipelineError with stage 'parsing'
-                        assert result.error is not None
-                        assert result.error['category'] == 'parsing'
-                        assert 'message' in result.error
-                        message = result.error['message']
-                        assert isinstance(message, str)
-                        assert 'Unexpected error' in message
+            # Verify ProcessedResult with error
+            # Error is wrapped in PipelineError with stage 'parsing'
+            assert result.error is not None
+            assert result.error['category'] == 'parsing'
+            assert 'message' in result.error
+            message = result.error['message']
+            assert isinstance(message, str)
+            assert 'Unexpected error' in message
