@@ -30,7 +30,6 @@ def scenario(
         'test_duplicate': test_duplicate,
         'test_rotation': test_rotation,
         'test_persistence': test_persistence,
-        'exception': None,
     }
 
 
@@ -48,87 +47,82 @@ class TestEmailState:
         test_duplicate: bool,
         test_rotation: bool,
         test_persistence: bool,
-        exception: type[Exception] | None,
     ):
-        def execute() -> None:
-            temp_dir = Path(tempfile.mkdtemp())
-            try:
-                subject, matched_folder = params
-                state_file = temp_dir / 'email_state.json'
+        temp_dir = Path(tempfile.mkdtemp())
+        try:
+            subject, _ = params
+            state_file = temp_dir / 'email_state.json'
 
-                if test_persistence:
-                    # Test persistence across instances
-                    from eserv.monitor.types import EmailRecord
-                    from datetime import UTC, datetime
+            if test_persistence:
+                # Test persistence across instances
+                from datetime import UTC, datetime
 
-                    state1 = eserv.state_tracker(state_file)
-                    record = EmailRecord(
-                        uid='test-uid-123',
-                        sender='court@example.com',
-                        subject=subject,
-                        received_at=datetime.now(UTC),
-                        html_body='<html>test</html>',
-                    )
-                    state1.record(record)
+                from eserv.monitor.types import EmailRecord
 
-                    # Create new instance and verify persistence
-                    state2 = eserv.state_tracker(state_file)
-                    assert state2.is_processed('test-uid-123')
-                    assert 'test-uid-123' in state2.processed
+                state1 = eserv.state_tracker(state_file)
+                record = EmailRecord(
+                    uid='test-uid-123',
+                    sender='court@example.com',
+                    subject=subject,
+                    received_at=datetime.now(UTC),
+                    html_body='<html>test</html>',
+                )
+                state1.record(record)
 
-                elif test_rotation:
-                    # NOTE: Weekly rotation feature was removed (see CLAUDE.md)
-                    # This test is skipped as the functionality no longer exists
-                    # The current implementation uses a fresh start approach with UID primary keys
-                    pytest.skip('Rotation feature removed - using fresh start approach')
+                # Create new instance and verify persistence
+                state2 = eserv.state_tracker(state_file)
+                assert state2.is_processed('test-uid-123')
+                assert 'test-uid-123' in state2.processed
 
-                elif test_duplicate:
-                    # Test duplicate detection
-                    from eserv.monitor.types import EmailRecord
-                    from datetime import UTC, datetime
+            elif test_rotation:
+                # NOTE: Weekly rotation feature was removed (see CLAUDE.md)
+                # This test is skipped as the functionality no longer exists
+                # The current implementation uses a fresh start approach with UID primary keys
+                pytest.skip('Rotation feature removed - using fresh start approach')
 
-                    state = eserv.state_tracker(state_file)
-                    record = EmailRecord(
-                        uid='duplicate-test-456',
-                        sender='court@example.com',
-                        subject=subject,
-                        received_at=datetime.now(UTC),
-                        html_body='<html>test</html>',
-                    )
+            elif test_duplicate:
+                # Test duplicate detection
+                from datetime import UTC, datetime
 
-                    # Record twice
-                    state.record(record)
-                    state.record(record)
+                from eserv.monitor.types import EmailRecord
 
-                    # Should still only be processed once
-                    assert state.is_processed('duplicate-test-456')
-                    assert len(state.processed) == 1
+                state = eserv.state_tracker(state_file)
+                record = EmailRecord(
+                    uid='duplicate-test-456',
+                    sender='court@example.com',
+                    subject=subject,
+                    received_at=datetime.now(UTC),
+                    html_body='<html>test</html>',
+                )
 
-                else:
-                    # Test basic mark/check
-                    from eserv.monitor.types import EmailRecord
-                    from datetime import UTC, datetime
+                # Record twice
+                state.record(record)
+                state.record(record)
 
-                    state = eserv.state_tracker(state_file)
-                    assert not state.is_processed('basic-test-789')
+                # Should still only be processed once
+                assert state.is_processed('duplicate-test-456')
+                assert len(state.processed) == 1
 
-                    record = EmailRecord(
-                        uid='basic-test-789',
-                        sender='court@example.com',
-                        subject=subject,
-                        received_at=datetime.now(UTC),
-                        html_body='<html>test</html>',
-                    )
-                    state.record(record)
+            else:
+                # Test basic mark/check
+                from datetime import UTC, datetime
 
-                    assert state.is_processed('basic-test-789')
-                    assert 'basic-test-789' in state.processed
+                from eserv.monitor.types import EmailRecord
 
-            finally:
-                shutil.rmtree(temp_dir, ignore_errors=True)
+                state = eserv.state_tracker(state_file)
+                assert not state.is_processed('basic-test-789')
 
-        if exception is not None:
-            with pytest.raises(exception):
-                execute()
-        else:
-            execute()
+                record = EmailRecord(
+                    uid='basic-test-789',
+                    sender='court@example.com',
+                    subject=subject,
+                    received_at=datetime.now(UTC),
+                    html_body='<html>test</html>',
+                )
+                state.record(record)
+
+                assert state.is_processed('basic-test-789')
+                assert 'basic-test-789' in state.processed
+
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)

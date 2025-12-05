@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
@@ -14,12 +13,12 @@ import requests
 from eserv.util.oauth_manager import (
     CredentialManager,
     OAuthCredential,
-    _refresh_dropbox,
-    _refresh_outlook,
+    _refresh_dropbox,  # noqa: PLC2701
+    _refresh_outlook,  # noqa: PLC2701
 )
 
 if TYPE_CHECKING:
-    pass
+    from pathlib import Path
 
 
 class TestTokenRefresh:
@@ -385,7 +384,7 @@ class TestDropboxManager:
         assert manager._client is None
 
         # Access client property
-        with patch('dropbox.Dropbox') as MockDropbox:
+        with patch('dropbox.Dropbox') as MockDropbox:  # noqa: N806
             mock_client = Mock()
             MockDropbox.return_value = mock_client
 
@@ -420,7 +419,7 @@ class TestDropboxManager:
 
         manager = DropboxManager(cred)
 
-        with patch('dropbox.Dropbox') as MockDropbox:
+        with patch('dropbox.Dropbox') as MockDropbox:  # noqa: N806
             mock_client = Mock()
             MockDropbox.return_value = mock_client
 
@@ -452,7 +451,7 @@ class TestDropboxManager:
 
         manager = DropboxManager(cred)
 
-        with patch('dropbox.Dropbox') as MockDropbox:
+        with patch('dropbox.Dropbox') as MockDropbox:  # noqa: N806
             _ = manager.client
 
             # Verify original credential values were used
