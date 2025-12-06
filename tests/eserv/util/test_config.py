@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Final
 
 import pytest
 
-import eserv
+from automate import eserv
 
 if TYPE_CHECKING:
     from pathlib import Path

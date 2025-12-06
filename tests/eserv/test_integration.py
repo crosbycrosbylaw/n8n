@@ -16,13 +16,13 @@ from typing import TYPE_CHECKING
 import pytest
 from rampy import test
 
-import eserv
-from eserv.util.target_finder import FolderMatcher
+from automate import eserv
+from automate.eserv.util.target_finder import FolderMatcher
 
 if TYPE_CHECKING:
     from typing import Any
 
-    from eserv.types import EmailRecord
+    from automate.eserv.types import EmailRecord
 
 
 def workflow_scenario(

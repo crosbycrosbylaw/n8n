@@ -15,12 +15,9 @@ from __future__ import annotations
 
 import sys
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from rampy import console, test
-
-if TYPE_CHECKING:
-    pass
 
 cons = console.bind()
 
@@ -39,7 +36,7 @@ def check_config() -> bool:
     cons.info('Checking configuration...')
 
     try:
-        from eserv.util import Config
+        from automate.eserv.util import Config
 
         config = Config.from_env()
 
@@ -64,7 +61,7 @@ def check_dropbox() -> bool:
     try:
         import dropbox
 
-        from eserv.util import Config
+        from automate.eserv.util import Config
 
         config = Config.from_env()
         dbx = dropbox.Dropbox(config.dropbox.token)
@@ -114,7 +111,7 @@ def test_sample_email() -> bool:
 
         from bs4 import BeautifulSoup
 
-        from eserv.extract import extract_download_info, extract_upload_info
+        from automate.eserv.extract import extract_download_info, extract_upload_info
         from tests.eserv.lib import SAMPLE_EMAIL
 
         # Parse email
@@ -169,7 +166,7 @@ def main() -> int:
 
     results: list[tuple[str, Any]] = []
     for name, test_func in tests:
-        print(f'\n[ {name} ]')  # noqa: T201
+        print(f'\n[ {name} ]')
         result = test_func()
         results.append((name, result))
 

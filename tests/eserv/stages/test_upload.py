@@ -15,8 +15,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
-from eserv.enums import status
-from eserv.types import DropboxManager
+from automate.eserv.enums import status
+from automate.eserv.types import DropboxManager
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -253,7 +253,7 @@ def test_document_upload_orchestration(
         case_name='Unknown Case',
         assertions=lambda res: {
             'status should be review': res.status == status.MANUAL_REVIEW,
-            'path should be review': res.folder_path == '/Clio/Manual Review/',
+            'path should be review': res.folder_path == '/Manual Review/',
         },
         extensions=lambda self: [
             self.mock_dbx.upload.assert_called_once(),

@@ -118,7 +118,7 @@ def migrate_credentials_file(file_path: Path) -> None:
 
 
 def main() -> None:
-    """Main entry point for migration script."""
+    """Entry point for migration script."""
     if len(sys.argv) != 2:
         print('Usage: python scripts/migrate_credentials.py /path/to/credentials.json')
         sys.exit(1)

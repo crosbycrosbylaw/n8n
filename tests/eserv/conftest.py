@@ -12,7 +12,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Generator, Mapping, Sequence
     from pathlib import Path
 
-    from eserv.types import EmailRecord
+    from automate.eserv.types import EmailRecord
 
 
 @pytest.fixture
@@ -26,7 +26,7 @@ def tempdir() -> Generator[Path]:
 
 @pytest.fixture
 def record() -> EmailRecord:
-    from eserv.record import record_factory
+    from automate.eserv.record import record_factory
 
     return record_factory(SAMPLE_EMAIL)
 

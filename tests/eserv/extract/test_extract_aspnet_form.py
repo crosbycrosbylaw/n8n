@@ -11,8 +11,8 @@ from typing import TYPE_CHECKING
 import pytest
 from rampy import test
 
-from eserv.errors import EmailParseError
-from eserv.extract import extract_aspnet_form_data
+from automate.eserv.errors.types import EmailParseError
+from automate.eserv.extract import extract_aspnet_form_data
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

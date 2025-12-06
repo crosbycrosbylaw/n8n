@@ -4,7 +4,7 @@ build-system.requires      = ["hatchling"]
 [project]
 
 description = "python utilities for n8n workflow automation"
-name        = "eserv"
+name        = "automate"
 version     = "0.0.1"
 
 authors = [{ name = "zaynram", email = "ramdasszayn@gmail.com" }]
@@ -15,8 +15,8 @@ dynamic = ["dependencies", "requires-python"]
 
 include-package-data = true
 
-package-dir = { "*" = "src" }
-packages    = ["eserv"]
+package-dir = { "*" = "src", "eserv" = "src/automate" }
+packages    = ["automate", "eserv"]
 py-modules  = ["setup_console.py"]
 
 [tool.pytest.ini_options]

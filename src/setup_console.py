@@ -1,3 +1,3 @@
 from rampy import console
 
-console = console.bind(file=__name__)
+console = console.bind()

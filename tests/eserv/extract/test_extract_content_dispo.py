@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 from rampy import test
 
-from eserv.extract import extract_filename_from_disposition
+from automate.eserv.extract import extract_filename_from_disposition
 
 if TYPE_CHECKING:
     from typing import Literal

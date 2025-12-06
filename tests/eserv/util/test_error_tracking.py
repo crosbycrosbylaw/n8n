@@ -6,15 +6,15 @@ from typing import TYPE_CHECKING, Unpack
 
 from rampy import test
 
-from eserv import stage
-from eserv.record import record_factory
-from eserv.util import error_tracker_factory
+from automate.eserv import stage
+from automate.eserv.record import record_factory
+from automate.eserv.util import error_tracker_factory
 
 if TYPE_CHECKING:
     from pathlib import Path
     from typing import TypedDict
 
-    from eserv.types import EmailRecord
+    from automate.eserv.types import EmailRecord
 
     class Scenario(TypedDict):
         record: EmailRecord

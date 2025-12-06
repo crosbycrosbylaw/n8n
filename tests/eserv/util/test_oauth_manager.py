@@ -10,8 +10,8 @@ import orjson
 import pytest
 import requests
 
-from eserv.util import dropbox_manager_factory
-from eserv.util.oauth_manager import (
+from automate.eserv.util import dropbox_manager_factory
+from automate.eserv.util.oauth_manager import (
     CredentialManager,
     OAuthCredential,
     _refresh_dropbox,
@@ -615,7 +615,7 @@ class TestCredentialManager:
         manager = CredentialManager(creds_file)
 
         # Mock refresh handler
-        with patch('eserv.util.oauth_manager._refresh_dropbox') as mock_refresh:
+        with patch('automate.eserv.util.oauth_manager._refresh_dropbox') as mock_refresh:
             # Get credential (should NOT trigger refresh)
             cred = manager.get_credential('dropbox')
 

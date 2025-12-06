@@ -16,13 +16,13 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from eserv.download import (
+from automate.eserv.download import (
     _bypass_aspnet_form,
     _process_accepted_response,
     _process_response,
     download_documents,
 )
-from eserv.errors import DocumentDownloadError
+from automate.eserv.errors.types import DocumentDownloadError
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -77,8 +77,8 @@ class TestDownloadDocuments:
         mock_info.source = 'http://example.com/document.pdf'
 
         with (
-            patch('eserv.download.extract_download_info', return_value=mock_info),
-            patch('eserv.download.document_store_factory', return_value=temp_path),
+            patch('automate.eserv.download.extract_download_info', return_value=mock_info),
+            patch('automate.eserv.download.document_store_factory', return_value=temp_path),
             patch('requests.sessions.Session') as mock_session_class,
         ):
             # Setup mock session
@@ -131,11 +131,11 @@ class TestDownloadDocuments:
         ]
 
         with (
-            patch('eserv.download.extract_download_info', return_value=mock_info),
-            patch('eserv.download.document_store_factory', return_value=temp_path),
+            patch('automate.eserv.download.extract_download_info', return_value=mock_info),
+            patch('automate.eserv.download.document_store_factory', return_value=temp_path),
             patch('requests.sessions.Session') as mock_session_class,
             patch(
-                'eserv.download.extract_links_from_response_html',
+                'automate.eserv.download.extract_links_from_response_html',
                 return_value=mock_links,
             ),
         ):
@@ -193,7 +193,7 @@ class TestDownloadDocuments:
         """Test that missing download info raises an error."""
         with (
             patch(
-                'eserv.download.extract_download_info',
+                'automate.eserv.download.extract_download_info',
                 side_effect=ValueError('No download info'),
             ),
             pytest.raises(ValueError, match='No download info'),
@@ -252,9 +252,9 @@ class TestProcessResponse:
         post_response.raise_for_status = Mock()
 
         with (
-            patch('eserv.download.extract_aspnet_form_data', return_value={}),
+            patch('automate.eserv.download.extract_aspnet_form_data', return_value={}),
             patch(
-                'eserv.download.extract_post_request_url',
+                'automate.eserv.download.extract_post_request_url',
                 return_value='http://example.com/post',
             ),
         ):
@@ -302,7 +302,7 @@ class TestProcessResponse:
         pdf_response.raise_for_status = Mock()
 
         with patch(
-            'eserv.download.extract_links_from_response_html',
+            'automate.eserv.download.extract_links_from_response_html',
             return_value=[mock_link],
         ):
             mock_session.get.return_value = pdf_response
@@ -348,7 +348,9 @@ class TestProcessResponse:
         )
 
         # Process response should raise
-        with pytest.raises(DocumentDownloadError, match="unknown content-type: 'application/unknown'"):
+        with pytest.raises(
+            DocumentDownloadError, match="unknown content-type: 'application/unknown'"
+        ):
             _process_response(mock_session, mock_response)
 
 
@@ -370,9 +372,9 @@ class TestBypassAspnetForm:
         post_response.raise_for_status = Mock()
 
         with (
-            patch('eserv.download.extract_aspnet_form_data', return_value=mock_form_data),
+            patch('automate.eserv.download.extract_aspnet_form_data', return_value=mock_form_data),
             patch(
-                'eserv.download.extract_post_request_url',
+                'automate.eserv.download.extract_post_request_url',
                 return_value='http://example.com/post',
             ),
         ):
@@ -398,7 +400,7 @@ class TestBypassAspnetForm:
         # Mock extract_aspnet_form_data to raise error
         with (
             patch(
-                'eserv.download.extract_aspnet_form_data',
+                'automate.eserv.download.extract_aspnet_form_data',
                 side_effect=ValueError('Missing form data'),
             ),
             pytest.raises(ValueError, match='Missing form data'),
@@ -412,9 +414,9 @@ class TestBypassAspnetForm:
 
         # Mock extract_post_request_url to raise error
         with (
-            patch('eserv.download.extract_aspnet_form_data', return_value={}),
+            patch('automate.eserv.download.extract_aspnet_form_data', return_value={}),
             patch(
-                'eserv.download.extract_post_request_url',
+                'automate.eserv.download.extract_post_request_url',
                 side_effect=ValueError('Missing POST URL'),
             ),
             pytest.raises(ValueError, match='Missing POST URL'),
@@ -431,7 +433,7 @@ class TestProcessAcceptedResponse:
         content_disposition = 'attachment; filename="Motion to Dismiss.pdf"'
 
         with patch(
-            'eserv.download.extract_filename_from_disposition',
+            'automate.eserv.download.extract_filename_from_disposition',
             return_value='Motion to Dismiss.pdf',
         ):
             result = _process_accepted_response(content, None, content_disposition)
@@ -447,7 +449,7 @@ class TestProcessAcceptedResponse:
         content_disposition = ''
 
         with patch(
-            'eserv.download.extract_filename_from_disposition',
+            'automate.eserv.download.extract_filename_from_disposition',
             return_value=None,
         ):
             result = _process_accepted_response(content, 1, content_disposition)
@@ -463,7 +465,7 @@ class TestProcessAcceptedResponse:
         content_disposition = ''
 
         with patch(
-            'eserv.download.extract_filename_from_disposition',
+            'automate.eserv.download.extract_filename_from_disposition',
             return_value=None,
         ):
             result = _process_accepted_response(content, None, content_disposition)

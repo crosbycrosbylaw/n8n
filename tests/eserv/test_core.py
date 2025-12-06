@@ -20,10 +20,10 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from eserv.core import Pipeline
-from eserv.enums import status
-from eserv.errors.pipeline import *
-from eserv.types import UploadResult
+from automate.eserv.core import Pipeline
+from automate.eserv.enums import status
+from automate.eserv.errors.pipeline import *
+from automate.eserv.types import IntermediaryResult
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -64,7 +64,7 @@ def mock_dependencies(tempdir) -> dict[str, Mock]:
     mock_state.is_processed.return_value = False
     mock_state.processed = set()
 
-    # Configure error() to return UploadResult with ERROR status and store error entry
+    # Configure error() to return IntermediaryResult with ERROR status and store error entry
     errors_list = []
 
     def mock_error(
@@ -72,13 +72,15 @@ def mock_dependencies(tempdir) -> dict[str, Mock]:
         *,
         stage=None,
         exception=None,
+        result=None,
         context=None,
-        **kwds: Any,
-    ) -> UploadResult:
+    ) -> IntermediaryResult:
         # Store error entry
         if exception and hasattr(exception, 'entry'):
             errors_list.append(exception.entry())
-        return UploadResult(status=status.ERROR)
+        if result:
+            raise PipelineError.from_stage(stage, message=event, context=context)
+        return IntermediaryResult(status=status.ERROR)
 
     mock_tracker = Mock(spec=['track', 'clear_old_errors', 'prev_error'])
     mock_track_cm = Mock()
@@ -102,7 +104,7 @@ def mock_dependencies(tempdir) -> dict[str, Mock]:
 @pytest.fixture
 def sample_email_record():
     """Create sample EmailRecord for testing."""
-    from eserv import record_factory
+    from automate.eserv import record_factory
 
     return record_factory(
         uid='email-123',
@@ -134,7 +136,7 @@ def mock_core_factory(
         }
         try:
             with patch.multiple(
-                target='eserv.core',
+                target='automate.eserv.core',
                 **{_resolve_dependency_name(name): out[name] for name in out},
             ):
                 yield out
@@ -215,10 +217,10 @@ class TestPipelineProcess:
         # Mock all stage functions
         with (
             mock_core_factory('config', 'state', 'tracker'),
-            patch('eserv.core.BeautifulSoup') as mock_soup_class,
-            patch('eserv.core.download_documents', return_value=('Motion', store_path)),
-            patch('eserv.core.extract_upload_info') as mock_extract,
-            patch('eserv.core.upload_documents') as mock_upload,
+            patch('automate.eserv.core.BeautifulSoup') as mock_soup_class,
+            patch('automate.eserv.core.download_documents', return_value=('Motion', store_path)),
+            patch('automate.eserv.core.extract_upload_info') as mock_extract,
+            patch('automate.eserv.core.upload_documents') as mock_upload,
         ):
             # Setup mocks
             mock_soup = Mock()
@@ -229,7 +231,7 @@ class TestPipelineProcess:
                 doc_count=1,
             )
 
-            mock_upload.return_value = UploadResult(
+            mock_upload.return_value = IntermediaryResult(
                 status=status.SUCCESS,
                 folder_path='/Clio/Smith v. Jones',
                 uploaded_files=['Motion.pdf'],
@@ -257,7 +259,7 @@ class TestPipelineProcess:
         """Test HTML parsing failure returns error result."""
         with (
             mock_core_factory('config', 'state', 'tracker'),
-            patch('eserv.core.BeautifulSoup', side_effect=Exception('Parse error')),
+            patch('automate.eserv.core.BeautifulSoup', side_effect=Exception('Parse error')),
         ):
             # Initialize pipeline
             pipeline = Pipeline()
@@ -278,9 +280,9 @@ class TestPipelineProcess:
         """Test document download failure returns error result."""
         with (
             mock_core_factory('config', 'state', 'tracker'),
-            patch('eserv.core.BeautifulSoup'),
+            patch('automate.eserv.core.BeautifulSoup'),
             patch(
-                'eserv.core.download_documents',
+                'automate.eserv.core.download_documents',
                 side_effect=Exception('Download error'),
             ),
         ):
@@ -307,10 +309,10 @@ class TestPipelineProcess:
 
         with (
             mock_core_factory('config', 'state', 'tracker'),
-            patch('eserv.core.BeautifulSoup'),
-            patch('eserv.core.download_documents', return_value=('Motion', store_path)),
+            patch('automate.eserv.core.BeautifulSoup'),
+            patch('automate.eserv.core.download_documents', return_value=('Motion', store_path)),
             patch(
-                'eserv.core.extract_upload_info',
+                'automate.eserv.core.extract_upload_info',
                 side_effect=Exception('Extraction error'),
             ),
         ):
@@ -340,9 +342,9 @@ class TestPipelineProcess:
 
         with (
             mock_core_factory('config', 'state', 'tracker'),
-            patch('eserv.core.BeautifulSoup'),
-            patch('eserv.core.download_documents', return_value=('Motion', store_path)),
-            patch('eserv.core.extract_upload_info') as mock_extract,
+            patch('automate.eserv.core.BeautifulSoup'),
+            patch('automate.eserv.core.download_documents', return_value=('Motion', store_path)),
+            patch('automate.eserv.core.extract_upload_info') as mock_extract,
         ):
             mock_extract.return_value = Mock(case_name='Smith v. Jones')
 
@@ -369,13 +371,13 @@ class TestPipelineProcess:
 
         with (
             mock_core_factory('config', 'state', 'tracker'),
-            patch('eserv.core.BeautifulSoup'),
-            patch('eserv.core.download_documents', return_value=('Motion', store_path)),
-            patch('eserv.core.extract_upload_info') as mock_extract,
-            patch('eserv.core.upload_documents') as mock_upload,
+            patch('automate.eserv.core.BeautifulSoup'),
+            patch('automate.eserv.core.download_documents', return_value=('Motion', store_path)),
+            patch('automate.eserv.core.extract_upload_info') as mock_extract,
+            patch('automate.eserv.core.upload_documents') as mock_upload,
         ):
             mock_extract.return_value = Mock(case_name='Smith v. Jones')
-            mock_upload.return_value = UploadResult(status=status.NO_WORK)
+            mock_upload.return_value = IntermediaryResult(status=status.NO_WORK)
 
             # Initialize pipeline
             pipeline = Pipeline()
@@ -398,13 +400,13 @@ class TestPipelineProcess:
 
         with (
             mock_core_factory('config', 'state', 'tracker'),
-            patch('eserv.core.BeautifulSoup'),
-            patch('eserv.core.download_documents', return_value=('Motion', store_path)),
-            patch('eserv.core.extract_upload_info') as mock_extract,
-            patch('eserv.core.upload_documents') as mock_upload,
+            patch('automate.eserv.core.BeautifulSoup'),
+            patch('automate.eserv.core.download_documents', return_value=('Motion', store_path)),
+            patch('automate.eserv.core.extract_upload_info') as mock_extract,
+            patch('automate.eserv.core.upload_documents') as mock_upload,
         ):
             mock_extract.return_value = Mock(case_name='Smith v. Jones')
-            mock_upload.return_value = UploadResult(
+            mock_upload.return_value = IntermediaryResult(
                 status=status.SUCCESS,
                 folder_path='/Clio/Smith v. Jones',
                 uploaded_files=['Motion.pdf'],
@@ -432,13 +434,13 @@ class TestPipelineProcess:
 
         with (
             mock_core_factory('config', 'state', 'tracker'),
-            patch('eserv.core.BeautifulSoup'),
-            patch('eserv.core.download_documents', return_value=('Motion', store_path)),
-            patch('eserv.core.extract_upload_info') as mock_extract,
-            patch('eserv.core.upload_documents') as mock_upload,
+            patch('automate.eserv.core.BeautifulSoup'),
+            patch('automate.eserv.core.download_documents', return_value=('Motion', store_path)),
+            patch('automate.eserv.core.extract_upload_info') as mock_extract,
+            patch('automate.eserv.core.upload_documents') as mock_upload,
         ):
             mock_extract.return_value = Mock(case_name='Unknown Case')
-            mock_upload.return_value = UploadResult(
+            mock_upload.return_value = IntermediaryResult(
                 status=status.MANUAL_REVIEW,
                 folder_path='/Clio/Manual Review/',
                 uploaded_files=['Motion.pdf'],
@@ -456,7 +458,7 @@ class TestPipelineProcess:
 
     def test_upload_error_status(
         self,
-        mock_dependencies: dict,
+        mock_dependencies: dict[str, Mock],
         mock_core_factory: MockCoreFactory,
         sample_email_record,
         tempdir,
@@ -464,24 +466,27 @@ class TestPipelineProcess:
         """Test ERROR status from upload failure."""
         store_path = tempdir / 'docs'
         store_path.mkdir(exist_ok=True)
+
         pdf_path = store_path / 'Motion.pdf'
         pdf_path.write_bytes(b'%PDF-1.4\nTest')
 
         with (
             mock_core_factory('config', 'state', 'tracker'),
-            patch('eserv.core.BeautifulSoup'),
-            patch('eserv.core.download_documents', return_value=('Motion', store_path)),
-            patch('eserv.core.extract_upload_info') as mock_extract,
-            patch('eserv.core.upload_documents') as mock_upload,
+            patch('automate.eserv.core.BeautifulSoup'),
+            patch('automate.eserv.core.download_documents', return_value=('Motion', store_path)),
+            patch('automate.eserv.core.extract_upload_info') as mock_extract,
+            patch('automate.eserv.core.upload_documents') as mock_upload,
         ):
             mock_extract.return_value = Mock(case_name='Smith v. Jones')
-            mock_upload.return_value = UploadResult(status=status.ERROR, error='Dropbox API error')
+            mock_upload.return_value = IntermediaryResult(
+                status=status.ERROR, error='Dropbox API error'
+            )
 
             # Initialize pipeline
             pipeline = Pipeline()
 
-            # Process should raise PipelineError
-            with pytest.raises(PipelineError):
+            # Process should raise DocumentUploadError
+            with pytest.raises(DocumentUploadError):
                 pipeline.process(sample_email_record)
 
             # Verify error logged
@@ -498,7 +503,7 @@ class TestPipelineMonitor:
         """Test monitor delegates to EmailProcessor."""
         with (
             mock_core_factory('config', 'state', 'tracker'),
-            patch('eserv.core.EmailProcessor') as mock_processor_class,
+            patch('automate.eserv.core.EmailProcessor') as mock_processor_class,
         ):
             # Mock EmailProcessor.process_batch
             mock_processor = Mock()
@@ -527,7 +532,7 @@ class TestPipelineMonitor:
         """Test error log cleanup called before monitoring."""
         with (
             mock_core_factory('config', 'state', 'tracker'),
-            patch('eserv.core.EmailProcessor') as mock_processor_class,
+            patch('automate.eserv.core.EmailProcessor') as mock_processor_class,
         ):
             mock_processor = Mock()
             mock_processor.process_batch.return_value = Mock()
@@ -558,13 +563,13 @@ class TestPipelineExecute:
 
         with (
             mock_core_factory('config', 'state', 'tracker'),
-            patch('eserv.core.BeautifulSoup'),
-            patch('eserv.core.download_documents', return_value=('Motion', store_path)),
-            patch('eserv.core.extract_upload_info') as mock_extract,
-            patch('eserv.core.upload_documents') as mock_upload,
+            patch('automate.eserv.core.BeautifulSoup'),
+            patch('automate.eserv.core.download_documents', return_value=('Motion', store_path)),
+            patch('automate.eserv.core.extract_upload_info') as mock_extract,
+            patch('automate.eserv.core.upload_documents') as mock_upload,
         ):
             mock_extract.return_value = Mock(case_name='Smith v. Jones')
-            mock_upload.return_value = UploadResult(status=status.SUCCESS)
+            mock_upload.return_value = IntermediaryResult(status=status.SUCCESS)
 
             # Initialize pipeline and execute
             pipeline = Pipeline()
@@ -582,7 +587,7 @@ class TestPipelineExecute:
         """Test PipelineError converted to ProcessedResult with error."""
         with (
             mock_core_factory('config', 'state', 'tracker'),
-            patch('eserv.core.BeautifulSoup', side_effect=Exception('Parse error')),
+            patch('automate.eserv.core.BeautifulSoup', side_effect=Exception('Parse error')),
         ):
             # Initialize pipeline
             pipeline = Pipeline()
@@ -600,7 +605,9 @@ class TestPipelineExecute:
         """Test generic exception converted to ProcessedResult with stage info."""
         with (
             mock_core_factory('config', 'state', 'tracker'),
-            patch('eserv.core.BeautifulSoup', side_effect=RuntimeError('Unexpected error')),
+            patch(
+                'automate.eserv.core.BeautifulSoup', side_effect=RuntimeError('Unexpected error')
+            ),
         ):
             # Initialize pipeline
             pipeline = Pipeline()

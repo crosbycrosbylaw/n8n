@@ -30,8 +30,9 @@ preview = true
 
 fixable = ["ALL"]
 ignore = [
-    'B006', # Learn Python yo!
-    #'COM819', # Trailing commas is da bomb
+    'B006',   # Learn Python yo!
+    'COM819', # Trailing commas is da bomb
+    'COM812',
     'E731',   # Do not assign to lambda
     'ERA001',
     'T201',   # comment code, prints are lax during development

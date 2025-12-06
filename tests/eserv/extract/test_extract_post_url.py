@@ -10,7 +10,7 @@ from typing import Any
 
 from rampy import test
 
-from eserv.extract import extract_post_request_url
+from automate.eserv.extract import extract_post_request_url
 
 INITIAL_URL = 'https://base.com'
 

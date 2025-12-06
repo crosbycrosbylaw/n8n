@@ -13,10 +13,11 @@ Three distinct testing patterns are used based on test complexity and purpose:
 ## Pattern A: Scenario Factory Pattern
 
 **Use when:**
-- Testing pure functions or simple components
-- Multiple test cases with varying inputs/outputs
-- Minimal or no mocking required
-- Data-driven testing scenarios
+
+-   Testing pure functions or simple components
+-   Multiple test cases with varying inputs/outputs
+-   Minimal or no mocking required
+-   Data-driven testing scenarios
 
 **Structure:**
 
@@ -70,13 +71,14 @@ class TestComponentName:
 ```
 
 **Key conventions:**
-- Scenario factory function named `{component}_scenario`
-- Factory returns `dict[str, Any]`
-- `params` key contains list of positional arguments
-- Other keys become named test parameters
-- Test method uses positional-only `self` parameter (`/`)
-- Test method named simply `test`
-- Docstrings describe behavior, not scenario name
+
+-   Scenario factory function named `{component}_scenario`
+-   Factory returns `dict[str, Any]`
+-   `params` key contains list of positional arguments
+-   Other keys become named test parameters
+-   Test method uses positional-only `self` parameter (`/`)
+-   Test method named simply `test`
+-   Docstrings describe behavior, not scenario name
 
 **Reference:** `tests/eserv/util/test_target_finder.py`
 
@@ -85,10 +87,11 @@ class TestComponentName:
 ## Pattern B: Fixture Class Pattern
 
 **Use when:**
-- Complex mock orchestration required
-- Multiple related test scenarios with shared setup
-- Testing functions with many dependencies
-- Need for reusable test harness
+
+-   Complex mock orchestration required
+-   Multiple related test scenarios with shared setup
+-   Testing functions with many dependencies
+-   Need for reusable test harness
 
 **Structure:**
 
@@ -239,15 +242,16 @@ def test_component_orchestration(
 ```
 
 **Key conventions:**
-- Fixture class extends `test.subtestfix`
-- Basic fixtures defined first, composite fixtures second
-- Fixture class defined last in conftest.py
-- `context()` method manages patches via context manager
-- `converter()` transforms scenario kwargs to function arguments
-- `__call__()` defines scenario interface
-- `assertions` parameter takes dict-returning lambda
-- `extensions` parameter for mock assertions
-- Fixture class has `init=False` fields for internal mocks
+
+-   Fixture class extends `test.subtestfix`
+-   Basic fixtures defined first, composite fixtures second
+-   Fixture class defined last in conftest.py
+-   `context()` method manages patches via context manager
+-   `converter()` transforms scenario kwargs to function arguments
+-   `__call__()` defines scenario interface
+-   `assertions` parameter takes dict-returning lambda
+-   `extensions` parameter for mock assertions
+-   Fixture class has `init=False` fields for internal mocks
 
 **Reference:** `tests/eserv/stages/conftest.py` and `tests/eserv/stages/test_upload.py`
 
@@ -256,10 +260,11 @@ def test_component_orchestration(
 ## Pattern C: Class-Based Pattern
 
 **Use when:**
-- Grouping logically related unit tests
-- Simple fixtures without complex orchestration
-- One behavior per test method
-- Traditional pytest organization preferred
+
+-   Grouping logically related unit tests
+-   Simple fixtures without complex orchestration
+-   One behavior per test method
+-   Traditional pytest organization preferred
 
 **Structure:**
 
@@ -312,13 +317,14 @@ class TestComponentBehavior:
 ```
 
 **Key conventions:**
-- Group related tests by class
-- Class names describe component and aspect being tested
-- One test method per specific behavior
-- Descriptive test method names with `test_` prefix
-- Use fixtures for shared setup
-- Use `with patch()` for inline mocking
-- Assertions focused on single behavior
+
+-   Group related tests by class
+-   Class names describe component and aspect being tested
+-   One test method per specific behavior
+-   Descriptive test method names with `test_` prefix
+-   Use fixtures for shared setup
+-   Use `with patch()` for inline mocking
+-   Assertions focused on single behavior
 
 **Reference:** `tests/eserv/test_core.py`
 
@@ -327,16 +333,18 @@ class TestComponentBehavior:
 ## Pattern D: Mock Factory Pattern (Optional)
 
 **Use when:**
-- Many tests patch the same set of dependencies from a single module
-- Repetitive boilerplate is substantial (10+ tests with 3+ identical patches)
-- Patches are truly identical across all tests (same return values)
-- Benefits of DRY outweigh cost of indirection
+
+-   Many tests patch the same set of dependencies from a single module
+-   Repetitive boilerplate is substantial (10+ tests with 3+ identical patches)
+-   Patches are truly identical across all tests (same return values)
+-   Benefits of DRY outweigh cost of indirection
 
 **When NOT to use:**
-- Tests only patch 1-2 dependencies
-- Patches differ between tests (different return values, different configurations)
-- Only a handful of tests (< 5) in the file
-- Tests span multiple modules (each module would need its own factory)
+
+-   Tests only patch 1-2 dependencies
+-   Patches differ between tests (different return values, different configurations)
+-   Only a handful of tests (< 5) in the file
+-   Tests span multiple modules (each module would need its own factory)
 
 **Structure:**
 
@@ -434,32 +442,36 @@ class TestComponentBehavior:
 ```
 
 **Key conventions:**
-- Mock fixtures defined first (standard pytest pattern)
-- Type aliases for dependency names and factory callable
-- Factory fixture uses `@contextmanager` for clean setup/teardown
-- Lookup dict maps friendly names to actual import paths
-- Factory yields dict of mocks for assertions
-- Tests can still access `mock_dependencies` for detailed assertions
-- Factory is optional - tests can still use verbose patches if needed
-- **Module-specific** - Each test file defines its own factory; avoid generalized "factory factories"
+
+-   Mock fixtures defined first (standard pytest pattern)
+-   Type aliases for dependency names and factory callable
+-   Factory fixture uses `@contextmanager` for clean setup/teardown
+-   Lookup dict maps friendly names to actual import paths
+-   Factory yields dict of mocks for assertions
+-   Tests can still access `mock_dependencies` for detailed assertions
+-   Factory is optional - tests can still use verbose patches if needed
+-   **Module-specific** - Each test file defines its own factory; avoid generalized "factory factories"
 
 **When to migrate existing tests:**
-- File has 10+ tests with identical patch patterns
-- All tests patch same module with same dependencies
-- Patches are truly repetitive (not just similar)
-- Team agrees the abstraction improves readability
+
+-   File has 10+ tests with identical patch patterns
+-   All tests patch same module with same dependencies
+-   Patches are truly repetitive (not just similar)
+-   Team agrees the abstraction improves readability
 
 **Benefits:**
-- DRY - Eliminates repetitive boilerplate (can save 50+ lines)
-- Type safety - Literal types prevent typos in dependency names
-- Maintainability - Single source of truth for patch targets
-- Consistency - All tests patch dependencies the same way
+
+-   DRY - Eliminates repetitive boilerplate (can save 50+ lines)
+-   Type safety - Literal types prevent typos in dependency names
+-   Maintainability - Single source of truth for patch targets
+-   Consistency - All tests patch dependencies the same way
 
 **Tradeoffs:**
-- Indirection - Adds abstraction layer between test and patches
-- Less explicit - Full import paths not immediately visible
-- Module-specific - Each module needs its own factory (intentional; generalized factories sacrifice type safety and ergonomics)
-- Learning curve - New developers must understand the pattern
+
+-   Indirection - Adds abstraction layer between test and patches
+-   Less explicit - Full import paths not immediately visible
+-   Module-specific - Each module needs its own factory (intentional; generalized factories sacrifice type safety and ergonomics)
+-   Learning curve - New developers must understand the pattern
 
 **Reference:** `tests/eserv/test_core.py` (lines 91-112)
 
@@ -482,19 +494,20 @@ from pytest_fixture_classes import fixture_class
 from rampy import test
 
 # Project imports
-from eserv.module import function_under_test
+from automate.eserv.module import function_under_test
 
 # Type-only imports
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Sequence
     from typing import Any
 
-    from eserv.types import CustomType
+    from automate.eserv.types import CustomType
 ```
 
 ### Fixture Patterns
 
 **Simple fixtures:**
+
 ```python
 @pytest.fixture
 def mock_object() -> Mock:
@@ -503,6 +516,7 @@ def mock_object() -> Mock:
 ```
 
 **Composite fixtures:**
+
 ```python
 @pytest.fixture
 def mock_config(mock_dep1: Mock, mock_dep2: Mock) -> Mock:
@@ -511,6 +525,7 @@ def mock_config(mock_dep1: Mock, mock_dep2: Mock) -> Mock:
 ```
 
 **Fixture classes:**
+
 ```python
 @fixture_class(name='fixture_name')
 class FixtureClass:
@@ -525,6 +540,7 @@ class FixtureClass:
 ### Tempdir Management
 
 **Use rampy's test.directory():**
+
 ```python
 @pytest.fixture
 def tempdir() -> Generator[Path]:
@@ -536,6 +552,7 @@ def tempdir() -> Generator[Path]:
 ```
 
 **NOT manual tempfile/shutil:**
+
 ```python
 # DON'T DO THIS
 temp_dir = Path(tempfile.mkdtemp())
@@ -548,6 +565,7 @@ finally:
 ### Exception Testing
 
 **Scenario pattern:**
+
 ```python
 def scenario_factory(
     *,
@@ -577,6 +595,7 @@ class TestValidation:
 ```
 
 **Class-based pattern:**
+
 ```python
 def test_invalid_input_raises_error(self) -> None:
     """Test invalid input raises ValueError."""
@@ -610,14 +629,14 @@ START
 
 **Examples:**
 
-| Test File | Pattern | Reason |
-|-----------|---------|--------|
-| `test_target_finder.py` | A | Pure functions, data-driven |
-| `test_upload.py` | B | Complex mocking (Dropbox, matcher, cache) |
-| `test_core.py` | C + D | Logical grouping + repetitive mocking (17 tests × 3 patches) |
-| `test_extract_*.py` | A | Simple extraction, multiple cases |
-| `test_processor.py` | A | Can use scenario factories instead of dataclasses |
-| `test_email_state.py` | A | Simple state tracking, multiple scenarios |
+| Test File               | Pattern | Reason                                                       |
+| ----------------------- | ------- | ------------------------------------------------------------ |
+| `test_target_finder.py` | A       | Pure functions, data-driven                                  |
+| `test_upload.py`        | B       | Complex mocking (Dropbox, matcher, cache)                    |
+| `test_core.py`          | C + D   | Logical grouping + repetitive mocking (17 tests × 3 patches) |
+| `test_extract_*.py`     | A       | Simple extraction, multiple cases                            |
+| `test_processor.py`     | A       | Can use scenario factories instead of dataclasses            |
+| `test_email_state.py`   | A       | Simple state tracking, multiple scenarios                    |
 
 ---
 
@@ -690,27 +709,29 @@ def test_something(self):
 
 When updating tests to comply with standards:
 
-- [ ] Identify appropriate pattern (A, B, or C)
-- [ ] Update imports to match pattern
-- [ ] Create scenario factory functions (Pattern A) or fixture class (Pattern B)
-- [ ] Use positional-only `self` parameter for scenario tests
-- [ ] Replace manual tempdir with `rampy.test.directory()`
-- [ ] Move complex setup to `converter()` method (Pattern B)
-- [ ] Use lambda assertions and extensions (Pattern B)
-- [ ] Remove conditional logic from test body
-- [ ] Add descriptive docstrings
-- [ ] Verify tests still pass
+-   [ ] Identify appropriate pattern (A, B, or C)
+-   [ ] Update imports to match pattern
+-   [ ] Create scenario factory functions (Pattern A) or fixture class (Pattern B)
+-   [ ] Use positional-only `self` parameter for scenario tests
+-   [ ] Replace manual tempdir with `rampy.test.directory()`
+-   [ ] Move complex setup to `converter()` method (Pattern B)
+-   [ ] Use lambda assertions and extensions (Pattern B)
+-   [ ] Remove conditional logic from test body
+-   [ ] Add descriptive docstrings
+-   [ ] Verify tests still pass
 
 ---
 
 ## References
 
 **Primary examples:**
-- Pattern A: `tests/eserv/util/test_target_finder.py`
-- Pattern B: `tests/eserv/stages/conftest.py` + `tests/eserv/stages/test_upload.py`
-- Pattern C: `tests/eserv/test_core.py`
+
+-   Pattern A: `tests/eserv/util/test_target_finder.py`
+-   Pattern B: `tests/eserv/stages/conftest.py` + `tests/eserv/stages/test_upload.py`
+-   Pattern C: `tests/eserv/test_core.py`
 
 **Supporting documentation:**
-- pytest: https://docs.pytest.org/
-- pytest-fixture-classes: https://github.com/rampy/pytest-fixture-classes
-- rampy: https://github.com/rampy/rampy
+
+-   pytest: https://docs.pytest.org/
+-   pytest-fixture-classes: https://github.com/rampy/pytest-fixture-classes
+-   rampy: https://github.com/rampy/rampy

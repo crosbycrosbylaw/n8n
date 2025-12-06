@@ -17,11 +17,11 @@ from unittest.mock import Mock, patch
 import pytest
 from requests.exceptions import HTTPError
 
-from eserv.monitor.client import graph_client_factory
-from eserv.monitor.flags import status_flag_factory
+from automate.eserv.monitor.client import graph_client_factory
+from automate.eserv.monitor.flags import status_flag_factory
 
 if TYPE_CHECKING:
-    from eserv.types import GraphClient
+    from automate.eserv.types import GraphClient
 
 
 @pytest.fixture
@@ -51,7 +51,7 @@ def graph_client(mock_credential: Mock, mock_config: Mock) -> GraphClient:
 class TestFilterExpression:
     """Test Graph API OData filter expression generation."""
 
-    @patch('eserv.monitor.client.requests.request')
+    @patch('automate.eserv.monitor.client.requests.request')
     def test_filter_syntax_uses_odata_operators(
         self,
         mock_request: Mock,
@@ -81,7 +81,7 @@ class TestFilterExpression:
         assert 'hasAttachments:false' not in filter_expr
         assert 'NOT hasAttachments:false' not in filter_expr
 
-    @patch('eserv.monitor.client.requests.request')
+    @patch('automate.eserv.monitor.client.requests.request')
     def test_filter_includes_date_range(
         self,
         mock_request: Mock,
@@ -110,8 +110,8 @@ class TestFilterExpression:
 class TestPagination:
     """Test pagination handling with @odata.nextLink."""
 
-    @patch('eserv.monitor.client.requests.request')
-    @patch('eserv.monitor.client.requests.get')
+    @patch('automate.eserv.monitor.client.requests.request')
+    @patch('automate.eserv.monitor.client.requests.get')
     def test_pagination_fetches_all_pages(
         self,
         mock_get: Mock,
@@ -188,7 +188,7 @@ class TestPagination:
             timeout=30,
         )
 
-    @patch('eserv.monitor.client.requests.request')
+    @patch('automate.eserv.monitor.client.requests.request')
     def test_pagination_stops_when_no_nextlink(
         self,
         mock_request: Mock,
@@ -214,7 +214,7 @@ class TestPagination:
 class TestFolderResolution:
     """Test folder path resolution to folder ID."""
 
-    @patch('eserv.monitor.client.requests.request')
+    @patch('automate.eserv.monitor.client.requests.request')
     def test_resolve_nested_folder_path(
         self,
         mock_request: Mock,
@@ -241,7 +241,7 @@ class TestFolderResolution:
         assert folder_id == 'test_folder_id'
         assert mock_request.call_count == 2
 
-    @patch('eserv.monitor.client.requests.request')
+    @patch('automate.eserv.monitor.client.requests.request')
     def test_resolve_folder_raises_on_missing_folder(
         self,
         mock_request: Mock,
@@ -257,7 +257,7 @@ class TestFolderResolution:
         with pytest.raises(FileNotFoundError):
             graph_client.resolve_monitoring_folder_id()
 
-    @patch('eserv.monitor.client.requests.request')
+    @patch('automate.eserv.monitor.client.requests.request')
     def test_folder_id_caching(
         self,
         mock_request: Mock,
@@ -283,7 +283,7 @@ class TestFolderResolution:
 class TestErrorHandling:
     """Test network error categorization and retry logic."""
 
-    @patch('eserv.monitor.client.requests.request')
+    @patch('automate.eserv.monitor.client.requests.request')
     def test_retries_on_429_rate_limit(
         self,
         mock_request: Mock,
@@ -308,7 +308,7 @@ class TestErrorHandling:
         assert result == {'value': 'success'}
         assert mock_request.call_count == 2
 
-    @patch('eserv.monitor.client.requests.request')
+    @patch('automate.eserv.monitor.client.requests.request')
     def test_retries_on_500_server_error(
         self,
         mock_request: Mock,
@@ -331,7 +331,7 @@ class TestErrorHandling:
         assert result == {'data': 'ok'}
         assert mock_request.call_count == 2
 
-    @patch('eserv.monitor.client.requests.request')
+    @patch('automate.eserv.monitor.client.requests.request')
     def test_no_retry_on_400_bad_request(
         self,
         mock_request: Mock,
@@ -350,7 +350,7 @@ class TestErrorHandling:
         # Should only attempt once (no retries)
         assert mock_request.call_count == 1
 
-    @patch('eserv.monitor.client.requests.request')
+    @patch('automate.eserv.monitor.client.requests.request')
     def test_no_retry_on_401_unauthorized(
         self,
         mock_request: Mock,
@@ -368,8 +368,8 @@ class TestErrorHandling:
 
         assert mock_request.call_count == 1
 
-    @patch('eserv.monitor.client.requests.request')
-    @patch('eserv.monitor.client.time.sleep')
+    @patch('automate.eserv.monitor.client.requests.request')
+    @patch('automate.eserv.monitor.client.time.sleep')
     def test_exponential_backoff_delays(
         self,
         mock_sleep: Mock,
@@ -398,7 +398,7 @@ class TestErrorHandling:
 class TestMAPIFlags:
     """Test MAPI flag application."""
 
-    @patch('eserv.monitor.client.requests.request')
+    @patch('automate.eserv.monitor.client.requests.request')
     def test_apply_flag_uses_correct_format(
         self,
         mock_request: Mock,
@@ -430,7 +430,7 @@ class TestMAPIFlags:
 class TestHTMLBodyValidation:
     """Test HTML body validation."""
 
-    @patch('eserv.monitor.client.requests.request')
+    @patch('automate.eserv.monitor.client.requests.request')
     def test_raises_on_empty_html_body(
         self,
         mock_request: Mock,

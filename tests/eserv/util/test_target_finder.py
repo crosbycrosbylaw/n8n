@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from rampy import test
 
-from eserv.util.target_finder import FolderMatcher, PartyExtractor
+from automate.eserv.util.target_finder import FolderMatcher, PartyExtractor
 
 if TYPE_CHECKING:
     from typing import Any

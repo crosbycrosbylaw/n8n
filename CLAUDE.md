@@ -76,7 +76,7 @@ pixi run push
 **Pipeline & Orchestration:**
 
 -   **`core.py`** - `Pipeline` class: unified interface for both file-based and monitoring modes
-    -   `process(record: EmailRecord) -> UploadResult` - Process single email
+    -   `process(record: EmailRecord) -> IntermediaryResult` - Process single email
     -   `monitor(num_days: int) -> BatchResult` - Monitor folder and batch process
     -   `execute(record: EmailRecord) -> ProcessedResult` - Process single email with error handling
 -   **`__main__.py`** - Fire CLI entry point (auto-generates subcommands from Pipeline methods)
@@ -88,7 +88,7 @@ pixi run push
 -   **`stages/upload.py`** - Document upload orchestration with Dropbox integration
     -   `upload_documents()` - Main upload orchestration function
     -   `DropboxManager` - Dropbox client management with token refresh
--   **`stages/types.py`** - Upload result types: `UploadResult`, `UploadStatus`
+-   **`stages/types.py`** - Upload result types: `IntermediaryResult`, `UploadStatus`
 -   **`types.py`** - Barrel export module for core type definitions
 
 **Email Monitoring (`monitor/`):**
@@ -195,9 +195,10 @@ pixi run push
 -   **Tradeoffs**: Adds indirection, less explicit import paths
 
 **When to use:**
-- File has 10+ tests with identical patch patterns
-- All tests patch same module with same dependencies
-- Benefits of DRY outweigh cost of indirection
+
+-   File has 10+ tests with identical patch patterns
+-   All tests patch same module with same dependencies
+-   Benefits of DRY outweigh cost of indirection
 
 **Result:** All 131 tests passing. Pattern documented as optional enhancement for files with substantial repetition.
 
@@ -207,7 +208,7 @@ pixi run push
 
 **Issue:** Test was asserting against `mock_dependencies['tracker']` but the Pipeline was using a real ErrorTracker instance because the `error_tracker` patch was missing.
 
-**Resolution:** Added missing `patch('eserv.core.error_tracker', return_value=mock_dependencies['tracker'])` to match the pattern used in all other tests in the file. This ensures the Pipeline receives the mock tracker so assertions work correctly.
+**Resolution:** Added missing `patch('automate.eserv.core.error_tracker', return_value=mock_dependencies['tracker'])` to match the pattern used in all other tests in the file. This ensures the Pipeline receives the mock tracker so assertions work correctly.
 
 **Result:** All 131 tests now passing with 0 failures and 0 skipped tests.
 
@@ -239,6 +240,7 @@ pixi run push
 -   **Migrated test_extract_aspnet_form.py** - Renamed generic `scenario()` to `aspnet_form_scenario()`; renamed `exception` to `should_raise`; cleaner exception handling
 
 **Standardized conventions:**
+
 -   Scenario factory functions named `{component}_scenario`
 -   Positional-only `self` parameter (`/`) for scenario tests
 -   `rampy.test.directory()` for tempdir management (not manual tempfile/shutil)
@@ -246,6 +248,7 @@ pixi run push
 -   Descriptive docstrings on all test classes and factories
 
 **Reference implementations:**
+
 -   Pattern A: `tests/eserv/util/test_target_finder.py`
 -   Pattern B: `tests/eserv/stages/conftest.py` + `tests/eserv/stages/test_upload.py`
 -   Pattern C: `tests/eserv/test_core.py`
@@ -524,10 +527,12 @@ python scripts/migrate_credentials.py /path/to/credentials.json
 ```
 
 The script will:
-- Create a timestamped backup of your original file
-- Convert to the new flat format
-- Preserve all credential data
-```
+
+-   Create a timestamped backup of your original file
+-   Convert to the new flat format
+-   Preserve all credential data
+
+````
 
 ## Testing
 
@@ -548,6 +553,6 @@ python -m pytest --cov=eserv --cov-report=term-missing ./tests
 # Generate HTML coverage report
 python -m pytest --cov=eserv --cov-report=html ./tests
 # View at: htmlcov/index.html
-```
+````
 
 **Bug Fix Summary:** 28 critical issues resolved (Issues #1-28 across three passes). Core functionality is stable, but test coverage gaps remain. See "Outstanding Tasks" section above for pre-deployment requirements.

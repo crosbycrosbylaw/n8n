@@ -17,13 +17,13 @@ from unittest.mock import Mock
 import pytest
 from rampy import test
 
-from eserv import processor_factory, record_factory, result_factory, status_flag_factory
+from automate.eserv import processor_factory, record_factory, result_factory, status_flag_factory
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
     from typing import Any
 
-    from eserv.types import *
+    from automate.eserv.types import *
 
 
 @pytest.fixture
@@ -358,7 +358,7 @@ class TestBatchResultSummary:
 
         count, error = params
 
-        from eserv.types import BatchResult
+        from automate.eserv.types import BatchResult
 
         # Create results based on scenario
         if error is None and count == expect_succeeded:

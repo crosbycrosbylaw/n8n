@@ -5,13 +5,13 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from eserv.record import record_factory
-from eserv.util import state_tracker_factory
+from automate.eserv.record import record_factory
+from automate.eserv.util import state_tracker_factory
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from eserv.types import EmailRecord
+    from automate.eserv.types import EmailRecord
 
 
 def create_test_record(uid: str, subject: str) -> EmailRecord:

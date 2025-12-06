@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from bs4 import BeautifulSoup
 from rampy import test
 
-from eserv.extract import extract_upload_info
+from automate.eserv.extract import extract_upload_info
 from tests.eserv.lib import create_sample_email
 
 if TYPE_CHECKING:

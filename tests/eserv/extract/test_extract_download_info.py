@@ -12,8 +12,8 @@ import pytest
 from bs4 import BeautifulSoup
 from rampy import test
 
-from eserv.errors import EmailParseError
-from eserv.extract import extract_download_info
+from automate.eserv.errors.types import EmailParseError
+from automate.eserv.extract import extract_download_info
 from tests.eserv.lib import create_sample_email
 
 if typing.TYPE_CHECKING:

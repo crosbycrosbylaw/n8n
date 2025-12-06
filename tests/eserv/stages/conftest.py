@@ -21,14 +21,14 @@ import pytest
 from pytest_fixture_classes import fixture_class
 from rampy import test
 
-from eserv.upload import upload_documents
+from automate.eserv.upload import upload_documents
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Sequence
     from inspect import BoundArguments
     from pathlib import Path
 
-    from eserv.types import UploadResult
+    from automate.eserv.types import IntermediaryResult
 
 
 @pytest.fixture
@@ -44,7 +44,7 @@ def mock_credential() -> Mock:
 
 @pytest.fixture
 def mock_paths() -> Mock:
-    return Mock(manual_review_folder='/Clio/Manual Review/')
+    return Mock(manual_review_folder='/Manual Review/')
 
 
 @pytest.fixture
@@ -103,21 +103,23 @@ class UploadDocumentSubtestFixture(test.subtestfix):
     def context(self) -> Generator[Any]:
         try:
             with (
-                patch('eserv.upload.index_cache_factory', return_value=self.mock_cache),
-                patch('eserv.upload.folder_matcher_factory', return_value=self.mock_matcher),
-                patch('eserv.upload.dropbox_manager_factory', return_value=self.mock_dbx),
-                patch('eserv.upload.notifier_factory', return_value=self.mock_notifier),
+                patch('automate.eserv.upload.index_cache_factory', return_value=self.mock_cache),
+                patch(
+                    'automate.eserv.upload.folder_matcher_factory', return_value=self.mock_matcher
+                ),
+                patch('automate.eserv.upload.dropbox_manager_factory', return_value=self.mock_dbx),
+                patch('automate.eserv.upload.notifier_factory', return_value=self.mock_notifier),
             ):
                 yield
         finally:
             pass
 
     def converter(self, **kwds: Any) -> BoundArguments:
-        cached_paths = kwds['cached_paths']
-        case_name = kwds['case_name']
+        cached_paths = kwds.pop('cached_paths', ())
+        case_name = kwds.pop('case_name', 'Unknown')
 
         self.mock_cache.configure_mock(**{
-            'is_stale.return_value': kwds['stale_cache'],
+            'is_stale.return_value': kwds.pop('stale_cache', False),
             'get_all_paths.return_value': cached_paths,
         })
 
@@ -138,38 +140,29 @@ class UploadDocumentSubtestFixture(test.subtestfix):
         })
 
         self.mock_dbx.configure_mock(**{
-            'uploaded': kwds['uploaded'],
+            'uploaded': kwds.pop('uploaded', ()),
             'index.return_value': index_returns,
         })
-        return self.bind_factory(
+        return super().bind_factory(
             documents=kwds['documents'],
             case_name=case_name,
-            lead_name=kwds['lead_name'],
+            lead_name=kwds.pop('lead_name', 'Motion'),
             config=self.mock_config,
         )
 
-    def __call__(
-        self,
-        name: str,
-        *,
-        documents: Sequence[Path],
-        case_name: str | None = 'Unknown',
-        lead_name: str | None = 'Motion',
-        stale_cache: bool = False,
-        cached_paths: Sequence[str] = (),
-        uploaded: Sequence[str] = (),
-        extensions: Callable[[Self], Sequence[None] | dict[str, Any]] | None = None,
-        assertions: Callable[[UploadResult], dict[str, Any]] | None = None,
-        **_: ...,
-    ) -> None:
-        super()._subtest(
-            name,
-            documents=documents,
-            case_name=case_name,
-            lead_name=lead_name,
-            stale_cache=stale_cache,
-            cached_paths=cached_paths,
-            uploaded=uploaded,
-            extensions=extensions,
-            assertions=assertions,
-        )
+    if TYPE_CHECKING:
+
+        def __call__(
+            self,
+            name: str,
+            *,
+            documents: Sequence[Path],
+            case_name: str | None = 'Unknown',
+            lead_name: str | None = 'Motion',
+            stale_cache: bool = False,
+            cached_paths: Sequence[str] = (),
+            uploaded: Sequence[str] = (),
+            extensions: Callable[[Self], Sequence[None] | dict[str, Any]] | None = None,
+            assertions: Callable[[IntermediaryResult], dict[str, Any]] | None = None,
+            **kwds: ...,
+        ) -> None: ...

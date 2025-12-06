@@ -14,9 +14,11 @@ preview   = ["pixi-build"]
 
 [pypi-dependencies]
 
-eserv = { path = ".", editable = true }
+automate = { path = ".", editable = true }
+rampy    = { git = "https://github.com/zaynram/ramda-py.git", branch = "master" }
 
-rampy = { git = "https://github.com/zaynram/ramda-py.git", branch = "master" }
+[tasks]
+automate.cmd = "python -m automate"
 
 [feature]
 
@@ -24,7 +26,8 @@ rampy = { git = "https://github.com/zaynram/ramda-py.git", branch = "master" }
 
         [feature.eserv.tasks]
 
-        check-eserv.cmd = "python -m tests.eserv"
+        eserv.cmd      = "python -m automate.eserv"
+        test-eserv.cmd = "python -m pytest ./tests/eserv"
 
         [feature.eserv.dependencies]
 

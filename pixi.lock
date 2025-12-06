@@ -143,6 +143,11 @@ packages:
   - pkg:pypi/asttokens?source=hash-mapping
   size: 28206
   timestamp: 1733250564754
+- pypi: ./
+  name: automate
+  version: 0.0.1
+  sha256: bd41846975b172da9ded3ec24feb483079063c65c1ae8cc5fd9173a10ed846ef
+  editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/beautifulsoup4-4.14.2-pyha770c72_0.conda
   sha256: b949bd0121bb1eabc282c4de0551cc162b621582ee12b415e6f8297398e3b3b4
   md5: 749ebebabc2cae99b2e5b3edd04c6ca2
@@ -325,11 +330,6 @@ packages:
   - pkg:pypi/dropbox?source=hash-mapping
   size: 963095
   timestamp: 1734953543409
-- pypi: ./
-  name: eserv
-  version: 0.0.1
-  sha256: 73f4bda7e511239a1842bdf647629921c3f2a2403e500d77f197b89f771d831b
-  editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/executing-2.2.1-pyhd8ed1ab_0.conda
   sha256: 210c8165a58fdbf16e626aac93cc4c14dbd551a01d1516be5ecad795d2422cad
   md5: ff9efb7f7469aed3c4a8106ffa29593c

@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 from rampy import test
 
-from eserv.util.index_cache import IndexCache
+from automate.eserv.util.index_cache import IndexCache
 
 if TYPE_CHECKING:
     from typing import Any, Final
