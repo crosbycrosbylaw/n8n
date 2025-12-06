@@ -1,0 +1,21 @@
+{
+    "pythonVersion": "3.14",
+    "ignore": [".pixi"],
+    "include": ["./src", "./tests"],
+    "reportPossiblyUnboundVariable": "information",
+    "reportUnusedExpression": "information",
+    "reportWildcardImportFromLibrary": "none",
+    "reportTypedDictNotRequiredAccess": "warning",
+    "enableReachabilityAnalysis": true,
+    "deprecateTypingAliases": true,
+    "enableTypeIgnoreComments": true,
+    "useLibraryCodeForTypes": true,
+    "analyzeUnannotatedFunctions": true,
+    "enableExperimentalFeatures": true,
+    "reportMissingTypeStubs": "none",
+    "reportUnnecessaryCast": "warning",
+    "reportUnnecessaryContains": "warning",
+    "reportUnnecessaryComparison": "warning",
+    "reportUnnecessaryIsInstance": "warning",
+    "reportUnnecessaryTypeIgnoreComment": "warning"
+}

@@ -1,0 +1,8 @@
+{
+    "extends": "../pyrightconfig.json",
+    "reportUnknownArgumentType": "none",
+    "reportUnknownLambdaType": "none",
+    "reportUnknownMemberType": "none",
+    "reportUnknownParameterType": "none",
+    "reportUnknownVariableType": "none"
+}

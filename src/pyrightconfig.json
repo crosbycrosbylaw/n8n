@@ -1,0 +1,6 @@
+{
+    "extends": "../pyrightconfig.json",
+    "typeCheckingMode": "strict",
+    "reportUnknownMemberType": "information",
+    "reportUnknownArgumentType": "information"
+}
