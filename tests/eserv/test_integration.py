@@ -8,18 +8,15 @@ Run with: pytest tests/test_integration.py -v
 
 from __future__ import annotations
 
-import shutil
-import tempfile
-from pathlib import Path
 from typing import TYPE_CHECKING
 
-import pytest
 from rampy import test
 
 from automate import eserv
 from automate.eserv.util.target_finder import FolderMatcher
 
 if TYPE_CHECKING:
+    from pathlib import Path
     from typing import Any
 
     from automate.eserv.types import EmailRecord
@@ -36,7 +33,6 @@ def workflow_scenario(
 
     return {
         'params': [case_name, folders, is_duplicate],
-        'exception': None,
     }
 
 
@@ -58,60 +54,56 @@ def workflow_scenario(
 class TestUploadWorkflow:
     """Test complete upload workflow integrating multiple components."""
 
-    def test(self, /, params: list[Any], exception: type[Exception] | None, record: EmailRecord):
-        def execute() -> None:
-            case_name, folders, is_duplicate = params
-            temp_dir = Path(tempfile.mkdtemp())
+    def test(
+        self,
+        /,
+        params: list[Any],
+        record: EmailRecord,
+        tempdir: Path,
+    ):
+        case_name, folders, is_duplicate = params[0]
 
-            try:
-                # Initialize components
-                state_file = temp_dir / 'email_state.json'
-                cache_file = temp_dir / 'dbx_index.json'
+        temp = tempdir / 'svc'
 
-                email_state = eserv.state_tracker_factory(state_file)
-                index_cache = eserv.index_cache_factory(cache_file, ttl_hours=4)
+        # Initialize components
+        state_file = temp / 'email_state.json'
+        cache_file = temp / 'dbx_index.json'
 
-                # Populate cache with folders
-                index_cache.refresh({
-                    folder: {'id': f'id_{i}', 'name': folder} for i, folder in enumerate(folders)
-                })
+        email_state = eserv.state_tracker_factory(state_file)
+        index_cache = eserv.index_cache_factory(cache_file, ttl_hours=4)
 
-                # Simulate duplicate email if requested
-                if is_duplicate:
-                    email_state.record(record, error=None)
+        # Populate cache with folders
+        index_cache.refresh({
+            folder: {'id': f'id_{i}', 'name': folder} for i, folder in enumerate(folders)
+        })
 
-                # Check if already processed (by UID, not case name)
-                if email_state.is_processed(record.uid):
-                    # Should skip processing for duplicates
-                    assert is_duplicate
-                    return
+        # Simulate duplicate email if requested
+        if is_duplicate:
+            email_state.record(record, error=None)
 
-                # Try to match folder
-                matcher = FolderMatcher(folder_paths=folders, min_score=50.0)
-                match = matcher.find_best_match(case_name)
+        # Check if already processed (by UID, not case name)
+        if email_state.is_processed(record.uid):
+            # Should skip processing for duplicates
+            assert is_duplicate
+            return
 
-                if match:
-                    # Success path - verify match found
-                    assert match.score >= 50.0
-                    assert match.folder_path in folders
-                    # Record successful processing (no error)
-                    email_state.record(record, error=None)
-                else:
-                    # Manual review path - valid outcome, not an error
-                    # Verify no match was found
-                    assert match is None
-                    # In real workflow, would upload to manual review folder
-                    # Record as processed (manual review is not an error)
-                    email_state.record(record, error=None)
+        # Try to match folder
+        matcher = FolderMatcher(folder_paths=folders, min_score=50.0)
+        match = matcher.find_best_match(case_name)
 
-            finally:
-                shutil.rmtree(temp_dir, ignore_errors=True)
-
-        if exception is not None:
-            with pytest.raises(exception):
-                execute()
+        if match:
+            # Success path - verify match found
+            assert match.score >= 50.0
+            assert match.folder_path in folders
+            # Record successful processing (no error)
+            email_state.record(record, error=None)
         else:
-            execute()
+            # Manual review path - valid outcome, not an error
+            # Verify no match was found
+            assert match is None
+            # In real workflow, would upload to manual review folder
+            # Record as processed (manual review is not an error)
+            email_state.record(record, error=None)
 
 
 def test_config_initialization(tmp_path: Path):

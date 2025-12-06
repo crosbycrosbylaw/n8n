@@ -124,9 +124,9 @@ def test_sample_email() -> bool:
         # But we can at least validate the parsing works
         download_info = extract_download_info(soup)
 
-        if (doc_source := download_info.source) and (doc_name := download_info.doc_name):
+        if (doc_source := download_info.source) and (lead_name := download_info.lead_name):
             cons.info('Extracted document name', name=doc_source)
-            cons.info('Extracted document name', name=doc_name)
+            cons.info('Extracted document name', name=lead_name)
         else:
             return False
 

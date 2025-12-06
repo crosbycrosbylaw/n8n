@@ -73,12 +73,13 @@ class TestDownloadDocuments:
 
         # Mock extract_download_info
         mock_info = Mock()
-        mock_info.doc_name = 'Motion'
+        mock_info.lead_name = 'Motion'
         mock_info.source = 'http://example.com/document.pdf'
+        mock_info.store_path = temp_path
+        mock_info.unpack.return_value = mock_info.source, mock_info.lead_name, mock_info.store_path
 
         with (
             patch('automate.eserv.download.extract_download_info', return_value=mock_info),
-            patch('automate.eserv.download.document_store_factory', return_value=temp_path),
             patch('requests.sessions.Session') as mock_session_class,
         ):
             # Setup mock session
@@ -102,11 +103,11 @@ class TestDownloadDocuments:
             mock_session_class.return_value = mock_session
 
             # Execute download
-            doc_name, store_path = download_documents(mock_soup)
+            result = download_documents(mock_soup)
 
             # Verify return values
-            assert doc_name == 'Motion'
-            assert store_path == temp_path
+            assert result.lead_name == 'Motion'
+            assert result.store_path == temp_path
 
             # Verify session.get called
             mock_session.get.assert_called_once()
@@ -120,9 +121,10 @@ class TestDownloadDocuments:
         temp_path.mkdir(exist_ok=True)
 
         mock_info = Mock()
-        mock_info.doc_name = 'Motion'
+        mock_info.lead_name = 'Motion'
         mock_info.source = 'http://example.com/index.html'
-
+        mock_info.store_path = temp_path
+        mock_info.unpack.return_value = mock_info.source, mock_info.lead_name, mock_info.store_path
         # Mock extract_links_from_response_html to return 3 links
         mock_links = [
             Mock(source='http://example.com/doc1.pdf'),
@@ -132,7 +134,6 @@ class TestDownloadDocuments:
 
         with (
             patch('automate.eserv.download.extract_download_info', return_value=mock_info),
-            patch('automate.eserv.download.document_store_factory', return_value=temp_path),
             patch('requests.sessions.Session') as mock_session_class,
             patch(
                 'automate.eserv.download.extract_links_from_response_html',
@@ -180,11 +181,11 @@ class TestDownloadDocuments:
             mock_session_class.return_value = mock_session
 
             # Execute download
-            doc_name, store_path = download_documents(mock_soup)
+            result = download_documents(mock_soup)
 
             # Verify return values
-            assert doc_name == 'Motion'
-            assert store_path == temp_path
+            assert result.lead_name == 'Motion'
+            assert result.store_path == temp_path
 
             # Verify session.get called 4 times (1 HTML + 3 PDFs)
             assert mock_session.get.call_count == 4
@@ -456,7 +457,7 @@ class TestProcessAcceptedResponse:
 
             # Verify returns tuple with fallback filename
             assert isinstance(result, tuple)
-            assert result[0] == 'attachment_1'
+            assert result[0] == 'untitled_1'
             assert result[1] == content
 
     def test_returns_raw_bytes_when_no_filename_or_file_no(self) -> None:

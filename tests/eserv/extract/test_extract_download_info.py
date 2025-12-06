@@ -45,7 +45,7 @@ def scenario(
 
 @test.scenarios(**{
     'simple valid email': scenario(filename='Motion to Dismiss.pdf'),
-    'missing filename': scenario(filename=''),
+    'missing filename': scenario(filename='', expect_name='untitled'),
     'page count filter': scenario(filename='Correct Document.pdf'),
     'missing download link': scenario(download_link='', exception=EmailParseError),
     'link with excess whitespace': scenario(
@@ -66,7 +66,7 @@ class TestExtractDownloadInfo:
             result = extract_download_info(*params)
 
             expect_name = expect['name']
-            assert result.doc_name == expect_name, f'{result.doc_name} != {expect_name}'
+            assert result.lead_name == expect_name, f'{result.lead_name} != {expect_name}'
 
             expect_link = expect['link']
             assert result.source == expect_link, f'{result.source} != {expect_link}'
