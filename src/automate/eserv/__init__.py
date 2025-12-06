@@ -1,7 +1,6 @@
 """A file handling automation pipeline for internal use."""
 
 __all__ = [
-    'clear_temp',
     'config_factory',
     'document_store_factory',
     'download_documents',
