@@ -53,7 +53,7 @@ class BatchResult:
     results: Sequence[ProcessedResult]
 
     def summarize(self) -> dict[ProcessStatus, list[ProcessedResultDict]]:
-        out: ... = {}
+        out: ... = dict.fromkeys(['error', 'success'])
         for r in self.results:
             out.setdefault(r.status, []).append(r.asdict())
         return out

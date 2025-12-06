@@ -567,7 +567,7 @@ class TestPipelineMonitor:
         """Test monitor delegates to EmailProcessor."""
         with (
             mock_core_factory('config', 'state', 'tracker'),
-            patch('automate.eserv.core.EmailProcessor') as mock_processor_class,
+            patch('automate.eserv.core.processor_factory') as mock_processor_class,
         ):
             # Mock EmailProcessor.process_batch
             mock_processor = Mock()
@@ -597,10 +597,10 @@ class TestPipelineMonitor:
         """Test error log cleanup called before monitoring."""
         with (
             mock_core_factory('config', 'state', 'tracker'),
-            patch('automate.eserv.core.EmailProcessor') as mock_processor_class,
+            patch('automate.eserv.core.processor_factory') as mock_processor_class,
         ):
             mock_processor = Mock()
-            mock_batch_result = Mock(spec=['summarize'])
+            mock_batch_result = Mock(spec=['summarize'], failed=0, succeeded=0, total=0)
             mock_batch_result.summarize.return_value = {}
             mock_processor.process_batch.return_value = mock_batch_result
             mock_processor_class.return_value = mock_processor

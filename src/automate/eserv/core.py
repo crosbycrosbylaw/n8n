@@ -189,8 +189,8 @@ class Pipeline:
 
         batch_result = processor_factory(self).process_batch(num_days)
 
-        for err in batch_result.summarize()['error']:
-            if inner := err['error']:
+        for err in batch_result.summarize().get('error', ()):
+            if inner := err.get('error'):
                 message = str(inner.pop('message'))
                 context = inner.pop('context', {})
 
