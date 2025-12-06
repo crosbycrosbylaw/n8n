@@ -73,6 +73,7 @@ tmp/
 temp/
 .tmp/
 .pytest_temp/
+.service/
 
 service/.cache
 service/.n8n
