@@ -40,7 +40,7 @@ def test_env_file(tmp_path: Path):
             "access_token": "test_outlook_token_12345678901",
             "refresh_token": "refresh_token"
         }
-    ]"""
+    ]""",
     )
 
     env_file = tmp_path / '.env'
@@ -56,14 +56,14 @@ SMTP_USE_TLS=true
 MANUAL_REVIEW_FOLDER=/Manual Review
 SERVICE_DIR={tmp_path}
 INDEX_CACHE_TTL_HOURS=4
-"""
+""",
     )
     return env_file
 
 
 def test_config_from_env(test_env_file):
     """Test Config.from_env() loads all configuration."""
-    config = eserv.config(test_env_file)
+    config = eserv.config_factory(test_env_file)
 
     # Verify SMTP config
     assert config.smtp.server == 'smtp.example.com'

@@ -6,13 +6,14 @@ from typing import TYPE_CHECKING, overload
 import orjson
 from rampy.util import create_field_factory
 
-from eserv.monitor.result import processed_result
-from eserv.monitor.types import ProcessedResult
+from eserv.monitor.result import result_factory
+from eserv.types.results import ProcessedResult
+from setup_console import console
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from eserv.monitor.types import EmailRecord, ErrorDict, ProcessedResultDict
+    from eserv.types import EmailRecord, ErrorDict, ProcessedResultDict
 
 
 @dataclass
@@ -41,8 +42,9 @@ class EmailState:
             with self.json_path.open('rb') as f:
                 data: dict[str, ProcessedResultDict] = orjson.loads(f.read())
 
-            self._entries = {uid: processed_result(entry) for uid, entry in data.items()}
+            self._entries = {uid: result_factory(entry) for uid, entry in data.items()}
         except Exception:
+            console.exception('EmailState loading')
             self._entries = {}
 
     @overload
@@ -58,7 +60,7 @@ class EmailState:
         if isinstance(arg, ProcessedResult):
             self._entries[arg.record.uid] = arg
         else:
-            self._entries[arg.uid] = processed_result(arg, error=error)
+            self._entries[arg.uid] = result_factory(record=arg, error=error)
 
         self._save()
 
@@ -83,17 +85,4 @@ class EmailState:
             f.write(orjson.dumps(data, option=orjson.OPT_INDENT_2))
 
 
-if TYPE_CHECKING:
-
-    def state_tracker(json_path: Path) -> EmailState:
-        """Initialize an audit log for processed emails (UID-based).
-
-        Args:
-            json_path (Path):
-                The path to the JSON file to read and write to.
-
-        """
-        ...
-
-
-state_tracker = create_field_factory(EmailState)
+state_tracker_factory = create_field_factory(EmailState)

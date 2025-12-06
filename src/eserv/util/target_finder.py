@@ -16,16 +16,12 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Final
+from typing import Final
 
-from rampy import console
 from rampy.util import create_field_factory
 from rapidfuzz import fuzz, process
 
-from .pdf_utils import extract_text_from_pdf
-
-if TYPE_CHECKING:
-    from pathlib import Path
+from setup_console import console
 
 
 @dataclass(slots=True, frozen=True)
@@ -133,7 +129,10 @@ class PartyExtractor:
         """
         # Remove common suffixes (Inc., LLC, etc.)
         party = re.sub(
-            r',?\s+(Inc\.?|LLC\.?|Corp\.?|Ltd\.?|Co\.?)$', '', party, flags=re.IGNORECASE
+            r',?\s+(Inc\.?|LLC\.?|Corp\.?|Ltd\.?|Co\.?)$',
+            '',
+            party,
+            flags=re.IGNORECASE,
         )
 
         # Split into words and filter noise
@@ -175,10 +174,8 @@ class FolderMatcher:
         """
         parties = PartyExtractor.extract_parties(case_name)
 
-        csl = console.bind(case_name=case_name)
-
         if not parties:
-            csl.warning('No parties extracted from case name')
+            console.warning('No parties extracted from case name', case_name=case_name)
             return None
 
         best_match = None
@@ -202,11 +199,12 @@ class FolderMatcher:
                     matched_party = party
 
         if best_match and best_score >= self.min_score:
-            csl.bind(
+            console.info(
+                event='Found folder match',
                 score=best_score,
                 matched_folder=best_match,
                 matched_on=matched_party,
-            ).info('Found folder match')
+            )
 
             return CaseMatch(
                 folder_path=best_match,
@@ -214,60 +212,14 @@ class FolderMatcher:
                 matched_on=matched_party,
             )
 
-        csl.bind(best_score=best_score, min_score=self.min_score).warning('No folder match found')
+        console.warning(
+            event='No folder match found',
+            case_name=case_name,
+            best_score=best_score,
+            min_score=self.min_score,
+        )
 
         return None
 
 
-def extract_case_names_from_pdf(pdf_path: Path) -> list[str]:
-    """Extract potential case names from PDF text.
-
-    Looks for common patterns like "Case Name:", "Re:", "Matter:", etc.
-
-    Args:
-        pdf_path: Path to PDF file.
-
-    Returns:
-        List of potential case names found in the PDF.
-
-    """
-    text = extract_text_from_pdf(pdf_path)
-
-    csl = console.bind(path=pdf_path.as_posix())
-
-    # Patterns for case name extraction
-    patterns = [
-        re.compile(r'Case\s+Name:?\s+(.+?)(?:\n|$)', re.IGNORECASE),
-        re.compile(r'Re:?\s+(.+?)(?:\n|$)', re.IGNORECASE),
-        re.compile(r'Matter:?\s+(.+?)(?:\n|$)', re.IGNORECASE),
-        re.compile(r'In\s+re:?\s+(.+?)(?:\n|$)', re.IGNORECASE),
-    ]
-
-    case_names: list[str] = []
-    for pattern in patterns:
-        matches = pattern.findall(text)
-        case_names.extend(matches)
-
-    # Clean and deduplicate
-    cleaned = [' '.join(name.split()) for name in case_names]
-    unique = list(dict.fromkeys(cleaned))  # Preserve order while deduplicating
-
-    csl.bind(count=len(unique)).info('Extracted case names from PDF')
-
-    return unique
-
-
-if TYPE_CHECKING:
-
-    def folder_matcher(folder_paths: list[str], min_score: float = 70) -> FolderMatcher:
-        """Initialize a folder matcher.
-
-        Args:
-            folder_paths: List of Dropbox folder paths to search.
-            min_score: Minimum confidence score (default 70.0).
-
-        """
-        ...
-
-
-folder_matcher = create_field_factory(FolderMatcher)
+folder_matcher_factory = create_field_factory(FolderMatcher)

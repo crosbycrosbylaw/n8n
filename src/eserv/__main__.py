@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import fire
 
-from eserv.core import record_processor
+from eserv.core import pipeline_factory
 from eserv.record import record_factory
 
 if TYPE_CHECKING:
@@ -14,13 +14,13 @@ if TYPE_CHECKING:
 
 
 if __name__ == '__main__':
-    processor = record_processor()
+    pipeline = pipeline_factory()
 
-    class _component:  # noqa: N801
+    class _component:
         @staticmethod
-        def process(string: str) -> ProcessedResult:
-            return processor.execute(record_factory(f'{string}'))
+        def process(string: str, **kwds: Any) -> ProcessedResult:
+            return pipeline.execute(record_factory(f'{string}', **kwds))
 
-        monitor = staticmethod(processor.monitor)
+        monitor = staticmethod(pipeline.monitor)
 
     fire.Fire(_component)

@@ -22,7 +22,7 @@ def _clean_document_name(raw: str | None) -> str:
     return ''.join(c for c in name if c.isalnum() or c in {'.', '_', '-'})
 
 
-def document_store(name: str | None = None) -> Path:
+def document_store_factory(name: str | None = None) -> Path:
     """Get a temporary directory to store downloaded documents."""
     cleaned = _clean_document_name(name)
 

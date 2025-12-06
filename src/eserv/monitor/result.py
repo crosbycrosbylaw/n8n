@@ -3,33 +3,36 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, overload
 
-from eserv.monitor.types import ProcessedResult
-
 if TYPE_CHECKING:
-    from eserv.monitor.types import EmailInfo, ErrorDict, ProcessedResultDict
+    from eserv.types import EmailInfo, ErrorDict, ProcessedResult, ProcessedResultDict
 
 
 @overload
-def processed_result(record: EmailInfo, /, *, error: ErrorDict | None) -> ProcessedResult: ...
+def result_factory(*, record: EmailInfo, error: ErrorDict | None = None) -> ProcessedResult: ...
 @overload
-def processed_result(entry: ProcessedResultDict, /) -> ProcessedResult: ...
-def processed_result(
-    arg: EmailInfo | ProcessedResultDict,
-    /,
-    **kwds: ErrorDict | None,
+def result_factory(entry: ProcessedResultDict, /) -> ProcessedResult: ...
+def result_factory(
+    entry: ProcessedResultDict | None = None,
+    *,
+    record: EmailInfo | None = None,
+    error: ErrorDict | None = None,
 ) -> ProcessedResult:
     """Create a ProcessedResult instance."""
-    from eserv.monitor.types import EmailInfo  # noqa: PLC0415
+    from eserv.record import record_factory
+    from eserv.types import EmailInfo, ProcessedResult
 
-    if isinstance(arg, EmailInfo):
-        return ProcessedResult(record=arg, error=kwds['error'])
+    if isinstance(record, EmailInfo):
+        return ProcessedResult(record=record, error=error)
+
+    if entry is None:
+        raise ValueError
 
     return ProcessedResult(
-        record=EmailInfo(
-            uid=arg['uid'],
-            sender=arg['sender'],
-            subject=arg['subject'],
+        record=record_factory(
+            uid=entry['uid'],
+            sender=entry['sender'],
+            subject=entry['subject'],
         ),
-        error=arg['error'],
-        processed_at=datetime.fromisoformat(arg['processed_at']),
+        error=entry['error'],
+        processed_at=datetime.fromisoformat(entry['processed_at']),
     )

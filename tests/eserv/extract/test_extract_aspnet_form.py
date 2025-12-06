@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 import pytest
 from rampy import test
 
+from eserv.errors import EmailParseError
 from eserv.extract import extract_aspnet_form_data
 
 if TYPE_CHECKING:
@@ -47,7 +48,7 @@ def aspnet_form_scenario(
             '<input type="hidden" name="__VIEWSTATEGENERATOR" value="ABC123" />',
             '<input type="hidden" name="__EVENTVALIDATION" value="XYZ789" />',
         ],
-        should_raise=ValueError,
+        should_raise=EmailParseError,
     ),
 })
 class TestExtractAspNetFormData:

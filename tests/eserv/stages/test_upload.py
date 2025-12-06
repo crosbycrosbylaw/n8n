@@ -15,8 +15,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
-from eserv.stages import status
-from eserv.stages.upload import DropboxManager
+from eserv.enums import status
+from eserv.types import DropboxManager
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -280,7 +280,7 @@ def test_document_upload_orchestration(
         case_name='Smith v. Jones',
         uploaded=[],
         extensions=lambda self: {
-            'upload should be called per file': self.mock_dbx.upload.call_count == 3
+            'upload should be called per file': self.mock_dbx.upload.call_count == 3,
         },
     )
 

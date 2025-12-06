@@ -16,7 +16,9 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import TYPE_CHECKING
 
-from rampy import console
+from rampy import create_field_factory
+
+from setup_console import console
 
 if TYPE_CHECKING:
     from eserv.util.configuration import SMTPConfig
@@ -49,8 +51,8 @@ class Notifier:
     smtp_config: SMTPConfig
     notification_config: NotificationConfig = field(init=False)
 
-    def __post_init__(self) -> None:  # noqa: D105
-        from eserv.util.types import NotificationConfig  # noqa: PLC0415
+    def __post_init__(self) -> None:
+        from eserv.util.types import NotificationConfig
 
         self.notification_config = NotificationConfig()
 
@@ -62,8 +64,6 @@ class Notifier:
             body: Email body (plain text).
 
         """
-        cons = console.bind(subject=subject)
-
         msg = MIMEMultipart()
         msg['From'] = self.smtp_config.from_addr
         msg['To'] = self.smtp_config.to_addr
@@ -83,10 +83,9 @@ class Notifier:
             server.send_message(msg)
             server.quit()
 
-            cons.info('Email notification sent')
-
+            console.info('Email notification sent', subject=subject)
         except Exception:
-            cons.exception('Failed to send email notification')
+            console.exception('Failed to send email notification', subject=subject)
 
     def notify_upload_success(self, case_name: str, folder_path: str, file_count: int) -> None:
         """Notify successful document upload.
@@ -108,7 +107,10 @@ Files Uploaded: {file_count}
         self._send_email(subject, body)
 
     def notify_manual_review(
-        self, case_name: str, reason: str, details: dict[str, str] | None = None
+        self,
+        case_name: str,
+        reason: str,
+        details: dict[str, str] | None = None,
     ) -> None:
         """Notify that manual review is required.
 
@@ -133,7 +135,11 @@ Reason: {reason}
         self._send_email(subject, body)
 
     def notify_error(
-        self, case_name: str, stage: str, error: str, context: dict[str, str] | None = None
+        self,
+        case_name: str,
+        stage: str,
+        error: str,
+        context: dict[str, str] | None = None,
     ) -> None:
         """Notify pipeline error.
 
@@ -158,3 +164,6 @@ Error: {error}
                 body += f'  {key}: {value}\n'
 
         self._send_email(subject, body)
+
+
+notifier_factory = create_field_factory(Notifier)

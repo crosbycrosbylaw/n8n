@@ -18,7 +18,8 @@ if TYPE_CHECKING:
 
     from eserv.monitor.client import GraphClient
 
-    type CredentialType = Literal['dropbox', 'microsoft-outlook']
+type CredentialType = Literal['dropbox', 'microsoft-outlook']
+type RefreshHandler = Callable[[OAuthCredential], dict[str, Any]]
 
 
 def _refresh_dropbox(cred: OAuthCredential[Dropbox]) -> dict[str, Any]:
@@ -71,7 +72,7 @@ class OAuthCredential[T = Any]:
     refresh_token: str
     expires_at: datetime | None = None
 
-    handler: Callable[[OAuthCredential], dict[str, Any]] | None = field(default=None, repr=False)
+    handler: RefreshHandler | None = field(default=None, repr=False)
 
     def __str__(self) -> str:
         """Return the access token as string representation."""
@@ -211,9 +212,7 @@ class CredentialManager:
             )
 
     @staticmethod
-    def _resolve_refresh_handler(
-        cred_type: str,
-    ) -> Callable[[OAuthCredential], OAuthCredential] | None:
+    def _resolve_refresh_handler(cred_type: str) -> RefreshHandler | None:
         match cred_type:
             case 'dropbox':
                 return _refresh_dropbox

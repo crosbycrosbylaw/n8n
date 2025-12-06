@@ -21,14 +21,14 @@ import pytest
 from pytest_fixture_classes import fixture_class
 from rampy import test
 
-from eserv import upload_documents
+from eserv.upload import upload_documents
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Sequence
     from inspect import BoundArguments
     from pathlib import Path
 
-    from eserv.stages.types import UploadResult
+    from eserv.types import UploadResult
 
 
 @pytest.fixture
@@ -103,10 +103,10 @@ class UploadDocumentSubtestFixture(test.subtestfix):
     def context(self) -> Generator[Any]:
         try:
             with (
-                patch('eserv.stages.upload.IndexCache', return_value=self.mock_cache),
-                patch('eserv.stages.upload.FolderMatcher', return_value=self.mock_matcher),
-                patch('eserv.stages.upload.DropboxManager', return_value=self.mock_dbx),
-                patch('eserv.stages.upload.Notifier', return_value=self.mock_notifier),
+                patch('eserv.upload.index_cache_factory', return_value=self.mock_cache),
+                patch('eserv.upload.folder_matcher_factory', return_value=self.mock_matcher),
+                patch('eserv.upload.dropbox_manager_factory', return_value=self.mock_dbx),
+                patch('eserv.upload.notifier_factory', return_value=self.mock_notifier),
             ):
                 yield
         finally:

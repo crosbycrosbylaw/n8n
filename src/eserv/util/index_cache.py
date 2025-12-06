@@ -14,8 +14,9 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 import orjson
-from rampy import console
 from rampy.util import create_field_factory
+
+from setup_console import console
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -53,14 +54,12 @@ class IndexCache:
 
     def _load_cache(self) -> None:
         """Load cache from JSON file, creating if missing."""
-        cons = console.bind()
-
         if not self.cache_file.exists():
             self._index = {}
             self._prev_refresh = datetime_min_utc()
             self._save_cache()
 
-            cons.info('Created new index cache file', path=self.cache_file.as_posix())
+            console.info('Created new index cache file', path=self.cache_file.as_posix())
 
             return
 
@@ -72,10 +71,10 @@ class IndexCache:
             prev_refresh = data.get('prev_refresh', datetime_min_utc().isoformat())
             self._prev_refresh = datetime.fromisoformat(prev_refresh)
 
-            cons.info('Loaded index cache', folder_count=len(self._index))
+            console.info('Loaded index cache', folder_count=len(self._index))
 
         except Exception:
-            cons.exception('Failed to load index cache')
+            console.exception('IndexCache loading')
 
             self._index = {}
             self._prev_refresh = datetime_min_utc()
@@ -83,6 +82,9 @@ class IndexCache:
 
     def _save_cache(self) -> None:
         """Save current cache to JSON file."""
+        # Ensure parent directory exists
+        self.cache_file.parent.mkdir(parents=True, exist_ok=True)
+
         data = {
             'prev_refresh': self._prev_refresh.isoformat(),
             'index': self._index,
@@ -110,8 +112,11 @@ class IndexCache:
         self._prev_refresh = datetime.now(UTC)
         self._save_cache()
 
-        cons = console.bind(folder_count=len(self._index), ttl_hours=self.ttl_hours)
-        cons.info('Refreshed index cache')
+        console.info(
+            event='Refreshed index cache',
+            folder_count=len(self._index),
+            ttl_hours=self.ttl_hours,
+        )
 
     def get_index(self) -> dict[str, dict[str, str]]:
         """Get current folder index.
@@ -144,11 +149,4 @@ class IndexCache:
         return [*self._index.keys()]
 
 
-if TYPE_CHECKING:
-
-    def dbx_index_cache(cache_file: Path, ttl_hours: int) -> IndexCache:
-        """Initialize a Dropbox file index cache manager."""
-        ...
-
-
-dbx_index_cache = create_field_factory(IndexCache)
+index_cache_factory = create_field_factory(IndexCache)

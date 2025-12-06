@@ -6,7 +6,6 @@ import pytest
 from pytest_fixture_classes import fixture_class
 from rampy import test
 
-import eserv
 from tests.eserv.lib import SAMPLE_EMAIL
 
 if typing.TYPE_CHECKING:
@@ -27,7 +26,9 @@ def tempdir() -> Generator[Path]:
 
 @pytest.fixture
 def record() -> EmailRecord:
-    return eserv.record_factory(SAMPLE_EMAIL)
+    from eserv.record import record_factory
+
+    return record_factory(SAMPLE_EMAIL)
 
 
 @fixture_class(name='setup_files')

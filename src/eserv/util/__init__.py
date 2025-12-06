@@ -3,23 +3,23 @@
 from __future__ import annotations
 
 __all__ = [
-    'config',
-    'dbx_index_cache',
-    'document_store',
-    'error_tracker',
-    'extract_case_names_from_pdf',
-    'extract_text_from_pdf',
-    'extract_text_from_store',
-    'folder_matcher',
-    'stage',
-    'state_tracker',
+    'config_factory',
+    'document_store_factory',
+    'dropbox_manager_factory',
+    'error_tracker_factory',
+    'folder_matcher_factory',
+    'index_cache_factory',
+    'notifier_factory',
+    'state_tracker_factory',
+    'text_extractor_factory',
 ]
 
-from .configuration import config
-from .doc_store import document_store
-from .email_state import state_tracker
-from .error_tracking import error_tracker
-from .index_cache import dbx_index_cache
-from .pdf_utils import extract_text_from_pdf, extract_text_from_store
-from .target_finder import extract_case_names_from_pdf, folder_matcher
-from .types import PipelineStage as stage  # noqa: N813
+from .configuration import config_factory
+from .dbx_manager import dropbox_manager_factory
+from .doc_store import document_store_factory
+from .email_state import state_tracker_factory
+from .error_tracking import error_tracker_factory
+from .index_cache import index_cache_factory
+from .notifications import notifier_factory
+from .pdf_utils import text_extractor_factory
+from .target_finder import folder_matcher_factory

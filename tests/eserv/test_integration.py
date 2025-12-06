@@ -22,7 +22,7 @@ from eserv.util.target_finder import FolderMatcher
 if TYPE_CHECKING:
     from typing import Any
 
-    from eserv.monitor.types import EmailRecord
+    from eserv.types import EmailRecord
 
 
 def workflow_scenario(
@@ -68,8 +68,8 @@ class TestUploadWorkflow:
                 state_file = temp_dir / 'email_state.json'
                 cache_file = temp_dir / 'dbx_index.json'
 
-                email_state = eserv.state_tracker(state_file)
-                index_cache = eserv.dbx_index_cache(cache_file, ttl_hours=4)
+                email_state = eserv.state_tracker_factory(state_file)
+                index_cache = eserv.index_cache_factory(cache_file, ttl_hours=4)
 
                 # Populate cache with folders
                 index_cache.refresh({
@@ -140,7 +140,7 @@ def test_config_initialization(tmp_path: Path):
             "access_token": "test_token_long_enough",
             "refresh_token": "refresh_token"
         }
-    ]"""
+    ]""",
     )
 
     # Create .env file
@@ -155,10 +155,10 @@ SMTP_USERNAME=user@example.com
 SMTP_PASSWORD=password
 SERVICE_DIR={tmp_path}
 MANUAL_REVIEW_FOLDER=/Manual Review
-"""
+""",
     )
 
-    config = eserv.config(env_file)
+    config = eserv.config_factory(env_file)
 
     # Verify all components are configured
     assert config.smtp.server

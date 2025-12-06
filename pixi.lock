@@ -115,7 +115,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/ee/49/1377b49de7d0c1ce41292161ea0f721913fa8722c19fb9c1e3aa0367eecb/pytest_cov-7.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/5e/ea/1057c5e3ac1ce36d8bc5817d7445b90fba06181508a23dff1fc3d13d2f6d/pytest_fixture_classes-1.0.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/14/1b/a298b06749107c305e1fe0f814c6c74aea7b2f1e10989cb30f544a1b3253/python_dotenv-1.2.1-py3-none-any.whl
-      - pypi: git+https://github.com/zaynram/ramda-py.git?branch=master#e80c1566aab4c33333930492bfef507c2689e3b5
+      - pypi: git+https://github.com/zaynram/ramda-py.git?branch=master#94febbcfc1e585342ea3f04e93e8d72994dd736c
       - pypi: https://files.pythonhosted.org/packages/a8/45/a132b9074aa18e799b891b91ad72133c98d8042c70f6240e4c5f9dabee2f/structlog-25.5.0-py3-none-any.whl
       - pypi: ./
 packages:
@@ -328,7 +328,7 @@ packages:
 - pypi: ./
   name: eserv
   version: 0.0.1
-  sha256: 845738e4febbd03dc188ed5fe918fd25d7c44df1af1b58197372c8b05a12c2a7
+  sha256: 73f4bda7e511239a1842bdf647629921c3f2a2403e500d77f197b89f771d831b
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/executing-2.2.1-pyhd8ed1ab_0.conda
   sha256: 210c8165a58fdbf16e626aac93cc4c14dbd551a01d1516be5ecad795d2422cad
@@ -1197,7 +1197,7 @@ packages:
   - pkg:pypi/pyzmq?source=hash-mapping
   size: 185711
   timestamp: 1757387025899
-- pypi: git+https://github.com/zaynram/ramda-py.git?branch=master#e80c1566aab4c33333930492bfef507c2689e3b5
+- pypi: git+https://github.com/zaynram/ramda-py.git?branch=master#94febbcfc1e585342ea3f04e93e8d72994dd736c
   name: rampy
   version: 0.0.2
 - conda: https://conda.anaconda.org/conda-forge/win-64/rapidfuzz-3.14.3-py314h13fbf68_1.conda

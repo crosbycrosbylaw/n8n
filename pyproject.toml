@@ -10,28 +10,16 @@ version     = "0.0.1"
 authors = [{ name = "zaynram", email = "ramdasszayn@gmail.com" }]
 dynamic = ["dependencies", "requires-python"]
 
-[tool]
 
-setuptools.include-package-data = true
-setuptools.package-dir          = { "*" = "src" }
-setuptools.packages             = ["eserv"]
+[tool.setuptools]
 
-pyright.extends = "../pyrightconfig.json"
-pyright.strict  = ["src/eserv"]
+include-package-data = true
 
-ruff.extend = "../ruff.toml"
-ruff.lint.per-file-ignores = { "**/tests/**" = [
-    "PLR",
-    "ANN001",
-    "S101",
-    "ANN201",
-    "D103",
-    "PLC2701",
-    "PLC0415",
-    "SLF001",
-    "FBT001",
-    "D102",
-    "D101",
-    "S106",
-    "ARG001",
-] }
+package-dir = { "*" = "src" }
+packages    = ["eserv"]
+py-modules  = ["setup_console.py"]
+
+[tool.pytest.ini_options]
+
+tmp_path_retention_count  = 0
+tmp_path_retention_policy = "none"

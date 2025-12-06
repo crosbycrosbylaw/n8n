@@ -12,6 +12,7 @@ import pytest
 from bs4 import BeautifulSoup
 from rampy import test
 
+from eserv.errors import EmailParseError
 from eserv.extract import extract_download_info
 from tests.eserv.lib import create_sample_email
 
@@ -46,7 +47,7 @@ def scenario(
     'simple valid email': scenario(filename='Motion to Dismiss.pdf'),
     'missing filename': scenario(filename=''),
     'page count filter': scenario(filename='Correct Document.pdf'),
-    'missing download link': scenario(download_link='', exception=ValueError),
+    'missing download link': scenario(download_link='', exception=EmailParseError),
     'link with excess whitespace': scenario(
         filename='Whitespace Test.pdf',
         download_link=f'  {DOWNLOAD_LINK}  ',

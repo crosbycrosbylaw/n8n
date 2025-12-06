@@ -1,17 +1,18 @@
+from __future__ import annotations
+
 import threading
 import time
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any, Final
 
 import requests
+from rampy import create_field_factory
 from requests.exceptions import HTTPError
 
-if TYPE_CHECKING:
-    from eserv.monitor.flags import StatusFlag
-    from eserv.util.configuration import MonitoringConfig
-    from eserv.util.types import OAuthCredential
+from eserv.record import record_factory
 
-    from .types import EmailRecord
+if TYPE_CHECKING:
+    from eserv.types import EmailRecord, MonitoringConfig, OAuthCredential, StatusFlag
 
 _STATUS_CODES: Final[dict[str, int]] = {'rate-limit': 429, 'server-error': 500}
 
@@ -21,8 +22,6 @@ class GraphClient:
 
     def __init__(self, credential: OAuthCredential[GraphClient], config: MonitoringConfig) -> None:
         """Initialize a Microsoft Graph client."""
-        credential.set_client(self)
-
         self.cred = credential
         self.config = config
         self._folder_id_cache: dict[str, str] = {}
@@ -146,8 +145,6 @@ class GraphClient:
                 If the email's html body is empty.
 
         """
-        from .types import EmailRecord  # noqa: PLC0415
-
         folder_id = self.resolve_monitoring_folder_id()
 
         # Calculate date range
@@ -202,13 +199,13 @@ class GraphClient:
                     raise ValueError(message)
 
                 records.append(
-                    EmailRecord(
+                    record_factory(
                         uid=uid,
                         sender=msg.get('from', {}).get('emailAddress', {}).get('address', ''),
                         subject=msg.get('subject', ''),
                         received_at=datetime.fromisoformat(msg.get('receivedDateTime', '')),
-                        html_body=html_body,
-                    )
+                        body=html_body,
+                    ),
                 )
 
             # Check for next page
@@ -224,3 +221,6 @@ class GraphClient:
             property_patch = {'singleValueExtendedProperties': [flag]}
 
             self._request('PATCH', path=f'/me/messages/{email_uid}', json=property_patch)
+
+
+graph_client_factory = create_field_factory(GraphClient)

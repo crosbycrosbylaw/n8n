@@ -31,8 +31,7 @@ from eserv.errors import InvalidFormatError, MissingVariableError
 from eserv.util.oauth_manager import CredentialManager
 
 if TYPE_CHECKING:
-    from eserv.util.oauth_manager import CredentialType
-    from eserv.util.types import OAuthCredential
+    from eserv.types import CredentialType, OAuthCredential
 
 
 @dataclass(slots=True, frozen=True)
@@ -165,7 +164,7 @@ class PathsConfig:
             service_dir = Path(path_string).resolve()
             service_dir.mkdir(parents=True, exist_ok=True)
         else:
-            from rampy import rootpath  # noqa: PLC0415
+            from rampy import rootpath
 
             service_dir = rootpath('service', mkdir=True)
 
@@ -303,14 +302,15 @@ class Config:
         ).info('Configuration loaded')
 
 
-def config(dotenv: Path | None = None) -> Config:
+def config_factory(dotenv: Path | None = None) -> Config:
     """Load complete configuration from environment variables.
 
     Args:
         dotenv: Optional path to .env file. If None, uses default .env in cwd.
 
     """
-    Config.load(dotenv)
+    # When a specific dotenv path is provided (e.g., for testing), override existing env vars
+    Config.load(dotenv, override=dotenv is not None)
 
     return Config(
         smtp=SMTPConfig.from_env(),

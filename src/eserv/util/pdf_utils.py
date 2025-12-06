@@ -10,16 +10,20 @@ Functions:
 
 from __future__ import annotations
 
+import re
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import pymupdf as fitz
-from rampy import console
+from rampy import create_field_factory
+
+from setup_console import console
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 
-def extract_text_from_pdf(pdf_path: Path) -> str:
+def _extract_text_from_pdf(pdf_path: Path) -> str:
     """Extract text from a PDF file.
 
     Args:
@@ -36,7 +40,7 @@ def extract_text_from_pdf(pdf_path: Path) -> str:
         message = f'PDF file not found: {pdf_path}'
         raise FileNotFoundError(message)
 
-    cons = console.bind(path=pdf_path.as_posix())
+    subcons = console.bind(path=pdf_path.as_posix())
 
     try:
         doc = fitz.open(pdf_path)
@@ -44,22 +48,22 @@ def extract_text_from_pdf(pdf_path: Path) -> str:
 
         for page_num in range(len(doc)):
             page = doc[page_num]
-            text_parts.append(page.get_text())  # type: ignore[membertype]
+            text_parts.append(page.get_text())
 
         doc.close()
 
         full_text = '\n'.join(text_parts)
-        cons.info('Extracted text from PDF', pages=len(text_parts), chars=len(full_text))
+        subcons.info('Extracted text from PDF', pages=len(text_parts), chars=len(full_text))
 
     except Exception:
-        cons.exception('Failed to extract PDF text')
+        subcons.exception('PDF text extraction')
         raise
 
     else:
         return full_text
 
 
-def extract_text_from_store(store_path: Path) -> dict[str, str]:
+def _extract_text_from_store(store_path: Path) -> dict[str, str]:
     """Extract text from all PDFs in a document store directory.
 
     Args:
@@ -77,24 +81,116 @@ def extract_text_from_store(store_path: Path) -> dict[str, str]:
         message = f'Invalid document store path: {store_path}'
         raise ValueError(message)
 
-    cons = console.bind(store_path=store_path.as_posix())
+    subcons = console.bind(store_path=store_path.as_posix())
 
     if not (pdf_files := [*store_path.glob('*.pdf')]):
-        cons.warning('No PDF files found in store')
+        subcons.warning('No PDF files found in store')
         return {}
 
     extracted: dict[str, str] = {}
 
     for f in pdf_files:
         try:
-            text = extract_text_from_pdf(f)
+            text = _extract_text_from_pdf(f)
             extracted[f.name] = text
         except Exception:
-            cons.exception('Failed to extract PDF in store', pdf_path=f.as_posix())
+            console.exception(
+                event='PDF text extraction',
+                store_path=store_path.as_posix(),
+                pdf_path=f.as_posix(),
+            )
+
             extracted[f.name] = ''
 
-    successful: int = sum(1 for t in extracted.values() if t)
-
-    cons.info('Extracted text from store', pdf_count=len(pdf_files), success_count=successful)
+    subcons.info(
+        event='Extracted text from store',
+        pdf_count=len(pdf_files),
+        success_count=sum(1 for t in extracted.values() if t),
+    )
 
     return extracted
+
+
+@dataclass
+class TextExtractor:
+    path: Path
+
+    def get_text(self, override: Path | None = None) -> str:
+        """Extract text content from a PDF file at the specified path.
+
+        Returns:
+            Extracted text from the PDF file as a string
+
+        Raises:
+            FileNotFoundError:
+                If the provided path is missing or is not a file.
+
+        """
+        path = (override or self.path).resolve(strict=True)
+
+        if path.is_file():
+            return _extract_text_from_pdf(path)
+
+        raise FileNotFoundError(path)
+
+    def collect_text(self, override: Path | None = None) -> dict[str, str]:
+        """Extract text content from all PDF files contained in the specified path.
+
+        If the path points to a file, the returned dictionary will have extract texts \
+            from any PDF files within the same directory.
+
+        Returns:
+            A mapping of filenames to their text content.
+
+        Raises:
+            FileNotFoundError:
+                If the provided path does not exist.
+
+        """
+        path = (override or self.path).resolve(strict=True)
+
+        if path.is_dir():
+            return _extract_text_from_store(path)
+
+        if path.is_file():
+            return _extract_text_from_store(path.parent)
+
+        raise FileNotFoundError(path)
+
+    def extract_names(self, override: Path | None = None) -> list[str]:
+        path = (override or self.path).resolve(strict=True)
+
+        if path.is_dir():
+            out: list[str] = []
+
+            for p in path.iterdir():
+                if p.is_file():
+                    out.extend(self.extract_names(p))
+
+            return out
+
+        text = self.get_text(path)
+
+        # Patterns for case name extraction
+        patterns = [
+            re.compile(r'Case\s+Name:?\s+(.+?)(?:\n|$)', re.IGNORECASE),
+            re.compile(r'Re:?\s+(.+?)(?:\n|$)', re.IGNORECASE),
+            re.compile(r'Matter:?\s+(.+?)(?:\n|$)', re.IGNORECASE),
+            re.compile(r'In\s+re:?\s+(.+?)(?:\n|$)', re.IGNORECASE),
+        ]
+
+        case_names: list[str] = []
+        for pattern in patterns:
+            matches = pattern.findall(text)
+            case_names.extend(matches)
+
+        # Clean and deduplicate
+        cleaned = [' '.join(name.split()) for name in case_names]
+        unique = [*dict.fromkeys(cleaned)]  # Preserve order while deduplicating
+
+        console.info(event='Extracted case names from PDF', path=path.as_posix(), count=len(unique))
+
+        return unique
+
+
+text_extractor_factory = create_field_factory(TextExtractor)

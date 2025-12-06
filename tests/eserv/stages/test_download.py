@@ -16,12 +16,13 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from eserv.stages.download import (
-    _bypass_aspnet_form,  # noqa: PLC2701
-    _process_accepted_response,  # noqa: PLC2701
-    _process_response,  # noqa: PLC2701
+from eserv.download import (
+    _bypass_aspnet_form,
+    _process_accepted_response,
+    _process_response,
     download_documents,
 )
+from eserv.errors import DocumentDownloadError
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -40,7 +41,7 @@ def mock_response() -> Mock:
         return_value=[
             ('content-type', 'application/pdf'),
             ('content-disposition', 'attachment; filename="document.pdf"'),
-        ]
+        ],
     )
     response.raise_for_status = Mock()
     return response
@@ -76,8 +77,8 @@ class TestDownloadDocuments:
         mock_info.source = 'http://example.com/document.pdf'
 
         with (
-            patch('eserv.stages.download.extract_download_info', return_value=mock_info),
-            patch('eserv.stages.download.document_store', return_value=temp_path),
+            patch('eserv.download.extract_download_info', return_value=mock_info),
+            patch('eserv.download.document_store_factory', return_value=temp_path),
             patch('requests.sessions.Session') as mock_session_class,
         ):
             # Setup mock session
@@ -92,7 +93,7 @@ class TestDownloadDocuments:
                 return_value=[
                     ('content-type', 'application/pdf'),
                     ('content-disposition', 'attachment; filename="Motion.pdf"'),
-                ]
+                ],
             )
             mock_response.raise_for_status = Mock()
             mock_session.get.return_value = mock_response
@@ -130,11 +131,11 @@ class TestDownloadDocuments:
         ]
 
         with (
-            patch('eserv.stages.download.extract_download_info', return_value=mock_info),
-            patch('eserv.stages.download.document_store', return_value=temp_path),
+            patch('eserv.download.extract_download_info', return_value=mock_info),
+            patch('eserv.download.document_store_factory', return_value=temp_path),
             patch('requests.sessions.Session') as mock_session_class,
             patch(
-                'eserv.stages.download.extract_links_from_response_html',
+                'eserv.download.extract_links_from_response_html',
                 return_value=mock_links,
             ),
         ):
@@ -168,7 +169,7 @@ class TestDownloadDocuments:
                             'content-disposition',
                             f'attachment; filename="{url.split("/")[-1]}"',
                         ),
-                    ]
+                    ],
                 )
                 pdf_response.raise_for_status = Mock()
                 return pdf_response
@@ -192,7 +193,7 @@ class TestDownloadDocuments:
         """Test that missing download info raises an error."""
         with (
             patch(
-                'eserv.stages.download.extract_download_info',
+                'eserv.download.extract_download_info',
                 side_effect=ValueError('No download info'),
             ),
             pytest.raises(ValueError, match='No download info'),
@@ -210,7 +211,7 @@ class TestProcessResponse:
             return_value=[
                 ('content-type', 'application/pdf'),
                 ('content-disposition', 'attachment; filename="document.pdf"'),
-            ]
+            ],
         )
 
         # Process response
@@ -232,7 +233,7 @@ class TestProcessResponse:
         mock_response.headers.lower_items = Mock(
             return_value=[
                 ('content-type', 'text/html'),
-            ]
+            ],
         )
 
         # Mock POST response after bypass
@@ -246,14 +247,14 @@ class TestProcessResponse:
             return_value=[
                 ('content-type', 'application/pdf'),
                 ('content-disposition', 'attachment; filename="document.pdf"'),
-            ]
+            ],
         )
         post_response.raise_for_status = Mock()
 
         with (
-            patch('eserv.stages.download.extract_aspnet_form_data', return_value={}),
+            patch('eserv.download.extract_aspnet_form_data', return_value={}),
             patch(
-                'eserv.stages.download.extract_post_request_url',
+                'eserv.download.extract_post_request_url',
                 return_value='http://example.com/post',
             ),
         ):
@@ -279,7 +280,7 @@ class TestProcessResponse:
         mock_response.headers.lower_items = Mock(
             return_value=[
                 ('content-type', 'text/html'),
-            ]
+            ],
         )
 
         # Mock extracted links
@@ -296,12 +297,12 @@ class TestProcessResponse:
             return_value=[
                 ('content-type', 'application/pdf'),
                 ('content-disposition', 'attachment; filename="doc.pdf"'),
-            ]
+            ],
         )
         pdf_response.raise_for_status = Mock()
 
         with patch(
-            'eserv.stages.download.extract_links_from_response_html',
+            'eserv.download.extract_links_from_response_html',
             return_value=[mock_link],
         ):
             mock_session.get.return_value = pdf_response
@@ -326,7 +327,7 @@ class TestProcessResponse:
         mock_response.headers.lower_items = Mock(
             return_value=[
                 ('content-type', 'text/html'),
-            ]
+            ],
         )
 
         # Process with depth=2 should raise
@@ -343,11 +344,11 @@ class TestProcessResponse:
         mock_response.headers.lower_items = Mock(
             return_value=[
                 ('content-type', 'application/unknown'),
-            ]
+            ],
         )
 
         # Process response should raise
-        with pytest.raises(ValueError, match="unknown content-type: 'application/unknown'"):
+        with pytest.raises(DocumentDownloadError, match="unknown content-type: 'application/unknown'"):
             _process_response(mock_session, mock_response)
 
 
@@ -369,9 +370,9 @@ class TestBypassAspnetForm:
         post_response.raise_for_status = Mock()
 
         with (
-            patch('eserv.stages.download.extract_aspnet_form_data', return_value=mock_form_data),
+            patch('eserv.download.extract_aspnet_form_data', return_value=mock_form_data),
             patch(
-                'eserv.stages.download.extract_post_request_url',
+                'eserv.download.extract_post_request_url',
                 return_value='http://example.com/post',
             ),
         ):
@@ -397,7 +398,7 @@ class TestBypassAspnetForm:
         # Mock extract_aspnet_form_data to raise error
         with (
             patch(
-                'eserv.stages.download.extract_aspnet_form_data',
+                'eserv.download.extract_aspnet_form_data',
                 side_effect=ValueError('Missing form data'),
             ),
             pytest.raises(ValueError, match='Missing form data'),
@@ -411,9 +412,9 @@ class TestBypassAspnetForm:
 
         # Mock extract_post_request_url to raise error
         with (
-            patch('eserv.stages.download.extract_aspnet_form_data', return_value={}),
+            patch('eserv.download.extract_aspnet_form_data', return_value={}),
             patch(
-                'eserv.stages.download.extract_post_request_url',
+                'eserv.download.extract_post_request_url',
                 side_effect=ValueError('Missing POST URL'),
             ),
             pytest.raises(ValueError, match='Missing POST URL'),
@@ -430,7 +431,7 @@ class TestProcessAcceptedResponse:
         content_disposition = 'attachment; filename="Motion to Dismiss.pdf"'
 
         with patch(
-            'eserv.stages.download.extract_filename_from_disposition',
+            'eserv.download.extract_filename_from_disposition',
             return_value='Motion to Dismiss.pdf',
         ):
             result = _process_accepted_response(content, None, content_disposition)
@@ -446,7 +447,7 @@ class TestProcessAcceptedResponse:
         content_disposition = ''
 
         with patch(
-            'eserv.stages.download.extract_filename_from_disposition',
+            'eserv.download.extract_filename_from_disposition',
             return_value=None,
         ):
             result = _process_accepted_response(content, 1, content_disposition)
@@ -462,7 +463,7 @@ class TestProcessAcceptedResponse:
         content_disposition = ''
 
         with patch(
-            'eserv.stages.download.extract_filename_from_disposition',
+            'eserv.download.extract_filename_from_disposition',
             return_value=None,
         ):
             result = _process_accepted_response(content, None, content_disposition)

@@ -12,8 +12,8 @@ Tests cover:
 
 from __future__ import annotations
 
-from collections.abc import Callable, Generator
-from contextlib import _GeneratorContextManager, contextmanager
+from collections.abc import Callable
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal
 from unittest.mock import Mock, patch
@@ -21,11 +21,13 @@ from unittest.mock import Mock, patch
 import pytest
 
 from eserv.core import Pipeline
-from eserv.errors import PipelineError
-from eserv.stages import status
-from eserv.stages.types import UploadResult
+from eserv.enums import status
+from eserv.errors.pipeline import *
+from eserv.types import UploadResult
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+    from contextlib import _GeneratorContextManager
     from pathlib import Path
 
 
@@ -35,6 +37,18 @@ def mock_dotenv_path(tempdir) -> Path:
     env_path = tempdir / '.env'
     env_path.write_text('TEST_VAR=test_value\n')
     return env_path
+
+
+def _resolve_dependency_name(key: CoreDependency) -> str:
+    match key:
+        case 'config':
+            return 'config_factory'
+        case 'state':
+            return 'state_tracker_factory'
+        case 'tracker':
+            return 'error_tracker_factory'
+        case _:
+            raise ValueError(key)
 
 
 @pytest.fixture
@@ -50,21 +64,32 @@ def mock_dependencies(tempdir) -> dict[str, Mock]:
     mock_state.is_processed.return_value = False
     mock_state.processed = set()
 
-    mock_tracker = Mock(spec=['track', 'clear_old_errors'])
+    # Configure error() to return UploadResult with ERROR status and store error entry
+    errors_list = []
+
+    def mock_error(
+        event=None,
+        *,
+        stage=None,
+        exception=None,
+        context=None,
+        **kwds: Any,
+    ) -> UploadResult:
+        # Store error entry
+        if exception and hasattr(exception, 'entry'):
+            errors_list.append(exception.entry())
+        return UploadResult(status=status.ERROR)
+
+    mock_tracker = Mock(spec=['track', 'clear_old_errors', 'prev_error'])
     mock_track_cm = Mock()
     mock_track_cm.__enter__ = Mock(return_value=mock_track_cm)
     mock_track_cm.__exit__ = Mock(return_value=None)
-
-    # Configure error() to raise PipelineError when raises=True
-    def mock_error(message, stage, context=None, raises=None) -> None:
-        if raises:
-            from eserv.errors._core import PipelineError
-
-            raise PipelineError(message=message, stage=stage)
-
     mock_track_cm.error = Mock(side_effect=mock_error)
     mock_track_cm.warning = Mock()
     mock_tracker.track.return_value = mock_track_cm
+
+    # Configure prev_error to return the most recent error
+    type(mock_tracker).prev_error = property(lambda self: errors_list[-1] if errors_list else None)
 
     return {
         'config': mock_config,
@@ -77,34 +102,41 @@ def mock_dependencies(tempdir) -> dict[str, Mock]:
 @pytest.fixture
 def sample_email_record():
     """Create sample EmailRecord for testing."""
-    from eserv.monitor.types import EmailRecord
+    from eserv import record_factory
 
-    return EmailRecord(
+    return record_factory(
         uid='email-123',
         sender='court@example.com',
         subject='Smith v. Jones - Filing Accepted',
         received_at=datetime(2025, 1, 1, 12, 0, tzinfo=UTC),
-        html_body='<html><body><a href="http://example.com/doc.pdf">Download</a></body></html>',
+        body='<html><body><a href="http://example.com/doc.pdf">Download</a></body></html>',
     )
 
 
 type CoreDependency = Literal['config', 'state', 'tracker', 'track_cm']
-type MockCoreFactory = Callable[[*tuple[CoreDependency, ...]], _GeneratorContextManager[dict[CoreDependency, Mock]]]
+type MockCoreFactory = Callable[
+    [*tuple[CoreDependency, ...]],
+    _GeneratorContextManager[dict[CoreDependency, Mock]],
+]
 
 
 @pytest.fixture
 def mock_core_factory(
     mock_dependencies,
 ) -> MockCoreFactory:
-    lookup = {'config': 'config', 'state': 'state_tracker', 'tracker': 'error_tracker'}
 
     @contextmanager
     def _mock_core(*deps: CoreDependency) -> Generator[Any]:
+        include = set[str](deps) - {'track_cm'}
+
         out: dict[CoreDependency, Mock] = {
-            name: Mock(return_value=mock_dependencies[name]) for name in deps if name in lookup
+            name: Mock(return_value=mock_dependencies[name]) for name in deps if name in include
         }
         try:
-            with patch.multiple(target='eserv.core', **{lookup[name]: out[name] for name in out}):
+            with patch.multiple(
+                target='eserv.core',
+                **{_resolve_dependency_name(name): out[name] for name in out},
+            ):
                 yield out
         finally:
             pass
@@ -169,7 +201,6 @@ class TestPipelineProcess:
 
     def test_successful_complete_workflow(
         self,
-        mock_dependencies: dict,
         mock_core_factory: MockCoreFactory,
         sample_email_record,
         tempdir,
@@ -223,23 +254,20 @@ class TestPipelineProcess:
         mock_core_factory: MockCoreFactory,
         sample_email_record,
     ) -> None:
-        """Test HTML parsing failure raises PipelineError."""
+        """Test HTML parsing failure returns error result."""
         with (
             mock_core_factory('config', 'state', 'tracker'),
-            patch(
-                'eserv.core.BeautifulSoup',
-                side_effect=Exception('Parse error'),
-            ),
+            patch('eserv.core.BeautifulSoup', side_effect=Exception('Parse error')),
         ):
             # Initialize pipeline
             pipeline = Pipeline()
 
-            # Process should raise PipelineError
-            with pytest.raises(PipelineError):
-                pipeline.process(sample_email_record)
+            # Process should return error result
+            result = pipeline.process(sample_email_record)
 
-            # Verify error logged
+            # Verify error logged and returned error status
             mock_dependencies['track_cm'].error.assert_called_once()
+            assert result.status == status.ERROR
 
     def test_download_failure(
         self,
@@ -247,7 +275,7 @@ class TestPipelineProcess:
         mock_core_factory: MockCoreFactory,
         sample_email_record,
     ) -> None:
-        """Test document download failure raises PipelineError."""
+        """Test document download failure returns error result."""
         with (
             mock_core_factory('config', 'state', 'tracker'),
             patch('eserv.core.BeautifulSoup'),
@@ -259,12 +287,12 @@ class TestPipelineProcess:
             # Initialize pipeline
             pipeline = Pipeline()
 
-            # Process should raise PipelineError
-            with pytest.raises(PipelineError):
-                pipeline.process(sample_email_record)
+            # Process should return error result
+            result = pipeline.process(sample_email_record)
 
-            # Verify error logged
+            # Verify error logged and returned error status
             mock_dependencies['track_cm'].error.assert_called_once()
+            assert result.status == status.ERROR
 
     def test_upload_info_extraction_failure(
         self,
@@ -273,7 +301,7 @@ class TestPipelineProcess:
         sample_email_record,
         tempdir,
     ) -> None:
-        """Test upload info extraction failure raises PipelineError."""
+        """Test upload info extraction failure returns error result."""
         store_path = tempdir / 'docs'
         store_path.mkdir(exist_ok=True)
 
@@ -289,12 +317,12 @@ class TestPipelineProcess:
             # Initialize pipeline
             pipeline = Pipeline()
 
-            # Process should raise PipelineError
-            with pytest.raises(PipelineError):
-                pipeline.process(sample_email_record)
+            # Process should return error result
+            result = pipeline.process(sample_email_record)
 
-            # Verify error logged
+            # Verify error logged and returned error status
             mock_dependencies['track_cm'].error.assert_called_once()
+            assert result.status == status.ERROR
 
     def test_duplicate_detection_uid_already_processed(
         self,
@@ -330,7 +358,6 @@ class TestPipelineProcess:
 
     def test_no_pdfs_after_download(
         self,
-        mock_dependencies: dict,
         mock_core_factory: MockCoreFactory,
         sample_email_record,
         tempdir,
@@ -359,7 +386,6 @@ class TestPipelineProcess:
 
     def test_upload_success_status(
         self,
-        mock_dependencies: dict,
         mock_core_factory: MockCoreFactory,
         sample_email_record,
         tempdir,
@@ -449,10 +475,7 @@ class TestPipelineProcess:
             patch('eserv.core.upload_documents') as mock_upload,
         ):
             mock_extract.return_value = Mock(case_name='Smith v. Jones')
-            mock_upload.return_value = UploadResult(
-                status=status.ERROR,
-                error='Dropbox API error',
-            )
+            mock_upload.return_value = UploadResult(status=status.ERROR, error='Dropbox API error')
 
             # Initialize pipeline
             pipeline = Pipeline()
@@ -470,7 +493,6 @@ class TestPipelineMonitor:
 
     def test_batch_processing_via_email_processor(
         self,
-        mock_dependencies: dict,
         mock_core_factory: MockCoreFactory,
     ) -> None:
         """Test monitor delegates to EmailProcessor."""
@@ -524,7 +546,6 @@ class TestPipelineExecute:
 
     def test_successful_execution_wrapper(
         self,
-        mock_dependencies: dict,
         mock_core_factory: MockCoreFactory,
         sample_email_record,
         tempdir,
@@ -555,7 +576,6 @@ class TestPipelineExecute:
 
     def test_pipeline_error_converted_to_processed_result(
         self,
-        mock_dependencies: dict,
         mock_core_factory: MockCoreFactory,
         sample_email_record,
     ) -> None:
@@ -574,7 +594,6 @@ class TestPipelineExecute:
 
     def test_generic_exception_converted_to_processed_result(
         self,
-        mock_dependencies: dict,
         mock_core_factory: MockCoreFactory,
         sample_email_record,
     ) -> None:
@@ -590,8 +609,8 @@ class TestPipelineExecute:
             # Verify ProcessedResult with error
             # Error is wrapped in PipelineError with stage 'parsing'
             assert result.error is not None
-            assert result.error['category'] == 'parsing'
+            assert result.error['category'] == EmailParseError.stage.value
             assert 'message' in result.error
             message = result.error['message']
             assert isinstance(message, str)
-            assert 'Unexpected error' in message
+            assert message == EmailParseError.default_message()

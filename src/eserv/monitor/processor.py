@@ -3,17 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from rampy import console
+from rampy import create_field_factory
 
-from .flags import status_flag
+from setup_console import console
+
+from .flags import status_flag_factory
 
 if TYPE_CHECKING:
     from eserv.core import Pipeline
-    from eserv.util.types import EmailState
-
-    from .client import GraphClient
-    from .flags import StatusFlag
-    from .types import BatchResult, ProcessedResult
+    from eserv.types import BatchResult, EmailState, GraphClient, ProcessedResult, StatusFlag
 
 
 @dataclass
@@ -26,7 +24,7 @@ class EmailProcessor:
 
     def __post_init__(self) -> None:
         """Initialize state from pipeline after dataclass initialization."""
-        from .client import GraphClient  # noqa: PLC0415
+        from .client import GraphClient
 
         self.client = GraphClient(
             self.pipeline.config.credentials['microsoft-outlook'],
@@ -36,7 +34,7 @@ class EmailProcessor:
 
     def process_batch(self, num_days: int) -> BatchResult:
         """Process all unprocessed emails from monitoring folder."""
-        from .types import BatchResult  # noqa: PLC0415
+        from eserv.types import BatchResult
 
         batch = self.client.fetch_unprocessed_emails(num_days, self.state.processed)
         results: list[ProcessedResult] = []
@@ -49,8 +47,8 @@ class EmailProcessor:
             try:
                 flag = self._result_to_flag(result)
                 self.client.apply_flag(record.uid, flag)
-            except Exception as err:
-                console.bind().exception(str(err))
+            except Exception:
+                console.exception('Batch processing')
 
             self.state.record(result)
 
@@ -60,6 +58,9 @@ class EmailProcessor:
     def _result_to_flag(result: ProcessedResult) -> StatusFlag:
         """Convert result to MAPI flag."""
         if not result.error:
-            return status_flag(success=True)
+            return status_flag_factory(success=True)
 
-        return status_flag(result.error)
+        return status_flag_factory(result.error)
+
+
+processor_factory = create_field_factory(EmailProcessor)

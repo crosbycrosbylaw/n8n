@@ -47,12 +47,14 @@ __all__ = [
 
 import re
 import typing
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 from urllib.parse import urlencode, urljoin
 
 from bs4 import BeautifulSoup, Tag
+
+from eserv.errors.pipeline import EmailParseError
+from eserv.types.structs import DownloadInfo, UploadInfo
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
@@ -117,7 +119,7 @@ class _Extractor[T = str](Protocol):
         Default implementation extracts and returns the text content of the tag.
         """
         if tag is not None:
-            return typing.cast('T', tag.get_text(strip=True))
+            return typing.cast('Any', tag.get_text(strip=True))
 
         return None
 
@@ -140,7 +142,7 @@ class _Extractor[T = str](Protocol):
 
         if required and not tag:
             message = 'failed to find required html element'
-            raise ValueError(message, tag)
+            raise EmailParseError(message, context={'tag': str(tag)})
 
         return tag
 
@@ -175,7 +177,7 @@ class _Extractor[T = str](Protocol):
 
 class _LinkExtractor(_Extractor[str], target='a'):
     regex: Pattern[str] = re.compile(
-        r'(https:\/\/illinois.tylertech.cloud\/ViewDocuments.aspx\?\w+=[\w-]+)'
+        r'(https:\/\/illinois.tylertech.cloud\/ViewDocuments.aspx\?\w+=[\w-]+)',
     )
 
     def _select(self, tag: Tag) -> bool:
@@ -212,23 +214,9 @@ class _DocumentNameExtractor(_Extractor[str], target='td'):
     def get_one(self) -> str | None:
         """Get the document name from the document details table.
 
-        Raises ValueError if the document name cannot be found.
+        Raises EmailParseError if the document name cannot be found.
         """
         return super().get_one()
-
-
-@dataclass(slots=True, frozen=True)
-class DownloadInfo:
-    """Information about a file to be downloaded.
-
-    Attributes:
-        source (str): The URL or path from which to download the file.
-        filename (str): The name to use when saving the downloaded file.
-
-    """
-
-    source: str
-    doc_name: str | None
 
 
 def extract_download_info(soup: BeautifulSoup) -> DownloadInfo:
@@ -245,7 +233,7 @@ def extract_download_info(soup: BeautifulSoup) -> DownloadInfo:
         DownloadInfo: An object containing the extracted download link and document name.
 
     Raises:
-        ValueError: If the download link matching the expected pattern cannot be found
+        EmailParseError: If the download link matching the expected pattern cannot be found
             in the email content.
 
     Example:
@@ -261,7 +249,7 @@ def extract_download_info(soup: BeautifulSoup) -> DownloadInfo:
 
     if not source:
         message = 'could not find download link in email content.'
-        raise ValueError(message)
+        raise EmailParseError(message)
 
     doc_name = _DocumentNameExtractor(soup).get_one()
 
@@ -284,20 +272,6 @@ class _CaseNameExtractor(_Extractor[str], target='td'):
             and (prev := tag.find_previous_sibling("td"))
             and ("Case Name" in prev.text),
         )  # fmt: skip
-
-
-@dataclass(slots=True, frozen=True)
-class UploadInfo:
-    """Information about an upload operation.
-
-    Attributes:
-        doc_count: The number of documents uploaded.
-        case_name: The name of the case associated with the upload, or None if not applicable.
-
-    """
-
-    doc_count: int
-    case_name: str | None
 
 
 def extract_upload_info(soup: BeautifulSoup, store: Path) -> UploadInfo:
@@ -334,7 +308,7 @@ class _ViewStateValueExtractor(_Extractor[tuple[str, str]], target='input'):
 
         if not all(x and isinstance(x, str) for x in items):
             message = f'expected strings; recieved {type(name)}, {type(value)}'
-            raise TypeError(message)
+            raise EmailParseError from TypeError(message)
 
         return typing.cast('tuple[str, str]', items)
 
@@ -343,7 +317,7 @@ class _ViewStateValueExtractor(_Extractor[tuple[str, str]], target='input'):
             super()._select(tag)
             and tag.has_attr('name')
             and tag.has_attr('value')
-            and self.regex.match(f'{tag["name"]!s}')
+            and self.regex.match(f'{tag["name"]!s}'),
         )
 
 
@@ -368,7 +342,7 @@ def extract_aspnet_form_data(content: str, email: str) -> str:
             - SubmitUsernameButton: Set to "Validate"
 
     Raises:
-        ValueError: If any of the required ASP.NET fields (__VIEWSTATE,
+        EmailParseError: If any of the required ASP.NET fields (__VIEWSTATE,
                     __VIEWSTATEGENERATOR, __EVENTVALIDATION) are missing from the HTML content.
 
     Example:
@@ -386,8 +360,8 @@ def extract_aspnet_form_data(content: str, email: str) -> str:
     for key in '__VIEWSTATE', '__VIEWSTATEGENERATOR', '__EVENTVALIDATION':
         if key in out:
             continue
-        message = f"missing required ASP.NET field: '{key}'"
-        raise ValueError(message)
+        message = 'HTML content is missing a required ASP.NET field.'
+        raise EmailParseError(message, context={'missing_field': key})
 
     out.update((key, email) for key in ['emailAddress', 'username'])
     out.update(

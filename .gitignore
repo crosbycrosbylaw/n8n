@@ -5,8 +5,6 @@ bun.lock
 # claude files
 .claude/
 
-# pyright configuration
-pyrightconfig.json
 
 # pixi environments
 .pixi/*
@@ -74,6 +72,7 @@ coverage/
 tmp/
 temp/
 .tmp/
+.pytest_temp/
 
 service/.cache
 service/.n8n
@@ -83,6 +82,5 @@ credentials.json
 
 **/.*cache*
 
-ruff.toml
 **/*.ipynb
 pixi.lock

@@ -1,31 +1,38 @@
+# ruff: noqa: BLE001
 from __future__ import annotations
 
-import traceback
 from typing import TYPE_CHECKING
 
 from bs4 import BeautifulSoup
-from rampy import console
 from rampy.util import create_field_factory
 
 from eserv import (
-    config,
+    config_factory,
     download_documents,
-    error_tracker,
+    error_tracker_factory,
     extract_upload_info,
-    processed_result,
-    stage,
-    state_tracker,
-    status,
+    result_factory,
+    state_tracker_factory,
     upload_documents,
 )
-from eserv.errors import PipelineError
+from eserv.enums import stage, status
+from eserv.errors import *
 from eserv.types import EmailProcessor, UploadResult
+from setup_console import console
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from eserv.monitor.types import BatchResult, ProcessedResult
-    from eserv.types import EmailRecord
+    from eserv.types import BatchResult, EmailRecord, ProcessedResult
+
+
+def _parse_html(content: str) -> BeautifulSoup:
+    try:
+        soup = BeautifulSoup(content, features='html.parser')
+    except (TypeError, UnicodeDecodeError) as e:
+        raise EmailParseError from e
+    else:
+        return soup
 
 
 class Pipeline:
@@ -33,9 +40,9 @@ class Pipeline:
 
     def __init__(self, dotenv_path: Path | None = None) -> None:
         """Initialize pipeline with configuration."""
-        self.config = config(dotenv_path)
-        self.state = state_tracker(self.config.state.state_file)
-        self.tracker = error_tracker(self.config.paths.service_dir / 'error_log.json')
+        self.config = config_factory(dotenv_path)
+        self.state = state_tracker_factory(self.config.state.state_file)
+        self.tracker = error_tracker_factory(self.config.paths.service_dir / 'error_log.json')
 
     def process(self, record: EmailRecord) -> UploadResult:
         """Process HTML file through complete pipeline.
@@ -48,77 +55,78 @@ class Pipeline:
             UploadResult with status and details.
 
         """
-        cons = console.bind(uid=record.uid)
+        subcons = console.bind(uid=record.uid)
 
         with self.tracker.track(record.uid) as tracker:
             # Parse email HTML
             try:
-                soup = BeautifulSoup(record.html_body, features='html.parser')
-                cons.info(event='Parsed email HTML')
-            except Exception as e:
-                tracker.error(
-                    message=f'Failed to initialize soup from html: {e!s}',
-                    stage=stage.EMAIL_PARSING,
-                    context={
-                        'exception_type': type(e).__name__,
-                        'traceback': traceback.format_exc(),
-                        'html_body_length': len(record.html_body),
-                    },
-                    raises=True,
+                soup = _parse_html(record.html_body)
+            except EmailParseError as e:
+                return tracker.error(
+                    event='BeautifulSoup initialization',
+                    exception=e,
+                    context={'html_body_length': len(record.html_body)},
                 )
+            except Exception as e:
+                wrapped = EmailParseError()
+                return tracker.error(
+                    event='BeautifulSoup initialization',
+                    exception=wrapped,
+                    context={'html_body_length': len(record.html_body), 'original_error': str(e)},
+                )
+            else:
+                subcons.info(event='Parsed HTML body')
 
             # Download documents
             try:
                 doc_name, store_path = download_documents(soup)
-                cons.info(
+            except DocumentDownloadError as e:
+                return tracker.error(exception=e)
+            except Exception as e:
+                wrapped = DocumentDownloadError()
+                return tracker.error(exception=wrapped, context={'original_error': str(e)})
+            else:
+                subcons.info(
                     event='Downloaded documents',
                     doc_name=doc_name,
                     store_path=store_path.as_posix(),
-                )
-            except Exception as e:
-                tracker.error(
-                    message=f'Failed to download documents: {e!s}',
-                    stage=stage.DOCUMENT_DOWNLOAD,
-                    context={
-                        'exception_type': type(e).__name__,
-                        'traceback': traceback.format_exc(),
-                    },
-                    raises=True,
                 )
 
             # Extract metadata
             try:
                 upload_info = extract_upload_info(soup, store_path)
                 case_name = upload_info.case_name or 'unknown'
-                cons = console.bind(case_name=case_name)
-                cons.info(
+            except EmailParseError as e:
+                return tracker.error(
+                    event='UploadInfo extraction',
+                    exception=e,
+                    context={'store_path': store_path.as_posix()},
+                )
+            except Exception as e:
+                wrapped = EmailParseError()
+                return tracker.error(
+                    event='UploadInfo extraction',
+                    exception=wrapped,
+                    context={'store_path': store_path.as_posix(), 'original_error': str(e)},
+                )
+            else:
+                subcons = console.bind(case_name=case_name)
+                subcons.info(
                     event='Extracted upload info',
                     doc_name=doc_name,
                     doc_count=upload_info.doc_count,
                 )
-            except Exception as e:
-                tracker.error(
-                    message=f'Failed to parse upload information: {e!s}',
-                    stage=stage.EMAIL_PARSING,
-                    context={
-                        'exception_type': type(e).__name__,
-                        'traceback': traceback.format_exc(),
-                        'store_path': store_path.as_posix(),
-                    },
-                    raises=True,
-                )
 
             if record.uid and self.state.is_processed(record.uid):
-                cons.info('Email already processed, skipping')
+                subcons.info('Email already processed, skipping')
                 return UploadResult(status=status.NO_WORK)
 
             pdfs = [*store_path.glob('*.pdf')]
-
             result = upload_documents(pdfs, case_name, doc_name, config=self.config)
 
             match result.status:
                 case status.SUCCESS:
-                    cons.info(
+                    subcons.info(
                         event='Upload successful',
                         folder=result.folder_path,
                         files=len(result.uploaded_files),
@@ -137,15 +145,18 @@ class Pipeline:
                     )
                 case status.ERROR:
                     tracker.error(
-                        message=result.error_msg,
-                        stage=stage.DROPBOX_UPLOAD,
-                        context={
-                            'folder_path': result.folder_path,
-                            'uploaded_files': result.uploaded_files,
-                            'case_name': case_name,
-                        },
-                        raises=True,
+                        exception=(
+                            exc := PipelineError.from_stage(
+                                stage.DROPBOX_UPLOAD,
+                                message=result.error_msg,
+                            )
+                        ),
+                        folder_path=result.folder_path,
+                        uploaded_files=result.uploaded_files,
+                        case_name=case_name,
                     )
+
+                    raise exc
 
             return result
 
@@ -176,20 +187,21 @@ class Pipeline:
 
         """
         try:
-            self.process(rec)
+            result = self.process(rec)
         except PipelineError as e:
-            return processed_result(rec, error=e.info())
+            return result_factory(record=rec, error=e.entry())
         except Exception as e:
-            return processed_result(rec, error={'category': 'unknown', 'message': str(e)})
+            console.exception('Something went wrong.', uid=rec.uid)
+
+            from_exc = PipelineError(message=type(e).__name__, args=e.args)
+            return result_factory(record=rec, error=from_exc.entry())
         else:
-            return processed_result(rec, error=None)
+            # Check if process() returned an error result
+            if result.status == status.ERROR:
+                # Get the error details from the tracker
+                error_entry = self.tracker.prev_error
+                return result_factory(record=rec, error=error_entry)
+            return result_factory(record=rec, error=None)
 
 
-if TYPE_CHECKING:
-
-    def record_processor(dotenv_path: Path | None = None) -> Pipeline:
-        """Initialize a document processing pipeline."""
-        ...
-
-
-record_processor = create_field_factory(Pipeline)
+pipeline_factory = create_field_factory(Pipeline)

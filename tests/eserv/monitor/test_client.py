@@ -17,11 +17,11 @@ from unittest.mock import Mock, patch
 import pytest
 from requests.exceptions import HTTPError
 
-from eserv.monitor.client import GraphClient
-from eserv.monitor.flags import status_flag
+from eserv.monitor.client import graph_client_factory
+from eserv.monitor.flags import status_flag_factory
 
 if TYPE_CHECKING:
-    pass
+    from eserv.types import GraphClient
 
 
 @pytest.fixture
@@ -45,7 +45,7 @@ def mock_config() -> Mock:
 @pytest.fixture
 def graph_client(mock_credential: Mock, mock_config: Mock) -> GraphClient:
     """Create GraphClient instance for testing."""
-    return GraphClient(credential=mock_credential, config=mock_config)
+    return graph_client_factory(credential=mock_credential, config=mock_config)
 
 
 class TestFilterExpression:
@@ -135,7 +135,7 @@ class TestPagination:
                     'from': {'emailAddress': {'address': 'test@example.com'}},
                     'subject': 'Test 1',
                     'receivedDateTime': datetime.now(UTC).isoformat(),
-                }
+                },
             ],
             '@odata.nextLink': 'https://next-page-url',
         }
@@ -151,7 +151,7 @@ class TestPagination:
                     'from': {'emailAddress': {'address': 'test@example.com'}},
                     'subject': 'Test 2',
                     'receivedDateTime': datetime.now(UTC).isoformat(),
-                }
+                },
             ],
         }
 
@@ -174,7 +174,7 @@ class TestPagination:
         records = graph_client.fetch_unprocessed_emails(num_days=1, processed_uids=set())
 
         # Should have fetched both pages
-        assert len(records) == 2  # noqa: PLR2004
+        assert len(records) == 2
         assert records[0].uid == 'msg1'
         assert records[1].uid == 'msg2'
 
@@ -231,7 +231,7 @@ class TestFolderResolution:
         level2_response = Mock()
         level2_response.status_code = 200
         level2_response.json.return_value = {
-            'value': [{'id': 'test_folder_id', 'displayName': 'Test Folder'}]
+            'value': [{'id': 'test_folder_id', 'displayName': 'Test Folder'}],
         }
 
         mock_request.side_effect = [level1_response, level2_response]
@@ -412,7 +412,7 @@ class TestMAPIFlags:
         mock_request.return_value = mock_response
 
         # Create a test flag (success flag)
-        test_flag = status_flag(success=True)
+        test_flag = status_flag_factory(success=True)
 
         graph_client.apply_flag('test_email_id', test_flag)
 
@@ -449,7 +449,7 @@ class TestHTMLBodyValidation:
                     'from': {'emailAddress': {'address': 'test@example.com'}},
                     'subject': 'Test',
                     'receivedDateTime': datetime.now(UTC).isoformat(),
-                }
+                },
             ],
         }
 

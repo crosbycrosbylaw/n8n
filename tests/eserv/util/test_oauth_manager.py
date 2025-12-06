@@ -10,11 +10,12 @@ import orjson
 import pytest
 import requests
 
+from eserv.util import dropbox_manager_factory
 from eserv.util.oauth_manager import (
     CredentialManager,
     OAuthCredential,
-    _refresh_dropbox,  # noqa: PLC2701
-    _refresh_outlook,  # noqa: PLC2701
+    _refresh_dropbox,
+    _refresh_outlook,
 )
 
 if TYPE_CHECKING:
@@ -363,8 +364,6 @@ class TestDropboxManager:
 
     def test_client_created_lazily(self):
         """Test client is created only when accessed."""
-        from eserv.stages.upload import DropboxManager
-
         # Create credential
         cred = OAuthCredential(
             type='dropbox',
@@ -378,13 +377,13 @@ class TestDropboxManager:
         )
 
         # Create manager
-        manager = DropboxManager(cred)
+        manager = dropbox_manager_factory(cred)
 
         # Assert _client is None initially
         assert manager._client is None
 
         # Access client property
-        with patch('dropbox.Dropbox') as MockDropbox:  # noqa: N806
+        with patch('dropbox.Dropbox') as MockDropbox:
             mock_client = Mock()
             MockDropbox.return_value = mock_client
 
@@ -404,8 +403,6 @@ class TestDropboxManager:
 
     def test_client_reused_on_subsequent_access(self):
         """Test client is reused across accesses."""
-        from eserv.stages.upload import DropboxManager
-
         cred = OAuthCredential(
             type='dropbox',
             account='test',
@@ -417,9 +414,9 @@ class TestDropboxManager:
             refresh_token='refresh',
         )
 
-        manager = DropboxManager(cred)
+        manager = dropbox_manager_factory(cred)
 
-        with patch('dropbox.Dropbox') as MockDropbox:  # noqa: N806
+        with patch('dropbox.Dropbox') as MockDropbox:
             mock_client = Mock()
             MockDropbox.return_value = mock_client
 
@@ -436,8 +433,6 @@ class TestDropboxManager:
 
     def test_manager_uses_credential_values(self):
         """Test that DropboxManager uses credential's current values."""
-        from eserv.stages.upload import DropboxManager
-
         cred = OAuthCredential(
             type='dropbox',
             account='test',
@@ -449,9 +444,9 @@ class TestDropboxManager:
             refresh_token='original_refresh',
         )
 
-        manager = DropboxManager(cred)
+        manager = dropbox_manager_factory(cred)
 
-        with patch('dropbox.Dropbox') as MockDropbox:  # noqa: N806
+        with patch('dropbox.Dropbox') as MockDropbox:
             _ = manager.client
 
             # Verify original credential values were used

@@ -1,4 +1,4 @@
-"""Unit tests for EmailProcessor.
+"""Unit tests for processor_factory.
 
 Tests cover:
 - Processor initialization with GraphClient and state
@@ -17,15 +17,13 @@ from unittest.mock import Mock
 import pytest
 from rampy import test
 
-from eserv.monitor.flags import status_flag
-from eserv.monitor.processor import EmailProcessor
-from eserv.monitor.types import EmailInfo, EmailRecord, ProcessedResult
+from eserv import processor_factory, record_factory, result_factory, status_flag_factory
 
 if TYPE_CHECKING:
-    from typing import Any
     from collections.abc import Callable, Sequence
+    from typing import Any
 
-    from eserv.monitor.types import ErrorDict
+    from eserv.types import *
 
 
 @pytest.fixture
@@ -56,12 +54,12 @@ def mock_graph_client() -> Mock:
 @pytest.fixture
 def sample_email_record() -> EmailRecord:
     """Create sample EmailRecord for testing."""
-    return EmailRecord(
+    return record_factory(
         uid='email-123',
         sender='court@example.com',
         subject='Test Case Filing',
         received_at=datetime(2025, 1, 1, 12, 0, tzinfo=UTC),
-        html_body='<html><body>Test email</body></html>',
+        body='<html><body>Test email</body></html>',
     )
 
 
@@ -78,7 +76,7 @@ class TestEmailProcessorInit:
         mock_pipeline: Mock,
     ) -> None:
         """Test GraphClient created from pipeline config credentials."""
-        processor = EmailProcessor(pipeline=mock_pipeline)
+        processor = processor_factory(pipeline=mock_pipeline)
 
         assert evaluator(processor, mock_pipeline)
 
@@ -110,19 +108,19 @@ def process_batch_scenario(
 @test.scenarios(**{
     'successful batch': process_batch_scenario(
         records=[
-            EmailRecord(
+            record_factory(
                 uid='email-456',
                 sender='court@example.com',
                 subject='Another Case',
                 received_at=datetime(2025, 1, 2, 12, 0, tzinfo=UTC),
-                html_body='<html><body>Email 2</body></html>',
+                body='<html><body>Email 2</body></html>',
             ),
-            EmailRecord(
+            record_factory(
                 uid='email-789',
                 sender='court@example.com',
                 subject='Third Case',
                 received_at=datetime(2025, 1, 3, 12, 0, tzinfo=UTC),
-                html_body='<html><body>Email 3</body></html>',
+                body='<html><body>Email 3</body></html>',
             ),
         ],
         expect_succeeded=3,
@@ -136,24 +134,31 @@ def process_batch_scenario(
     ),
     'partial failures': process_batch_scenario(
         records=[
-            EmailRecord(
+            record_factory(
                 uid='email-456',
                 sender='court@example.com',
                 subject='Another Case',
                 received_at=datetime(2025, 1, 2, 12, 0, tzinfo=UTC),
-                html_body='<html><body>Email 2</body></html>',
+                body='<html><body>Email 2</body></html>',
             ),
-            EmailRecord(
+            record_factory(
                 uid='email-789',
                 sender='court@example.com',
                 subject='Third Case',
                 received_at=datetime(2025, 1, 3, 12, 0, tzinfo=UTC),
-                html_body='<html><body>Email 3</body></html>',
+                body='<html><body>Email 3</body></html>',
             ),
         ],
-        mock_execute=lambda rec: ProcessedResult(
-            record=EmailInfo(uid=rec.uid, sender=rec.sender, subject=rec.subject),
-            error={'category': 'download', 'message': 'Network error'} if rec.uid == 'email-456' else None,
+        mock_execute=lambda rec: result_factory(
+            record=record_factory(uid=rec.uid, sender=rec.sender, subject=rec.subject),
+            error={
+                'category': 'download',
+                'message': 'Network error',
+                'uid': rec.uid,
+                'timestamp': datetime.now(UTC).isoformat(),
+            }
+            if rec.uid == 'email-456'
+            else None,
         ),
         expect_succeeded=2,
         insert_sample=True,
@@ -162,7 +167,7 @@ def process_batch_scenario(
 class TestProcessBatch:
     """Test batch processing workflow."""
 
-    def test(  # noqa: PLR0913
+    def test(
         self,
         /,
         params: list[Any],
@@ -193,7 +198,7 @@ class TestProcessBatch:
         mock_client = Mock(spec=['fetch_unprocessed_emails', 'apply_flag'])
         mock_client.fetch_unprocessed_emails.return_value = email_records
 
-        processor = EmailProcessor(pipeline=mock_pipeline)
+        processor = processor_factory(pipeline=mock_pipeline)
         processor.client = mock_client
 
         # Configure execute to return ProcessedResult objects
@@ -202,7 +207,7 @@ class TestProcessBatch:
             def wrapped_execute(rec):
                 # Handle dict serialization from rampy
                 if isinstance(rec, dict):
-                    rec_obj = EmailRecord(**rec)
+                    rec_obj = record_factory(**rec)
                     return mock_execute(rec_obj)
                 return mock_execute(rec)
 
@@ -220,8 +225,8 @@ class TestProcessBatch:
                     sender = rec.sender
                     subject = rec.subject
 
-                return ProcessedResult(
-                    record=EmailInfo(uid=uid, sender=sender, subject=subject),
+                return result_factory(
+                    record=record_factory(uid=uid, sender=sender, subject=subject),
                     error=None,
                 )
 
@@ -250,15 +255,15 @@ def test_flag_application_failure_continues_processing(
     sample_email_record: EmailRecord,
 ) -> None:
     """Test that flag application failures don't crash processing."""
-    processor = EmailProcessor(pipeline=mock_pipeline)
+    processor = processor_factory(pipeline=mock_pipeline)
     mock_client = Mock(spec=['fetch_unprocessed_emails', 'apply_flag'])
 
     # Mock fetch returns 1 email
     mock_client.fetch_unprocessed_emails.return_value = [sample_email_record]
 
     # Mock execute returns success
-    mock_pipeline.execute.return_value = ProcessedResult(
-        record=EmailInfo(
+    mock_pipeline.execute.return_value = result_factory(
+        record=record_factory(
             uid=sample_email_record.uid,
             sender=sample_email_record.sender,
             subject=sample_email_record.subject,
@@ -295,12 +300,12 @@ class TestResultFlagConversion:
     ) -> None:
         """Test successful result converts to success flag."""
         if error is not None:
-            expect_flag = status_flag(error)
+            expect_flag = status_flag_factory(error)
         else:
-            expect_flag = status_flag()
+            expect_flag = status_flag_factory()
 
-        result = ProcessedResult(
-            record=EmailInfo(
+        result = result_factory(
+            record=record_factory(
                 uid='email-123',
                 sender='test@example.com',
                 subject='Test',
@@ -308,7 +313,7 @@ class TestResultFlagConversion:
             error=error,
         )
 
-        processor = EmailProcessor(pipeline=mock_pipeline)
+        processor = processor_factory(pipeline=mock_pipeline)
         assert processor._result_to_flag(result) == expect_flag
 
 
@@ -329,7 +334,11 @@ def batch_result_scenario(
     'all successes': batch_result_scenario(count=5, error=None, expect_succeeded=5),
     'all failures': batch_result_scenario(
         count=5,
-        error={'category': 'download', 'message': 'Error'},
+        error={
+            'category': 'download',
+            'message': 'Error',
+            'timestamp': datetime.now(UTC).isoformat(),
+        },
         expect_succeeded=0,
     ),
     'mixed results': batch_result_scenario(count=3, error=None, expect_succeeded=2),
@@ -344,38 +353,59 @@ class TestBatchResultSummary:
         expect_succeeded: int,
     ) -> None:
         """Test batch result calculations."""
+        count: int
+        error: ErrorDict | None
+
         count, error = params
-        from eserv.monitor.types import BatchResult
+
+        from eserv.types import BatchResult
 
         # Create results based on scenario
         if error is None and count == expect_succeeded:
             # All successes
-            results = [
-                ProcessedResult(
-                    record=EmailInfo(uid=f'email-{i}', sender='test@example.com', subject='Test'),
-                    error=None,
+            results: list[ProcessedResult] = [
+                result_factory(
+                    record=record_factory(
+                        uid=f'email-{i}',
+                        sender='test@example.com',
+                        subject='Test',
+                    ),
                 )
                 for i in range(count)
             ]
-        elif expect_succeeded == 0:
-            # All failures
-            results = [
-                ProcessedResult(
-                    record=EmailInfo(uid=f'email-{i}', sender='test@example.com', subject='Test'),
-                    error=error,
-                )
-                for i in range(count)
-            ]
-        else:
-            # Mixed: create expect_succeeded successes and (count - expect_succeeded) failures
-            results = []
+        elif error and expect_succeeded == 0:
+            results: list[ProcessedResult] = []
+
             for i in range(count):
-                results.append(
-                    ProcessedResult(
-                        record=EmailInfo(uid=f'email-{i}', sender='test@example.com', subject='Test'),
-                        error=None if i < expect_succeeded else {'category': 'download', 'message': 'Error'},
-                    )
+                record = record_factory(
+                    uid=f'email-{i}',
+                    sender='test@example.com',
+                    subject='Test',
                 )
+                error['uid'] = record.uid
+                results.append(result_factory(record=record, error=error))
+
+        else:
+            results: list[ProcessedResult] = []
+
+            for i in range(count):
+                record = record_factory(
+                    uid=f'email-{i}',
+                    sender='test@example.com',
+                    subject='Test',
+                )
+
+                if i < expect_succeeded:
+                    error = None
+                else:
+                    error = {
+                        'uid': record.uid,
+                        'category': 'download',
+                        'message': 'Error',
+                        'timestamp': datetime.now(UTC).isoformat(),
+                    }
+
+                results.append(result_factory(record=record, error=error))
 
         batch_result = BatchResult(results)
 
