@@ -1,5 +1,4 @@
 """Provides a high-level interface for automating file-stamped document uploads."""
-# ruff: noqa: PLW0603
 
 
 def process(
@@ -59,7 +58,7 @@ def process(
 
         kwds['received_at'] = datetime.fromisoformat(received)
 
-    return setup_eserv(dotenv_path).execute(record_factory(body, **kwds))
+    setup_eserv(dotenv_path).execute(record_factory(body, **kwds))
 
 
 def monitor(dotenv: str | None = None, lookback: int = 1):
@@ -75,8 +74,6 @@ def monitor(dotenv: str | None = None, lookback: int = 1):
         BatchResult with summary and per-email results.
 
     """
-    global dotenv_path
-
     from automate.eserv.core import setup_eserv
 
     dotenv_path = None
@@ -86,4 +83,4 @@ def monitor(dotenv: str | None = None, lookback: int = 1):
 
         dotenv_path = Path(dotenv)
 
-    return setup_eserv(dotenv_path).monitor(num_days=lookback)
+    setup_eserv(dotenv_path).monitor(num_days=lookback)

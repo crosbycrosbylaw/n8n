@@ -187,9 +187,22 @@ class Pipeline:
         """
         self.tracker.clear_old_errors(days=30)
 
-        batch_result = EmailProcessor(self).process_batch(num_days)
+        batch_result = processor_factory(self).process_batch(num_days)
 
-        console.info('Batch complete', **batch_result.summarize())
+        for err in batch_result.summarize()['error']:
+            if inner := err['error']:
+                message = str(inner.pop('message'))
+                context = inner.pop('context', {})
+
+                console.error(message, **context)
+
+        console.info(
+            event='Batch complete',
+            failed=batch_result.failed,
+            success=batch_result.succeeded,
+            total=batch_result.total,
+        )
+
         return batch_result
 
     def execute(self, rec: EmailRecord) -> ProcessedResult:
